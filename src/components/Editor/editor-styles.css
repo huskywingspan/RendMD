@@ -43,26 +43,73 @@
 }
 
 /* Tables */
-.ProseMirror .editor-table {
+.ProseMirror table {
   border-collapse: collapse;
   margin: 1rem 0;
   width: 100%;
+  table-layout: fixed;
+  overflow: hidden;
 }
 
-.ProseMirror .editor-table th,
-.ProseMirror .editor-table td {
+.ProseMirror table th,
+.ProseMirror table td {
   border: 1px solid var(--theme-table-border);
   padding: 0.5rem 0.75rem;
   text-align: left;
+  min-width: 100px;
+  position: relative;
+  vertical-align: top;
+  box-sizing: border-box;
 }
 
-.ProseMirror .editor-table th {
+.ProseMirror table th {
   background-color: var(--theme-table-header-bg);
   font-weight: 600;
+  color: var(--theme-text-primary);
+  border-bottom: 2px solid var(--theme-accent-primary);
 }
 
-.ProseMirror .editor-table tr:hover td {
+.ProseMirror table tr:hover td {
   background-color: var(--theme-table-row-hover);
+}
+
+/* Selected cell highlighting - more distinct blue tint */
+.ProseMirror table td.selectedCell,
+.ProseMirror table th.selectedCell {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  border-color: var(--theme-accent-primary);
+  box-shadow: inset 0 0 0 2px var(--theme-accent-primary);
+}
+
+/* TipTap table cell selection overlay */
+.ProseMirror .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(59, 130, 246, 0.2);
+  pointer-events: none;
+}
+
+/* Table resize handles */
+.ProseMirror .tableWrapper {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.ProseMirror .resize-cursor {
+  cursor: col-resize;
+}
+
+/* Column resize handle */
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--theme-accent-primary);
+  pointer-events: none;
 }
 
 /* Code Block Wrapper (Shiki) */

@@ -3,9 +3,14 @@ import { Extension } from '@tiptap/core';
 /**
  * Custom keyboard shortcuts for RendMD editor.
  * 
+ * File shortcuts (handled at App level via events):
+ * - Ctrl+O: Open file
+ * - Ctrl+S: Save file
+ * - Ctrl+Shift+S: Save As
+ * 
  * List shortcuts:
- * - Tab: Indent list item
- * - Shift+Tab: Outdent list item
+ * - Tab: Indent list item / Next table cell
+ * - Shift+Tab: Outdent list item / Previous table cell
  * - Ctrl+Shift+8: Toggle bullet list
  * - Ctrl+Shift+9: Toggle ordered list
  * - Ctrl+Shift+X: Toggle task list
@@ -18,14 +23,23 @@ import { Extension } from '@tiptap/core';
  * 
  * Heading shortcuts:
  * - Ctrl+1 through Ctrl+6: Toggle headings
+ * 
+ * Table shortcuts (built into TipTap table extension):
+ * - Tab: Next cell
+ * - Shift+Tab: Previous cell
+ * - Enter: New paragraph in cell
  */
 export const CustomKeyboardShortcuts = Extension.create({
   name: 'customKeyboardShortcuts',
   
   addKeyboardShortcuts() {
     return {
-      // List indentation
+      // List indentation (tables handle Tab natively)
       'Tab': () => {
+        // Let table handle Tab if in table
+        if (this.editor.isActive('table')) {
+          return false; // Let table extension handle it
+        }
         if (this.editor.isActive('listItem')) {
           return this.editor.commands.sinkListItem('listItem');
         }
@@ -35,6 +49,10 @@ export const CustomKeyboardShortcuts = Extension.create({
         return false;
       },
       'Shift-Tab': () => {
+        // Let table handle Shift+Tab if in table
+        if (this.editor.isActive('table')) {
+          return false; // Let table extension handle it
+        }
         if (this.editor.isActive('listItem')) {
           return this.editor.commands.liftListItem('listItem');
         }

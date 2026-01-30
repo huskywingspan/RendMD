@@ -6,6 +6,7 @@ import { DebugPanel } from './DebugPanel';
 import { BubbleMenu } from './BubbleMenu';
 import { LinkPopover } from './LinkPopover';
 import { ImagePopover } from './ImagePopover';
+import { TableToolbar } from './TableToolbar';
 import { createEditorExtensions } from './extensions';
 import './editor-styles.css';
 
@@ -177,7 +178,13 @@ export function Editor(): JSX.Element {
       />
 
       {/* Rendered editor */}
-      <div className={showSource ? 'w-1/2 border-r border-[var(--theme-border)]' : 'w-full'}>
+      <div className={showSource ? 'w-1/2 border-r border-[var(--theme-border-primary)]' : 'w-full'}>
+        {/* Table toolbar - shown when editing */}
+        {editor && (
+          <div className="sticky top-0 z-10 p-2 bg-[var(--theme-bg-primary)] border-b border-[var(--theme-border-primary)]">
+            <TableToolbar editor={editor} />
+          </div>
+        )}
         <div className="h-full overflow-y-auto p-8" onClick={handleEditorClick}>
           <EditorContent 
             editor={editor} 

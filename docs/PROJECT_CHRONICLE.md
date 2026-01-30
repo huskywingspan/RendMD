@@ -700,6 +700,97 @@ light-glass.css   → 60+ CSS variables + backdrop-filter for light glass
 
 ---
 
+#### ADR-016: File System Access API Strategy
+**Status:** Accepted  
+**Date:** 2026-01-30
+
+**Context:** Need to implement local file open/save for Phase 2. File System Access API is modern but has limited browser support.
+
+**Decision:** Use File System Access API with traditional fallbacks:
+- **Chrome/Edge:** Full native API (`showOpenFilePicker`, `showSaveFilePicker`, auto-save)
+- **Firefox/Safari:** Fallback to `<input type="file">` for open, `<a download>` for save
+
+**Browser Support (as of research date):**
+
+| Feature | Chrome | Edge | Firefox | Safari |
+|---------|--------|------|---------|--------|
+| `showOpenFilePicker` | 86+ | 86+ | ❌ | ❌ |
+| `showSaveFilePicker` | 86+ | 86+ | ❌ | ❌ |
+| `createWritable` | 86+ | 86+ | 111+ | 26+ |
+
+**Rationale:**
+- ~75% of users (Chrome/Edge) get best experience
+- Firefox/Safari users still functional, just download-based saves
+- Feature detection makes this transparent to users
+- Polyfill library (`browser-fs-access`) available if needed later
+
+**Consequences:**
+- ✅ Best native experience for majority of users
+- ✅ Works everywhere (no hard requirement on modern API)
+- ⚠️ Auto-save not possible in Firefox/Safari
+- ⚠️ "Recent files" feature requires IndexedDB handle storage
+
+---
+
+#### ADR-017: TipTap Table Extension Selection  
+**Status:** Accepted  
+**Date:** 2026-01-30
+
+**Context:** Need table editing for Phase 2. Multiple options available.
+
+**Options Considered:**
+1. `@tiptap/extension-table` (official, 4 packages)
+2. Custom ProseMirror table implementation
+3. HTML table with contenteditable
+
+**Decision:** Use official `@tiptap/extension-table` suite:
+- `@tiptap/extension-table`
+- `@tiptap/extension-table-row`
+- `@tiptap/extension-table-header`
+- `@tiptap/extension-table-cell`
+
+**Rationale:**
+- Official TipTap extension with active maintenance
+- Built-in Tab navigation between cells
+- Works with existing `tiptap-markdown` serialization
+- Comprehensive commands (add/delete rows/cols, merge, etc.)
+- Well-documented API
+
+**Consequences:**
+- ✅ Well-tested, standard implementation
+- ✅ Full GFM table round-trip (via tiptap-markdown)
+- ⚠️ Column alignment syntax not preserved (known limitation)
+- ⚠️ 4 additional packages to maintain
+
+---
+
+#### ADR-018: tiptap-markdown Deprecation Awareness
+**Status:** Acknowledged  
+**Date:** 2026-01-30
+
+**Context:** During research, discovered `tiptap-markdown` (our current package) is deprecated. TipTap released official `@tiptap/markdown` in v3.7.0.
+
+**Decision:** Stay with `tiptap-markdown@0.8.x` for v1.0, plan migration for later.
+
+**Rationale:**
+- Current package works well for our needs
+- TipTap v3 has breaking changes requiring significant migration
+- Official package is new, may have undiscovered issues
+- Table serialization in current package is working
+
+**Migration Path (for future):**
+1. Wait for TipTap v3 to stabilize
+2. Test official `@tiptap/markdown` in a branch
+3. Migrate as part of v1.2 or major refactor
+
+**Consequences:**
+- ✅ Stable, known working implementation for v1.0
+- ✅ Avoid premature major dependency changes
+- ⚠️ Technical debt: will need migration eventually
+- ⚠️ May miss improvements in official package
+
+---
+
 ## Session Log
 
 | Date | Session | Key Activities | Outcomes |
@@ -711,6 +802,7 @@ light-glass.css   → 60+ CSS variables + backdrop-filter for light glass
 | 2026-01-29 | Phase 0.5 | Round-trip validation, debug infrastructure | Fidelity confirmed, debug panel built |
 | 2026-01-30 | Phase 1 | Core editing features, BubbleMenu, popovers, shortcuts | ADR-013, Reviewer approved |
 | 2026-01-30 | Phase 1.5 | Theme system, Shiki syntax highlighting | ADRs 014-015, all four themes working |
+| 2026-01-30 | Phase 2 Research | File System API, table extensions, serialization | ADRs 016-018, technical brief complete |
 
 ---
 
@@ -814,3 +906,4 @@ Reviewer feedback led to creating Phase 0.5 and 1.5 to manage scope.
 | 0.3.0 | 2026-01-29 | Phase 0.5 complete, round-trip validation, debug infrastructure |
 | 0.4.0 | 2026-01-30 | Phase 1 complete, ADR-013 (Floating UI), core editing features |
 | 0.5.0 | 2026-01-30 | Phase 1.5 complete, ADRs 014-015 (Shiki, themes), 4-theme system |
+| 0.6.0 | 2026-01-30 | Phase 2 research complete, ADRs 016-018, technical brief |

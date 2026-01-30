@@ -1,10 +1,18 @@
-import { Menu, Settings, Code } from 'lucide-react';
+import { Menu, Settings, Code, FolderOpen, Save } from 'lucide-react';
 import { useEditorStore } from '@/stores/editorStore';
+import { useFileSystem } from '@/hooks';
 import { cn } from '@/utils/cn';
 import { ThemeDropdown } from './ThemeDropdown';
+import { FileIndicator } from './FileIndicator';
 
-export function Header(): JSX.Element {
-  const { fileName, isDirty, showSource, toggleSidebar, toggleSource } = useEditorStore();
+interface HeaderProps {
+  isSaving?: boolean;
+  lastSaved?: Date | null;
+}
+
+export function Header({ isSaving, lastSaved }: HeaderProps): JSX.Element {
+  const { showSource, toggleSidebar, toggleSource } = useEditorStore();
+  const { openFile, saveFile } = useFileSystem();
 
   return (
     <header className="h-12 bg-[var(--theme-bg-secondary)] border-b border-[var(--theme-border-primary)] flex items-center justify-between px-4">
@@ -20,13 +28,29 @@ export function Header(): JSX.Element {
         
         <span className="font-semibold text-[var(--theme-text-primary)]">RendMD</span>
         
-        {fileName && (
-          <span className="text-[var(--theme-text-secondary)] text-sm flex items-center gap-1">
-            <span className="text-[var(--theme-text-muted)]">•</span>
-            {fileName}
-            {isDirty && <span className="text-[var(--theme-accent-primary)]">•</span>}
-          </span>
-        )}
+        <span className="text-[var(--theme-text-muted)]">•</span>
+        
+        <FileIndicator isSaving={isSaving} lastSaved={lastSaved} />
+      </div>
+
+      {/* Center section - File actions */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => openFile()}
+          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-secondary)] transition-colors"
+          title="Open file (Ctrl+O)"
+        >
+          <FolderOpen size={14} />
+          <span className="hidden sm:inline">Open</span>
+        </button>
+        <button
+          onClick={() => saveFile()}
+          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-secondary)] transition-colors"
+          title="Save file (Ctrl+S)"
+        >
+          <Save size={14} />
+          <span className="hidden sm:inline">Save</span>
+        </button>
       </div>
 
       {/* Right section */}
