@@ -1,8 +1,8 @@
 # RendMD - Project Plan
 
-> **Version:** 0.4.0  
-> **Last Updated:** 2026-01-30  
-> **Status:** Phase 1.5 Complete, Preparing Phase 2
+> **Version:** 0.5.0  
+> **Last Updated:** 2026-01-31  
+> **Status:** Phase 2 Complete, Preparing Phase 2.5
 
 ---
 
@@ -175,26 +175,55 @@
 
 ---
 
-### Phase 2: Tables & File Ops (Week 4)
+### Phase 2: Tables & File Ops (Week 4) ✅ COMPLETE
 **Goal:** Table editing and local file system integration
 
 #### Table Editing
-- [ ] Table rendering with cell navigation
-- [ ] Click cell to edit
-- [ ] Add/remove row buttons
-- [ ] Add/remove column buttons
-- [ ] Column alignment controls
-- [ ] Tab navigation between cells
+- [x] Table rendering with cell navigation
+- [x] Click cell to edit
+- [x] Add/remove row buttons
+- [x] Add/remove column buttons
+- [x] GFM compliance guards (protect header, prevent nesting)
+- [x] Contextual TableToolbar with smart button states
+- [ ] Column alignment controls *(deferred to Phase 2.5)*
+- [ ] Tab navigation between cells *(deferred to Phase 2.5)*
 
 #### File Operations
-- [ ] File System Access API integration
-- [ ] Open file dialog
-- [ ] Save / Save As
-- [ ] Auto-save with debounce (2s default)
-- [ ] Dirty state indicator (unsaved changes)
-- [ ] Keyboard shortcuts (Ctrl+O, Ctrl+S)
+- [x] File System Access API integration (useFileSystem hook)
+- [x] Open file dialog
+- [x] Save / Save As
+- [x] Auto-save with debounce (2s default, useAutoSave hook)
+- [x] Dirty state indicator (FileIndicator component)
+- [x] Keyboard shortcuts (Ctrl+O, Ctrl+S)
 
-**Deliverable:** Can open, edit tables, and save .md files locally
+**Deliverable:** Can open, edit tables, and save .md files locally ✅
+
+**Phase 2 Completion Notes:**
+- Completed: 2026-01-31
+- Table CSS with visible borders, header styling, blue selection highlight
+- GFM guards: header row protection, nested table prevention, add-row-above-header disabled
+- Delete column disabled when only 1 column left
+- ErrorBoundary component for graceful error handling
+- Dev scripts: dev.bat, dev.ps1
+
+---
+
+### Phase 2.5: Table Enhancements (Post-Phase 2 Sprint)
+**Goal:** Advanced table UX and remaining table features
+
+#### Grid Selection for Table Insertion
+- [ ] Grid picker component (like Google Docs/Word)
+- [ ] Hover to preview table size (e.g., "3×4 table")
+- [ ] Click to insert with selected dimensions
+- [ ] Replace current table insert button/command
+
+#### Table Navigation & Alignment
+- [ ] Tab navigation between cells (Tab = next, Shift+Tab = prev)
+- [ ] Enter creates new row at end of table
+- [ ] Column alignment controls (left/center/right)
+- [ ] Visual alignment indicators in header
+
+**Deliverable:** Premium table insertion and navigation experience
 
 ---
 
@@ -334,10 +363,11 @@
 | Milestone | Target | Key Deliverable | Status |
 |-----------|--------|-----------------|--------|
 | M0: Foundation | End of Week 1 | Basic editing works | ✅ Complete |
-| M0.5: Validation | Pre-Phase 1 | Markdown round-trip verified | 🔄 Next |
-| M1: Core Editing | End of Week 3 | All elements editable | ⏳ Planned |
-| M1.5: Enhancements | Post-Week 3 | Syntax highlighting, themes | ⏳ Planned |
-| M2: Files & Tables | End of Week 4 | File ops + tables | ⏳ Planned |
+| M0.5: Validation | Pre-Phase 1 | Markdown round-trip verified | ✅ Complete |
+| M1: Core Editing | End of Week 3 | All elements editable | ✅ Complete |
+| M1.5: Enhancements | Post-Week 3 | Syntax highlighting, themes | ✅ Complete |
+| M2: Files & Tables | End of Week 4 | File ops + tables | ✅ Complete |
+| M2.5: Table UX | Post-Week 4 | Grid insert, tab nav, alignment | ⏳ Planned |
 | M3: Source & Themes | End of Week 5 | Source view, frontmatter, 4 themes | ⏳ Planned |
 | M4: Images & Nav | End of Week 6 | Images + TOC | ⏳ Planned |
 | M5: Polish | End of Week 7 | Export + search + optimization | ⏳ Planned |
