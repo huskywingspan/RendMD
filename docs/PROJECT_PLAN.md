@@ -1,8 +1,8 @@
 # RendMD - Project Plan
 
-> **Version:** 0.2.0  
-> **Last Updated:** 2026-01-29  
-> **Status:** Phase 0 Complete, Preparing Phase 1
+> **Version:** 0.4.0  
+> **Last Updated:** 2026-01-30  
+> **Status:** Phase 1.5 Complete, Preparing Phase 2
 
 ---
 
@@ -64,92 +64,114 @@
 
 ---
 
-### Phase 0.5: Markdown Round-Trip Validation (Pre-Phase 1)
+### Phase 0.5: Markdown Round-Trip Validation (Pre-Phase 1) ✅ COMPLETE
 **Goal:** Validate core markdown processing before building on top of it
 
 #### Test Data Generation
-- [ ] Create `tests/fixtures/markdown-test-suite.md` with comprehensive test cases
-- [ ] Include all GFM elements: headings, lists, tables, code blocks, links, images
-- [ ] Include edge cases: nested lists (3+ levels), complex tables, mixed formatting
-- [ ] Include frontmatter variations
+- [x] Create `tests/fixtures/markdown-test-suite.md` with comprehensive test cases
+- [x] Include all GFM elements: headings, lists, tables, code blocks, links, images
+- [x] Include edge cases: nested lists (3+ levels), complex tables, mixed formatting
+- [x] Include frontmatter variations
 
 #### Validation Strategy
-- [ ] Create `tests/utils/roundtrip.test.ts` for automated validation
-- [ ] Implement visual diff tool for rendered output comparison
-- [ ] Document any known limitations in Chronicle
+- [x] Create `tests/utils/roundtrip.test.ts` for automated validation
+- [x] Implement visual diff tool for rendered output comparison
+- [x] Document any known limitations in Chronicle
 
 #### Debug Infrastructure
-- [ ] Add markdown debug panel (dev mode only) showing:
+- [x] Add markdown debug panel (dev mode only) showing:
   - Raw input markdown
   - ProseMirror document JSON
   - Serialized output markdown
   - Diff highlighting between input/output
-- [ ] Add console logging for parse/serialize steps (toggleable)
+- [x] Add console logging for parse/serialize steps (toggleable)
 
-**Deliverable:** Confidence that markdown processing is reliable
+**Deliverable:** Confidence that markdown processing is reliable ✅
 
 **Success Criteria:**
-1. All GFM elements survive round-trip
-2. Known limitations documented
-3. Debug tools available for troubleshooting
+1. ✅ All GFM elements survive round-trip
+2. ✅ Known limitations documented
+3. ✅ Debug tools available for troubleshooting
+
+**Phase 0.5 Completion Notes:**
+- Completed: 2026-01-29
+- Test suite: 505 lines covering all GFM elements
+- Known transformations documented (list markers, horizontal rules, reference links)
+- Debug panel built with 4 tabs (Input, Output, Document, Diff)
 
 ---
 
-### Phase 1: Core Editing (Weeks 2-3)
+### Phase 1: Core Editing (Weeks 2-3) ✅ COMPLETE
 **Goal:** Full inline editing for all common markdown elements
 
 #### Week 2: Text Elements
-- [ ] Paragraph inline editing with visual states
-- [ ] Heading editing with level toggle (H1-H6)
-- [ ] Bold/italic/code inline formatting
-- [ ] Selection-based formatting toolbar (bubble menu)
-- [ ] Bullet and numbered lists
-- [ ] List indent/outdent
-- [ ] Task list checkboxes
+- [x] Paragraph inline editing with visual states
+- [x] Heading editing with level toggle (H1-H6)
+- [x] Bold/italic/code inline formatting
+- [x] Selection-based formatting toolbar (bubble menu)
+- [x] Bullet and numbered lists
+- [x] List indent/outdent
+- [x] Task list checkboxes
 
 #### Week 3: Rich Elements
-- [ ] Link editing (click → popover with URL/text)
-- [ ] Image display and edit popover
-- [ ] Blockquote editing
-- [ ] Horizontal rule handling
-- [ ] Code block display (basic styling, no syntax highlighting yet)
-- [ ] Code block language indicator
+- [x] Link editing (click → popover with URL/text)
+- [x] Image display and edit popover
+- [x] Blockquote editing
+- [x] Horizontal rule handling
+- [x] Code block display (basic styling, no syntax highlighting yet)
+- [x] Code block language indicator
 
-**Deliverable:** Can edit all standard markdown elements inline
+**Deliverable:** Can edit all standard markdown elements inline ✅
 
 **Success Criteria:**
-1. All GFM elements render correctly
-2. Click any element to edit it
-3. Bubble menu appears on text selection
-4. Links are clickable (Ctrl+Click opens, Click edits)
-5. Code blocks display correctly (styling deferred to 1.5)
-6. Round-trip preserves all formatting
+1. ✅ All GFM elements render correctly
+2. ✅ Click any element to edit it
+3. ✅ Bubble menu appears on text selection
+4. ✅ Links are clickable (Ctrl+Click opens, Click edits)
+5. ✅ Code blocks display correctly (styling deferred to 1.5)
+6. ✅ Round-trip preserves all formatting
+
+**Phase 1 Completion Notes:**
+- Completed: 2026-01-30
+- BubbleMenu with formatting controls (bold, italic, code, strikethrough, link)
+- LinkPopover with Floating UI positioning
+- ImagePopover for alt text and URL editing
+- Keyboard shortcuts extension (Ctrl+B, Ctrl+I, etc.)
 
 ---
 
-### Phase 1.5: Polish & Enhancements (Post-Phase 1 Sprint)
+### Phase 1.5: Polish & Enhancements (Post-Phase 1 Sprint) ✅ COMPLETE
 **Goal:** Quick wins and polish items that didn't fit in Phase 1 scope
 
 #### Code Block Enhancements
-- [ ] Shiki integration for syntax highlighting
-- [ ] Code block language selector dropdown
-- [ ] Copy code button
+- [x] Shiki integration for syntax highlighting
+- [x] Code block language selector dropdown
+- [x] Copy code button
 
 #### Theme System
-- [ ] Wire up theme toggle in header (dark/light quick switch)
-- [ ] Theme dropdown with all four options
-- [ ] Theme persistence to localStorage
+- [x] Wire up theme toggle in header (dark/light quick switch)
+- [x] Theme dropdown with all four options
+- [x] Theme persistence to localStorage
 
 #### Developer Experience
-- [ ] Markdown debug panel refinements
-- [ ] Performance baseline measurement
+- [x] Markdown debug panel refinements
+- [x] Performance baseline measurement
 
-**Deliverable:** Polished Phase 1 with syntax highlighting and theme switching
+**Deliverable:** Polished Phase 1 with syntax highlighting and theme switching ✅
 
 **Success Criteria:**
-1. Code blocks have accurate syntax highlighting
-2. Theme toggle works and persists
-3. All four theme options selectable
+1. ✅ Code blocks have accurate syntax highlighting
+2. ✅ Theme toggle works and persists
+3. ✅ All four theme options selectable
+
+**Phase 1.5 Completion Notes:**
+- Completed: 2026-01-30
+- Shiki integration with theme-aware highlighting (github-dark/light-default)
+- CodeBlockComponent with language selector (17 languages) and copy button
+- useTheme hook with localStorage persistence and isDark computed property
+- ThemeDropdown with quick toggle (sun/moon) + full 4-theme selector
+- 4 complete CSS theme files (~60 variables each)
+- Build passes, bundle includes lazy-loaded Shiki language chunks
 
 ---
 

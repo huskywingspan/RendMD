@@ -542,6 +542,164 @@ These are semantic-preserving normalizations:
 
 ---
 
+## 2026-01-30 - Phase 1 Complete
+
+### Completion Summary
+
+**Status:** ✅ Approved by Reviewer  
+**Commit:** `d3fb95e`  
+**Build:** Passing (TypeScript, ESLint, Vite)
+
+### What Was Built
+
+1. **BubbleMenu** - `src/components/Editor/BubbleMenu.tsx`
+   - Appears on text selection
+   - Formatting buttons: Bold, Italic, Code, Strikethrough, Link
+   - Positioned above selection with Floating UI
+
+2. **LinkPopover** - `src/components/Editor/LinkPopover.tsx`
+   - Click link to edit URL and text
+   - Uses `@floating-ui/react` for positioning
+   - Apply/Remove link buttons
+   - External link click (Ctrl+Click or button)
+
+3. **ImagePopover** - `src/components/Editor/ImagePopover.tsx`
+   - Click image to edit alt text and URL
+   - Same Floating UI pattern as LinkPopover
+
+4. **Keyboard Shortcuts Extension** - `src/components/Editor/extensions/KeyboardShortcuts.ts`
+   - Ctrl+B (bold), Ctrl+I (italic), Ctrl+` (code)
+   - Ctrl+Shift+X (strikethrough)
+   - Ctrl+1 through Ctrl+6 (headings)
+   - Ctrl+Shift+7 (ordered list), Ctrl+Shift+8 (bullet list)
+   - Ctrl+Shift+9 (task list)
+
+### Key Decisions Made
+
+---
+
+#### ADR-013: Floating UI for Popovers
+**Status:** Accepted  
+**Date:** 2026-01-30
+
+**Context:** Popovers need intelligent positioning to avoid viewport edges.
+
+**Decision:** Use `@floating-ui/react` for all popover positioning.
+
+**Rationale:**
+- Handles viewport edge detection automatically
+- Works well with React's rendering model
+- Lightweight compared to full tooltip libraries
+- Consistent positioning behavior across all popovers
+
+---
+
+## 2026-01-30 - Phase 1.5 Complete
+
+### Completion Summary
+
+**Status:** ✅ Approved by Reviewer  
+**Commit:** `35a1deb`  
+**Files Changed:** 22 files, +2716/-108 lines  
+**Build:** Passing (including Shiki lazy-loaded chunks)
+
+### What Was Built
+
+1. **Theme System**
+   - `useTheme` hook with localStorage persistence
+   - 4 complete CSS theme files (~60 variables each):
+     - `dark-basic.css` - Primary development theme
+     - `light-basic.css` - Clean light theme
+     - `dark-glass.css` - Glassmorphism with backdrop blur
+     - `light-glass.css` - Light glassmorphism variant
+   - `ThemeDropdown` component with quick toggle + full selector
+   - Theme class applied to `<html>` element
+
+2. **Shiki Syntax Highlighting**
+   - `CodeBlockComponent` with theme-aware highlighting
+   - Language selector dropdown (17 common languages)
+   - Copy-to-clipboard button with visual feedback
+   - `CodeBlockShiki` TipTap extension wrapping the component
+   - Lazy-loaded language grammars (code-split)
+
+3. **Editor Extensions Factory**
+   - `createEditorExtensions(isDark)` function
+   - Theme-aware Shiki configuration
+   - Clean extension registration pattern
+
+### Bundle Analysis
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Main bundle | ~968KB | Includes TipTap, Zustand, core UI |
+| Shiki core | ~150KB | Lazy-loaded on first code block |
+| Language chunks | ~300 files | Each language grammar separate |
+| Themes | 4 files | CSS only, minimal |
+
+### Key Decisions Made
+
+---
+
+#### ADR-014: Shiki over Lowlight for Syntax Highlighting
+**Status:** Accepted  
+**Date:** 2026-01-30
+
+**Context:** Code blocks need syntax highlighting. Options considered: lowlight (highlight.js), Shiki (VS Code's engine), Prism.
+
+**Decision:** Use Shiki for syntax highlighting.
+
+**Rationale:**
+- Accurate highlighting (same engine as VS Code)
+- Theme-aware (can match app theme)
+- Modern architecture with lazy loading
+- Better TypeScript support than alternatives
+
+**Consequences:**
+- ✅ Accurate, beautiful syntax highlighting
+- ✅ Lazy-loaded languages reduce initial bundle
+- ⚠️ Larger total bundle than lowlight (acceptable with code-splitting)
+
+---
+
+#### ADR-015: Four-Theme Implementation Strategy
+**Status:** Accepted  
+**Date:** 2026-01-30
+
+**Context:** Need to implement dark-basic, light-basic, dark-glass, light-glass themes.
+
+**Decision:** 
+- Each theme is a standalone CSS file with all variables
+- Themes applied via class on `<html>` element
+- Glass themes use `backdrop-filter: blur()` on appropriate surfaces
+- Quick toggle switches between dark/light variants of current style
+
+**Theme Architecture:**
+```
+base.css          → CSS reset, Tailwind imports
+dark-basic.css    → 60+ CSS variables for dark basic
+light-basic.css   → 60+ CSS variables for light basic  
+dark-glass.css    → 60+ CSS variables + backdrop-filter for dark glass
+light-glass.css   → 60+ CSS variables + backdrop-filter for light glass
+```
+
+**Rationale:**
+- Standalone files are easier to maintain than complex override chains
+- Class-based switching is fast (no JS computation)
+- CSS variables enable component-level theming
+- Quick toggle preserves user's style preference (basic vs glass)
+
+---
+
+### Artifacts
+
+- Theme hook: `src/hooks/useTheme.ts`
+- Theme files: `src/themes/*.css`
+- Theme dropdown: `src/components/Header/ThemeDropdown.tsx`
+- Code block: `src/components/Editor/CodeBlockComponent.tsx`
+- Shiki extension: `src/components/Editor/extensions/CodeBlockShiki.ts`
+
+---
+
 ## Session Log
 
 | Date | Session | Key Activities | Outcomes |
@@ -551,6 +709,8 @@ These are semantic-preserving normalizations:
 | 2026-01-29 | Phase 0 | Project scaffolding, TipTap setup, basic layout | Foundation complete, Reviewer approved |
 | 2026-01-29 | Retrospective | Review Phase 0, plan testing strategy, scope Phase 1 | ADRs 010-012, Phase 0.5 and 1.5 added |
 | 2026-01-29 | Phase 0.5 | Round-trip validation, debug infrastructure | Fidelity confirmed, debug panel built |
+| 2026-01-30 | Phase 1 | Core editing features, BubbleMenu, popovers, shortcuts | ADR-013, Reviewer approved |
+| 2026-01-30 | Phase 1.5 | Theme system, Shiki syntax highlighting | ADRs 014-015, all four themes working |
 
 ---
 
@@ -652,3 +812,5 @@ Reviewer feedback led to creating Phase 0.5 and 1.5 to manage scope.
 | 0.1.0 | 2026-01-29 | Initial document creation |
 | 0.2.0 | 2026-01-29 | Phase 0 complete, ADRs 010-012, lessons learned |
 | 0.3.0 | 2026-01-29 | Phase 0.5 complete, round-trip validation, debug infrastructure |
+| 0.4.0 | 2026-01-30 | Phase 1 complete, ADR-013 (Floating UI), core editing features |
+| 0.5.0 | 2026-01-30 | Phase 1.5 complete, ADRs 014-015 (Shiki, themes), 4-theme system |
