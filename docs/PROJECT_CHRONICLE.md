@@ -791,6 +791,119 @@ light-glass.css   → 60+ CSS variables + backdrop-filter for light glass
 
 ---
 
+## 2026-01-30 - Phase 2 Implementation & Review
+
+### Context
+Phase 2 focused on table editing and file operations. Builder implemented features, then Reviewer conducted extensive interactive testing that uncovered 8 bugs requiring fixes.
+
+### What Was Built
+
+**Table Editing:**
+- GFM table support via @tiptap/extension-table suite
+- Contextual TableToolbar with add/delete row/column buttons
+- CSS styling with visible borders, header accents, selection highlighting
+- ProseMirror integration with `fixTables()` for consistency
+
+**File Operations:**
+- `useFileSystem` hook with File System Access API + fallbacks
+- `useAutoSave` hook with 2-second debounce
+- `FileIndicator` component showing dirty state and file path
+- Keyboard shortcuts: Ctrl+O (open), Ctrl+S (save)
+
+**Developer Experience:**
+- `ErrorBoundary` component for graceful crash handling
+- `dev.bat` and `dev.ps1` launch scripts
+
+---
+
+#### ADR-019: GFM Table Compliance Guards
+**Status:** Accepted  
+**Date:** 2026-01-30
+
+**Context:** During Phase 2 review, discovered that TipTap table commands allow operations that produce invalid GFM tables (which require exactly one header row as the first row).
+
+**Invalid Operations Identified:**
+1. Deleting the header row (GFM requires header)
+2. Adding rows above the header row (header must be first)
+3. Creating nested tables (not supported in GFM)
+4. Deleting the last column (leaves empty table)
+
+**Decision:** Implement client-side guards in TableToolbar to prevent invalid operations:
+
+```typescript
+// Helper to detect header cell position
+function isInHeaderCell(editor: Editor): boolean {
+  const { $from } = editor.state.selection;
+  for (let depth = $from.depth; depth > 0; depth--) {
+    const node = $from.node(depth);
+    if (node.type.name === 'tableHeader') return true;
+    if (node.type.name === 'table') break;
+  }
+  return false;
+}
+
+// Helper to count columns
+function getTableColumnCount(editor: Editor): number { ... }
+
+// Guards applied:
+const canDeleteRow = !isInHeaderCell(editor);
+const canDeleteColumn = getTableColumnCount(editor) > 1;
+const canAddRowBefore = !isInHeaderCell(editor);
+const canInsertTable = !editor.isActive('table'); // No nesting
+```
+
+**Rationale:**
+- Prevent users from creating files that won't render correctly elsewhere
+- Better UX than allowing action then showing error
+- Guards use ProseMirror tree walking for reliable detection
+- Disabled buttons provide visual feedback
+
+**Consequences:**
+- ✅ All table operations produce valid GFM
+- ✅ Clear visual feedback (disabled buttons)
+- ✅ No confusing error messages
+- ⚠️ Slightly restrictive (can't experiment with invalid structures)
+
+---
+
+### Bugs Found & Fixed During Review
+
+| # | Severity | Issue | Root Cause | Fix |
+|---|----------|-------|------------|-----|
+| 1 | 🔴 Critical | Delete row/column deletes entire table | Missing `can()` guards | Added `editor.can().deleteRow()` checks + `fixTables()` |
+| 2 | 🔴 Critical | Tables not rendering (no visible borders) | Wrong CSS selectors | Changed `.ProseMirror .editor-table` to `.ProseMirror table` |
+| 3 | 🟡 Medium | Header row deletable (invalid GFM) | No header detection | Added `isInHeaderCell()` helper |
+| 4 | 🟡 Medium | Nested tables creatable (invalid GFM) | No active-table check | Added `editor.isActive('table')` guard |
+| 5 | 🟡 Medium | Toolbar buttons disappear after ops | Missing re-render trigger | Added `selectionUpdate` + `transaction` event subscriptions |
+| 6 | 🟡 Medium | Add Row Above works in header | No position check | Added `canAddRowBefore` state |
+| 7 | 🟢 Minor | Header/selection styling unclear | Insufficient CSS contrast | Added accent border + blue selection tint |
+| 8 | 🟢 Minor | Delete column enabled with 1 column | No column count check | Added `getTableColumnCount()` helper |
+
+### Key Technical Insights
+
+**ProseMirror Tree Walking:**
+To reliably detect cell type, walk up from `$from.depth` checking `node.type.name`. Don't rely on CSS classes or DOM inspection.
+
+**TipTap Event Subscription:**
+Toolbar state must update on both `selectionUpdate` (cursor moved) and `transaction` (content changed). Using `useEffect` with cleanup:
+
+```typescript
+useEffect(() => {
+  const update = () => setUpdateKey(k => k + 1);
+  editor.on('selectionUpdate', update);
+  editor.on('transaction', update);
+  return () => {
+    editor.off('selectionUpdate', update);
+    editor.off('transaction', update);
+  };
+}, [editor]);
+```
+
+**Table Repair After Mutations:**
+Always call `fixTables()` after delete operations to ensure ProseMirror table model stays consistent.
+
+---
+
 ## Session Log
 
 | Date | Session | Key Activities | Outcomes |
@@ -803,6 +916,7 @@ light-glass.css   → 60+ CSS variables + backdrop-filter for light glass
 | 2026-01-30 | Phase 1 | Core editing features, BubbleMenu, popovers, shortcuts | ADR-013, Reviewer approved |
 | 2026-01-30 | Phase 1.5 | Theme system, Shiki syntax highlighting | ADRs 014-015, all four themes working |
 | 2026-01-30 | Phase 2 Research | File System API, table extensions, serialization | ADRs 016-018, technical brief complete |
+| 2026-01-30 | Phase 2 | Tables, file ops, GFM guards, bug fixes | ADR-019, 8 bugs found/fixed, Reviewer approved |
 
 ---
 
@@ -839,6 +953,28 @@ Reviewer feedback led to creating Phase 0.5 and 1.5 to manage scope.
 - Always validate core dependencies early
 - Separate "must have" from "polish" explicitly
 - Use .5 phases for validation and polish
+
+---
+
+### 2026-01-30 - Phase 2 Table Implementation
+
+**What happened:**
+Initial table implementation looked complete but interactive review uncovered 8 bugs. TipTap table extensions work well for basic operations but don't enforce GFM constraints, allowing users to create invalid markdown structures.
+
+**What we learned:**
+- TipTap table commands allow operations that produce invalid GFM (delete header, nest tables, add rows above header)
+- CSS selectors for ProseMirror-rendered tables need to target `table` directly, not wrapper classes
+- Toolbar state must subscribe to both `selectionUpdate` and `transaction` events to stay in sync
+- ProseMirror tree walking (`$from.node(depth)`) is more reliable than DOM inspection for detecting cell types
+- `fixTables()` should be called after any table mutation to maintain model consistency
+
+**What we'll do differently:**
+- Test GFM compliance explicitly during table feature development
+- Build guard functions early when working with constrained formats
+- Use interactive review sessions for complex UI components
+- Create helper functions for tree walking patterns - they're reusable
+
+---
 
 ### Template for Future Entries
 
@@ -906,4 +1042,4 @@ Reviewer feedback led to creating Phase 0.5 and 1.5 to manage scope.
 | 0.3.0 | 2026-01-29 | Phase 0.5 complete, round-trip validation, debug infrastructure |
 | 0.4.0 | 2026-01-30 | Phase 1 complete, ADR-013 (Floating UI), core editing features |
 | 0.5.0 | 2026-01-30 | Phase 1.5 complete, ADRs 014-015 (Shiki, themes), 4-theme system |
-| 0.6.0 | 2026-01-30 | Phase 2 research complete, ADRs 016-018, technical brief |
+| 0.6.0 | 2026-01-30 | Phase 2 research complete, ADRs 016-018, technical brief || 0.7.0 | 2026-01-30 | Phase 2 complete, ADR-019 (GFM guards), tables + file ops |
