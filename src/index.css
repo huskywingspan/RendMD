@@ -1,19 +1,8 @@
 @import "tailwindcss";
+@import "./themes/index.css";
 
-/* Base theme variables - Dark Basic (default) */
+/* Base variables - shared across all themes */
 :root {
-  /* Theme Colors */
-  --theme-bg-primary: #0d1117;
-  --theme-bg-secondary: #161b22;
-  --theme-bg-tertiary: #21262d;
-  --theme-text-primary: #e6edf3;
-  --theme-text-secondary: #8b949e;
-  --theme-text-muted: #6e7681;
-  --theme-accent: #58a6ff;
-  --theme-accent-hover: #79b8ff;
-  --theme-border: #30363d;
-  --theme-border-subtle: #21262d;
-
   /* Semantic Colors */
   --color-success: #3fb950;
   --color-warning: #d29922;
@@ -52,25 +41,26 @@ body {
   color: var(--theme-text-primary);
   margin: 0;
   min-height: 100vh;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
-/* Scrollbar styling (dark theme) */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--theme-bg-secondary);
+  background: var(--theme-scrollbar-track, var(--theme-bg-secondary));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--theme-border);
+  background: var(--theme-scrollbar-thumb, var(--theme-border-primary));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-text-muted);
+  background: var(--theme-scrollbar-thumb-hover, var(--theme-text-muted));
 }
 
 /* TipTap Editor Styles */
@@ -123,26 +113,28 @@ body {
 }
 
 .ProseMirror a {
-  color: var(--theme-accent);
+  color: var(--theme-accent-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .ProseMirror a:hover {
-  color: var(--theme-accent-hover);
+  color: var(--theme-accent-secondary);
 }
 
 .ProseMirror code {
   font-family: var(--font-family-mono);
   font-size: 0.9em;
-  background: var(--theme-bg-tertiary);
+  background: var(--theme-code-bg);
+  color: var(--theme-code-text);
   padding: 0.2em 0.4em;
   border-radius: 4px;
 }
 
 .ProseMirror pre {
   font-family: var(--font-family-mono);
-  background: var(--theme-bg-secondary);
+  background: var(--theme-code-bg);
+  border: 1px solid var(--theme-code-border);
   padding: 1rem;
   border-radius: 8px;
   overflow-x: auto;
@@ -155,10 +147,11 @@ body {
 }
 
 .ProseMirror blockquote {
-  border-left: 3px solid var(--theme-accent);
+  border-left: 3px solid var(--theme-blockquote-border);
+  background: var(--theme-blockquote-bg);
   padding-left: 1rem;
   margin: 1rem 0;
-  color: var(--theme-text-secondary);
+  color: var(--theme-blockquote-text);
   font-style: italic;
 }
 
@@ -173,7 +166,7 @@ body {
 
 .ProseMirror hr {
   border: none;
-  border-top: 1px solid var(--theme-border);
+  border-top: 1px solid var(--theme-border-primary);
   margin: 2rem 0;
 }
 

@@ -1,0 +1,69 @@
+/**
+ * Light Glass Theme
+ * Modern light theme with translucent/glassmorphism effects
+ */
+:root.light-glass {
+  /* Background colors */
+  --theme-bg-primary: rgba(255, 255, 255, 0.85);
+  --theme-bg-secondary: rgba(248, 250, 252, 0.8);
+  --theme-bg-tertiary: rgba(241, 245, 249, 0.7);
+  --theme-bg-hover: rgba(226, 232, 240, 0.6);
+  
+  /* Text colors */
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #334155;
+  --theme-text-muted: #64748b;
+  --theme-text-accent: #0284c7;
+  
+  /* Border colors */
+  --theme-border-primary: rgba(148, 163, 184, 0.3);
+  --theme-border-secondary: rgba(148, 163, 184, 0.4);
+  --theme-border-accent: rgba(14, 165, 233, 0.5);
+  
+  /* Accent colors */
+  --theme-accent-primary: #0ea5e9;
+  --theme-accent-secondary: #38bdf8;
+  --theme-accent-hover: #0284c7;
+  
+  /* Interactive states */
+  --theme-button-bg: rgba(14, 165, 233, 0.9);
+  --theme-button-text: #ffffff;
+  --theme-button-hover: rgba(2, 132, 199, 1);
+  --theme-input-bg: rgba(255, 255, 255, 0.7);
+  --theme-input-border: rgba(148, 163, 184, 0.4);
+  --theme-input-focus: rgba(14, 165, 233, 0.5);
+  
+  /* Code blocks */
+  --theme-code-bg: rgba(248, 250, 252, 0.9);
+  --theme-code-text: #1e293b;
+  --theme-code-border: rgba(148, 163, 184, 0.3);
+  
+  /* Task list */
+  --theme-checkbox-bg: rgba(255, 255, 255, 0.6);
+  --theme-checkbox-border: rgba(100, 116, 139, 0.5);
+  --theme-checkbox-checked-bg: rgba(14, 165, 233, 0.9);
+  --theme-checkbox-checked-border: transparent;
+  
+  /* Blockquote */
+  --theme-blockquote-bg: rgba(14, 165, 233, 0.08);
+  --theme-blockquote-border: rgba(14, 165, 233, 0.5);
+  --theme-blockquote-text: #334155;
+  
+  /* Table */
+  --theme-table-header-bg: rgba(248, 250, 252, 0.8);
+  --theme-table-row-hover: rgba(241, 245, 249, 0.6);
+  --theme-table-border: rgba(148, 163, 184, 0.3);
+  
+  /* Scrollbar */
+  --theme-scrollbar-track: rgba(241, 245, 249, 0.6);
+  --theme-scrollbar-thumb: rgba(148, 163, 184, 0.5);
+  --theme-scrollbar-thumb-hover: rgba(100, 116, 139, 0.6);
+  
+  /* Selection */
+  --theme-selection-bg: rgba(14, 165, 233, 0.2);
+  --theme-selection-text: #0f172a;
+  
+  /* Glass effect utilities */
+  --theme-glass-blur: blur(12px);
+  --theme-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}

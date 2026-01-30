@@ -1,0 +1,9 @@
+/**
+ * RendMD Theme System
+ * Import all theme variants
+ */
+
+@import './dark-basic.css';
+@import './light-basic.css';
+@import './dark-glass.css';
+@import './light-glass.css';

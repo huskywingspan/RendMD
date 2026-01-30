@@ -1,0 +1,65 @@
+/**
+ * Dark Basic Theme
+ * Classic dark theme with solid backgrounds
+ */
+:root.dark-basic {
+  /* Background colors */
+  --theme-bg-primary: #1a1a2e;
+  --theme-bg-secondary: #16213e;
+  --theme-bg-tertiary: #0f3460;
+  --theme-bg-hover: #1f2937;
+  
+  /* Text colors */
+  --theme-text-primary: #e2e8f0;
+  --theme-text-secondary: #94a3b8;
+  --theme-text-muted: #64748b;
+  --theme-text-accent: #60a5fa;
+  
+  /* Border colors */
+  --theme-border-primary: #334155;
+  --theme-border-secondary: #475569;
+  --theme-border-accent: #3b82f6;
+  
+  /* Accent colors */
+  --theme-accent-primary: #3b82f6;
+  --theme-accent-secondary: #60a5fa;
+  --theme-accent-hover: #2563eb;
+  
+  /* Interactive states */
+  --theme-button-bg: #3b82f6;
+  --theme-button-text: #ffffff;
+  --theme-button-hover: #2563eb;
+  --theme-input-bg: #1e293b;
+  --theme-input-border: #334155;
+  --theme-input-focus: #3b82f6;
+  
+  /* Code blocks */
+  --theme-code-bg: #0f172a;
+  --theme-code-text: #e2e8f0;
+  --theme-code-border: #334155;
+  
+  /* Task list */
+  --theme-checkbox-bg: transparent;
+  --theme-checkbox-border: #475569;
+  --theme-checkbox-checked-bg: #3b82f6;
+  --theme-checkbox-checked-border: #3b82f6;
+  
+  /* Blockquote */
+  --theme-blockquote-bg: rgba(59, 130, 246, 0.1);
+  --theme-blockquote-border: #3b82f6;
+  --theme-blockquote-text: #94a3b8;
+  
+  /* Table */
+  --theme-table-header-bg: #1e293b;
+  --theme-table-row-hover: #1e293b;
+  --theme-table-border: #334155;
+  
+  /* Scrollbar */
+  --theme-scrollbar-track: #1e293b;
+  --theme-scrollbar-thumb: #475569;
+  --theme-scrollbar-thumb-hover: #64748b;
+  
+  /* Selection */
+  --theme-selection-bg: rgba(59, 130, 246, 0.3);
+  --theme-selection-text: #e2e8f0;
+}

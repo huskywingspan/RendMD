@@ -1,11 +1,12 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import { useEditorStore } from '@/stores/editorStore';
-import { useEffect, useState, useCallback } from 'react';
+import { useTheme } from '@/hooks';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DebugPanel } from './DebugPanel';
 import { BubbleMenu } from './BubbleMenu';
 import { LinkPopover } from './LinkPopover';
 import { ImagePopover } from './ImagePopover';
-import { editorExtensions } from './extensions';
+import { createEditorExtensions } from './extensions';
 import './editor-styles.css';
 
 const INITIAL_CONTENT = `# Welcome to RendMD
@@ -45,6 +46,7 @@ function getMarkdownFromEditor(editor: ReturnType<typeof useEditor>): string {
 
 export function Editor(): JSX.Element {
   const { content, setContent, showSource } = useEditorStore();
+  const { isDark } = useTheme();
   
   // Track original input for debug comparison
   const [inputMarkdown, setInputMarkdown] = useState(INITIAL_CONTENT);
@@ -57,8 +59,11 @@ export function Editor(): JSX.Element {
   const [imagePopoverOpen, setImagePopoverOpen] = useState(false);
   const [selectedImagePos, setSelectedImagePos] = useState<number | null>(null);
 
+  // Create extensions with theme awareness
+  const extensions = useMemo(() => createEditorExtensions(isDark), [isDark]);
+
   const editor = useEditor({
-    extensions: editorExtensions,
+    extensions,
     content: content || INITIAL_CONTENT,
     editorProps: {
       attributes: {

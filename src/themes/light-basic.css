@@ -1,0 +1,65 @@
+/**
+ * Light Basic Theme
+ * Classic light theme with solid backgrounds
+ */
+:root.light-basic {
+  /* Background colors */
+  --theme-bg-primary: #ffffff;
+  --theme-bg-secondary: #f8fafc;
+  --theme-bg-tertiary: #f1f5f9;
+  --theme-bg-hover: #e2e8f0;
+  
+  /* Text colors */
+  --theme-text-primary: #1e293b;
+  --theme-text-secondary: #475569;
+  --theme-text-muted: #94a3b8;
+  --theme-text-accent: #2563eb;
+  
+  /* Border colors */
+  --theme-border-primary: #e2e8f0;
+  --theme-border-secondary: #cbd5e1;
+  --theme-border-accent: #3b82f6;
+  
+  /* Accent colors */
+  --theme-accent-primary: #3b82f6;
+  --theme-accent-secondary: #60a5fa;
+  --theme-accent-hover: #2563eb;
+  
+  /* Interactive states */
+  --theme-button-bg: #3b82f6;
+  --theme-button-text: #ffffff;
+  --theme-button-hover: #2563eb;
+  --theme-input-bg: #ffffff;
+  --theme-input-border: #e2e8f0;
+  --theme-input-focus: #3b82f6;
+  
+  /* Code blocks */
+  --theme-code-bg: #f8fafc;
+  --theme-code-text: #1e293b;
+  --theme-code-border: #e2e8f0;
+  
+  /* Task list */
+  --theme-checkbox-bg: transparent;
+  --theme-checkbox-border: #94a3b8;
+  --theme-checkbox-checked-bg: #3b82f6;
+  --theme-checkbox-checked-border: #3b82f6;
+  
+  /* Blockquote */
+  --theme-blockquote-bg: rgba(59, 130, 246, 0.05);
+  --theme-blockquote-border: #3b82f6;
+  --theme-blockquote-text: #475569;
+  
+  /* Table */
+  --theme-table-header-bg: #f8fafc;
+  --theme-table-row-hover: #f1f5f9;
+  --theme-table-border: #e2e8f0;
+  
+  /* Scrollbar */
+  --theme-scrollbar-track: #f1f5f9;
+  --theme-scrollbar-thumb: #cbd5e1;
+  --theme-scrollbar-thumb-hover: #94a3b8;
+  
+  /* Selection */
+  --theme-selection-bg: rgba(59, 130, 246, 0.2);
+  --theme-selection-text: #1e293b;
+}

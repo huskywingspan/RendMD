@@ -10,6 +10,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Markdown } from 'tiptap-markdown';
 import { CustomKeyboardShortcuts } from './keyboard-shortcuts';
+import { CodeBlockShiki } from './CodeBlockShiki';
 
 /**
  * Editor extensions for Phase 1 - Core Editing
@@ -21,50 +22,64 @@ import { CustomKeyboardShortcuts } from './keyboard-shortcuts';
  * - Image with click-to-edit
  * - Table support (GFM tables)
  * - Markdown serialization
+ * - CodeBlockShiki for Shiki-powered syntax highlighting
  */
-export const editorExtensions = [
-  StarterKit.configure({
-    heading: {
-      levels: [1, 2, 3, 4, 5, 6],
-    },
-    codeBlock: {
+
+/**
+ * Create editor extensions with theme awareness
+ * @param isDark - Whether the editor is in dark mode (for Shiki theme)
+ */
+export function createEditorExtensions(isDark: boolean = true) {
+  return [
+    StarterKit.configure({
+      heading: {
+        levels: [1, 2, 3, 4, 5, 6],
+      },
+      // Disable built-in code block, we use CodeBlockShiki instead
+      codeBlock: false,
+    }),
+    CodeBlockShiki.configure({
+      isDark,
       HTMLAttributes: {
         class: 'code-block',
       },
-    },
-  }),
-  Placeholder.configure({
-    placeholder: 'Start writing, or paste markdown...',
-  }),
-  TaskList,
-  TaskItem.configure({
-    nested: true,
-  }),
-  Link.configure({
-    openOnClick: false, // We handle click manually (click=edit, Ctrl+click=open)
-    HTMLAttributes: {
-      class: 'editor-link',
-    },
-  }),
-  Image.configure({
-    HTMLAttributes: {
-      class: 'editor-image',
-    },
-    allowBase64: true,
-  }),
-  Table.configure({
-    resizable: true,
-    HTMLAttributes: {
-      class: 'editor-table',
-    },
-  }),
-  TableRow,
-  TableCell,
-  TableHeader,
-  Markdown.configure({
-    html: false,
-    transformPastedText: true,
-    transformCopiedText: true,
-  }),
-  CustomKeyboardShortcuts,
-];
+    }),
+    Placeholder.configure({
+      placeholder: 'Start writing, or paste markdown...',
+    }),
+    TaskList,
+    TaskItem.configure({
+      nested: true,
+    }),
+    Link.configure({
+      openOnClick: false, // We handle click manually (click=edit, Ctrl+click=open)
+      HTMLAttributes: {
+        class: 'editor-link',
+      },
+    }),
+    Image.configure({
+      HTMLAttributes: {
+        class: 'editor-image',
+      },
+      allowBase64: true,
+    }),
+    Table.configure({
+      resizable: true,
+      HTMLAttributes: {
+        class: 'editor-table',
+      },
+    }),
+    TableRow,
+    TableCell,
+    TableHeader,
+    Markdown.configure({
+      html: false,
+      transformPastedText: true,
+      transformCopiedText: true,
+    }),
+    CustomKeyboardShortcuts,
+  ];
+}
+
+// Default extensions (dark mode)
+export const editorExtensions = createEditorExtensions(true);

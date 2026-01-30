@@ -3,4 +3,5 @@ export { DebugPanel } from './DebugPanel';
 export { BubbleMenu } from './BubbleMenu';
 export { LinkPopover } from './LinkPopover';
 export { ImagePopover } from './ImagePopover';
-export { editorExtensions } from './extensions';
+export { CodeBlockComponent } from './CodeBlockComponent';
+export { editorExtensions, createEditorExtensions } from './extensions';
