@@ -1,10 +1,12 @@
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import { Markdown } from 'tiptap-markdown';
 import { useEditorStore } from '@/stores/editorStore';
 import { useEffect, useState, useCallback } from 'react';
 import { DebugPanel } from './DebugPanel';
+import { BubbleMenu } from './BubbleMenu';
+import { LinkPopover } from './LinkPopover';
+import { ImagePopover } from './ImagePopover';
+import { editorExtensions } from './extensions';
+import './editor-styles.css';
 
 const INITIAL_CONTENT = `# Welcome to RendMD
 
@@ -47,23 +49,16 @@ export function Editor(): JSX.Element {
   // Track original input for debug comparison
   const [inputMarkdown, setInputMarkdown] = useState(INITIAL_CONTENT);
   const [outputMarkdown, setOutputMarkdown] = useState('');
+  
+  // Link popover state
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  
+  // Image popover state
+  const [imagePopoverOpen, setImagePopoverOpen] = useState(false);
+  const [selectedImagePos, setSelectedImagePos] = useState<number | null>(null);
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3, 4, 5, 6],
-        },
-      }),
-      Placeholder.configure({
-        placeholder: 'Start writing...',
-      }),
-      Markdown.configure({
-        html: false,
-        transformPastedText: true,
-        transformCopiedText: true,
-      }),
-    ],
+    extensions: editorExtensions,
     content: content || INITIAL_CONTENT,
     editorProps: {
       attributes: {
@@ -117,11 +112,68 @@ export function Editor(): JSX.Element {
     }
   }, [editor]);
 
+  // Handle link and image clicks
+  const handleEditorClick = useCallback((event: React.MouseEvent) => {
+    const target = event.target as HTMLElement;
+    
+    // Handle link clicks: click to edit, Ctrl+click to open
+    const link = target.closest('a');
+    if (link && editor) {
+      event.preventDefault();
+      
+      if (event.ctrlKey || event.metaKey) {
+        // Ctrl+Click opens link in new tab
+        window.open(link.href, '_blank', 'noopener,noreferrer');
+      } else {
+        // Regular click opens link popover
+        const linkPos = editor.view.posAtDOM(link, 0);
+        editor.chain().focus().setTextSelection(linkPos).run();
+        setLinkPopoverOpen(true);
+      }
+      return;
+    }
+    
+    // Handle image clicks
+    const img = target.closest('img');
+    if (img && editor) {
+      event.preventDefault();
+      const imgPos = editor.view.posAtDOM(img, 0);
+      setSelectedImagePos(imgPos);
+      setImagePopoverOpen(true);
+    }
+  }, [editor]);
+
   return (
     <div className="flex-1 flex overflow-hidden">
+      {/* Bubble menu for text selection */}
+      {editor && (
+        <BubbleMenu 
+          editor={editor} 
+          onLinkClick={() => setLinkPopoverOpen(true)}
+        />
+      )}
+      
+      {/* Link popover */}
+      <LinkPopover
+        editor={editor}
+        isOpen={linkPopoverOpen}
+        onClose={() => setLinkPopoverOpen(false)}
+      />
+      
+      {/* Image popover */}
+      <ImagePopover
+        editor={editor}
+        isOpen={imagePopoverOpen}
+        onClose={() => {
+          setImagePopoverOpen(false);
+          setSelectedImagePos(null);
+        }}
+        nodePos={selectedImagePos}
+      />
+
       {/* Rendered editor */}
       <div className={showSource ? 'w-1/2 border-r border-[var(--theme-border)]' : 'w-full'}>
-        <div className="h-full overflow-y-auto p-8">
+        <div className="h-full overflow-y-auto p-8" onClick={handleEditorClick}>
           <EditorContent 
             editor={editor} 
             className="max-w-3xl mx-auto"
