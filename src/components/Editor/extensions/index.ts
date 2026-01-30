@@ -13,6 +13,53 @@ import { CustomKeyboardShortcuts } from './keyboard-shortcuts';
 import { CodeBlockShiki } from './CodeBlockShiki';
 
 /**
+ * Extended TableCell with textAlign attribute support
+ * This allows column alignment (left, center, right) for GFM tables
+ */
+const CustomTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      textAlign: {
+        default: null,
+        parseHTML: element => element.style.textAlign || null,
+        renderHTML: attributes => {
+          if (!attributes.textAlign) {
+            return {};
+          }
+          return {
+            style: `text-align: ${attributes.textAlign}`,
+          };
+        },
+      },
+    };
+  },
+});
+
+/**
+ * Extended TableHeader with textAlign attribute support
+ */
+const CustomTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      textAlign: {
+        default: null,
+        parseHTML: element => element.style.textAlign || null,
+        renderHTML: attributes => {
+          if (!attributes.textAlign) {
+            return {};
+          }
+          return {
+            style: `text-align: ${attributes.textAlign}`,
+          };
+        },
+      },
+    };
+  },
+});
+
+/**
  * Editor extensions for Phase 1 - Core Editing
  * 
  * Includes:
@@ -70,8 +117,8 @@ export function createEditorExtensions(isDark: boolean = true) {
       },
     }),
     TableRow,
-    TableCell,
-    TableHeader,
+    CustomTableCell,
+    CustomTableHeader,
     Markdown.configure({
       html: false,
       transformPastedText: true,

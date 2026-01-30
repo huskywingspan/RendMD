@@ -73,6 +73,22 @@
   background-color: var(--theme-table-row-hover);
 }
 
+/* Table cell alignment */
+.ProseMirror table th[style*="text-align: left"],
+.ProseMirror table td[style*="text-align: left"] {
+  text-align: left;
+}
+
+.ProseMirror table th[style*="text-align: center"],
+.ProseMirror table td[style*="text-align: center"] {
+  text-align: center;
+}
+
+.ProseMirror table th[style*="text-align: right"],
+.ProseMirror table td[style*="text-align: right"] {
+  text-align: right;
+}
+
 /* Selected cell highlighting - more distinct blue tint */
 .ProseMirror table td.selectedCell,
 .ProseMirror table th.selectedCell {

@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { 
   Table2, 
@@ -8,9 +8,14 @@ import {
   ArrowDown, 
   ArrowLeft, 
   ArrowRight,
-  Trash2 
+  Trash2,
+  ChevronDown,
+  AlignLeft,
+  AlignCenter,
+  AlignRight
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { TableGridPicker } from './TableGridPicker';
 
 interface TableToolbarProps {
   editor: Editor | null;
@@ -94,6 +99,8 @@ function getTableColumnCount(editor: Editor): number {
 export function TableToolbar({ editor }: TableToolbarProps): JSX.Element | null {
   // Force re-render on editor selection/transaction changes
   const [, forceUpdate] = useState(0);
+  const [showGridPicker, setShowGridPicker] = useState(false);
+  const gridPickerButtonRef = useRef<HTMLButtonElement>(null);
   
   useEffect(() => {
     if (!editor) return;
@@ -113,16 +120,25 @@ export function TableToolbar({ editor }: TableToolbarProps): JSX.Element | null 
   }, [editor]);
 
   // All hooks must be called unconditionally (before any early returns)
-  const insertTable = useCallback(() => {
+  const insertTable = useCallback((rows: number = 3, cols: number = 3) => {
     // Don't insert nested tables - GFM doesn't support them
     if (editor && !editor.isActive('table')) {
       editor
         .chain()
         .focus()
-        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+        .insertTable({ rows, cols, withHeaderRow: true })
         .run();
     }
+    setShowGridPicker(false);
   }, [editor]);
+
+  const handleGridSelect = useCallback((rows: number, cols: number) => {
+    insertTable(rows, cols);
+  }, [insertTable]);
+
+  const handleGridClose = useCallback(() => {
+    setShowGridPicker(false);
+  }, []);
 
   const addRowBefore = useCallback(() => {
     editor?.chain().focus().addRowBefore().run();
@@ -164,6 +180,20 @@ export function TableToolbar({ editor }: TableToolbarProps): JSX.Element | null 
     editor?.chain().focus().deleteTable().run();
   }, [editor]);
 
+  // Column alignment controls
+  const setColumnAlignment = useCallback((align: 'left' | 'center' | 'right') => {
+    if (!editor) return;
+    editor.chain().focus().setCellAttribute('textAlign', align).run();
+  }, [editor]);
+
+  const getColumnAlignment = useCallback((): 'left' | 'center' | 'right' | null => {
+    if (!editor) return null;
+    // Check both tableCell and tableHeader attributes since cursor could be in either
+    const cellAttrs = editor.getAttributes('tableCell');
+    const headerAttrs = editor.getAttributes('tableHeader');
+    return cellAttrs?.textAlign || headerAttrs?.textAlign || 'left';
+  }, [editor]);
+
   // Early return after hooks
   if (!editor) return null;
 
@@ -177,15 +207,41 @@ export function TableToolbar({ editor }: TableToolbarProps): JSX.Element | null 
   // Can't add row above header - GFM requires header to be first row
   const canAddRowBefore = isInTable && !inHeaderCell;
 
-  // When not in a table, show insert button
+  // When not in a table, show insert button with grid picker
   if (!isInTable) {
     return (
-      <div className="table-toolbar flex items-center gap-1 p-1 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg">
-        <ToolbarButton
-          onClick={insertTable}
-          icon={<Table2 size={14} />}
-          label="Insert Table"
-        />
+      <div className="table-toolbar flex items-center gap-1 p-1 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg relative">
+        <button
+          ref={gridPickerButtonRef}
+          onClick={() => setShowGridPicker(!showGridPicker)}
+          className={cn(
+            "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
+            "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]",
+            showGridPicker && "bg-[var(--theme-bg-hover)] text-[var(--theme-text-primary)]"
+          )}
+          title="Insert Table"
+          aria-expanded={showGridPicker}
+          aria-haspopup="true"
+        >
+          <Table2 size={14} />
+          <span className="hidden sm:inline">Insert Table</span>
+          <ChevronDown 
+            size={12} 
+            className={cn(
+              "transition-transform",
+              showGridPicker && "rotate-180"
+            )}
+          />
+        </button>
+        
+        {showGridPicker && (
+          <div className="absolute top-full left-0 mt-1 z-50">
+            <TableGridPicker
+              onSelect={handleGridSelect}
+              onClose={handleGridClose}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -236,6 +292,47 @@ export function TableToolbar({ editor }: TableToolbarProps): JSX.Element | null 
           variant="danger"
           disabled={!canDeleteColumn}
         />
+      </div>
+
+      {/* Alignment operations */}
+      <div className="flex items-center gap-0.5 pr-2 border-r border-[var(--theme-border-primary)]">
+        <span className="text-xs text-[var(--theme-text-muted)] px-1">Align:</span>
+        <button
+          onClick={() => setColumnAlignment('left')}
+          className={cn(
+            "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
+            getColumnAlignment() === 'left'
+              ? "bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]"
+              : "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]"
+          )}
+          title="Align Left"
+        >
+          <AlignLeft size={14} />
+        </button>
+        <button
+          onClick={() => setColumnAlignment('center')}
+          className={cn(
+            "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
+            getColumnAlignment() === 'center'
+              ? "bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]"
+              : "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]"
+          )}
+          title="Align Center"
+        >
+          <AlignCenter size={14} />
+        </button>
+        <button
+          onClick={() => setColumnAlignment('right')}
+          className={cn(
+            "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
+            getColumnAlignment() === 'right'
+              ? "bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]"
+              : "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]"
+          )}
+          title="Align Right"
+        >
+          <AlignRight size={14} />
+        </button>
       </div>
 
       {/* Table operations */}

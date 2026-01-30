@@ -24,22 +24,24 @@ import { Extension } from '@tiptap/core';
  * Heading shortcuts:
  * - Ctrl+1 through Ctrl+6: Toggle headings
  * 
- * Table shortcuts (built into TipTap table extension):
- * - Tab: Next cell
+ * Table shortcuts:
+ * - Tab: Next cell (creates new row at end of table)
  * - Shift+Tab: Previous cell
- * - Enter: New paragraph in cell
+ * - Enter at end of last cell: Create new row
  */
 export const CustomKeyboardShortcuts = Extension.create({
   name: 'customKeyboardShortcuts',
   
   addKeyboardShortcuts() {
     return {
-      // List indentation (tables handle Tab natively)
+      // Table navigation with Tab - handled here for better control
       'Tab': () => {
-        // Let table handle Tab if in table
         if (this.editor.isActive('table')) {
-          return false; // Let table extension handle it
+          // goToNextCell returns true if it moved, false if at end
+          // When at end, it will automatically add a new row
+          return this.editor.commands.goToNextCell();
         }
+        // List indentation
         if (this.editor.isActive('listItem')) {
           return this.editor.commands.sinkListItem('listItem');
         }
@@ -49,10 +51,10 @@ export const CustomKeyboardShortcuts = Extension.create({
         return false;
       },
       'Shift-Tab': () => {
-        // Let table handle Shift+Tab if in table
         if (this.editor.isActive('table')) {
-          return false; // Let table extension handle it
+          return this.editor.commands.goToPreviousCell();
         }
+        // List outdentation
         if (this.editor.isActive('listItem')) {
           return this.editor.commands.liftListItem('listItem');
         }
