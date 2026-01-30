@@ -71,6 +71,15 @@ export function Editor(): JSX.Element {
         class: 'prose prose-invert max-w-none focus:outline-none min-h-full',
       },
     },
+    onCreate: ({ editor }) => {
+      // Initialize store with markdown on editor creation
+      // This ensures source view has content even before user edits
+      const markdown = getMarkdownFromEditor(editor);
+      if (markdown && !content) {
+        setContent(markdown);
+      }
+      setOutputMarkdown(markdown);
+    },
     onUpdate: ({ editor }) => {
       const markdown = getMarkdownFromEditor(editor);
       setContent(markdown);

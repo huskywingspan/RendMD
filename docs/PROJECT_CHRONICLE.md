@@ -866,6 +866,51 @@ const canInsertTable = !editor.isActive('table'); // No nesting
 
 ---
 
+#### ADR-020: Table Feature Limitations (GFM Constraints)
+**Status:** Accepted  
+**Date:** 2026-01-30
+
+**Context:** During Phase 2.5 research, investigated three table enhancements. Each revealed GFM limitations.
+
+**Features Investigated:**
+
+1. **Column Alignment Persistence** (`textAlign` → `:---`, `:---:`, `---:`)
+   - `tiptap-markdown` hardcodes delimiter as `---` with no alignment logic
+   - Custom serializer would require forking/extending the deprecated package
+   
+2. **Column Width Resize**
+   - TipTap supports `resizable: true` with `colwidth` attribute
+   - GFM has no width syntax, widths are visual-only
+   
+3. **Merge Cells** (colspan/rowspan)
+   - TipTap fully supports merge operations
+   - `tiptap-markdown` detects merged cells and falls back to HTML output
+
+**Decision:** Accept visual-only behavior for v1.0:
+
+| Feature | v1.0 Action | Future (v1.2+) |
+|---------|-------------|----------------|
+| Alignment | Visual-only, document limitation | Revisit after `@tiptap/markdown` migration |
+| Resize | Enable `resizable: true`, widths not saved | Consider frontmatter storage if users demand |
+| Merge cells | Enable with `html: true` in config | Already works with HTML fallback |
+
+**Rationale:**
+- GFM is deliberately simple; fighting it adds complexity
+- Visual features still improve editing UX even if not persisted
+- HTML fallback for merge cells is acceptable for power users
+- Migration to `@tiptap/markdown` (TipTap 3.7+) may solve alignment
+
+**Consequences:**
+- ✅ Keeps v1.0 scope manageable
+- ✅ Clear documentation prevents user confusion
+- ✅ Merge cells available for power users who accept HTML output
+- ⚠️ Alignment-heavy documents lose formatting on save (documented)
+- ⚠️ Column widths reset on reload (visual-only)
+
+**Research Reference:** See `docs/research/PHASE2.5_TABLE_ENHANCEMENTS.md`
+
+---
+
 ### Bugs Found & Fixed During Review
 
 | # | Severity | Issue | Root Cause | Fix |
@@ -917,6 +962,9 @@ Always call `fixTables()` after delete operations to ensure ProseMirror table mo
 | 2026-01-30 | Phase 1.5 | Theme system, Shiki syntax highlighting | ADRs 014-015, all four themes working |
 | 2026-01-30 | Phase 2 Research | File System API, table extensions, serialization | ADRs 016-018, technical brief complete |
 | 2026-01-30 | Phase 2 | Tables, file ops, GFM guards, bug fixes | ADR-019, 8 bugs found/fixed, Reviewer approved |
+| 2026-01-30 | Phase 2.5 Research | Table enhancement feasibility (alignment, resize, merge) | ADR-020, limitations documented, research complete |
+| 2026-01-30 | Phase 2.5 | Table toolbar with alignment, grid picker, keyboard nav | Column alignment working, grid picker for table creation |
+| 2026-01-30 | Phase 3 | Source view, frontmatter panel, view mode persistence | Three-way view mode, Shiki-highlighted source, YAML frontmatter UI |
 
 ---
 
@@ -973,6 +1021,32 @@ Initial table implementation looked complete but interactive review uncovered 8 
 - Build guard functions early when working with constrained formats
 - Use interactive review sessions for complex UI components
 - Create helper functions for tree walking patterns - they're reusable
+
+---
+
+### 2026-01-30 - Phase 3 Source View & Frontmatter
+
+**What happened:**
+Implemented three-way view mode (render/split/source) with Shiki syntax highlighting and YAML frontmatter panel. Initial implementation had several bugs discovered during manual testing:
+1. Source editor text moved when typing (CSS mismatch between textarea and Shiki output)
+2. Source view didn't show content on initial load (store not populated until user edits)
+3. Tags field couldn't accept commas (parsing happened on every keystroke)
+4. Custom fields didn't persist (empty string was treated as "remove field")
+5. View mode didn't persist after refresh (Zustand persist merge function issues)
+
+**What we learned:**
+- Overlay-based syntax highlighting requires *exact* CSS matching between textarea and highlighted output - font-family, font-size, line-height, whitespace all must match
+- Shiki generates its own inline styles that need to be overridden with `!important`
+- TipTap's `onUpdate` only fires on user edits, not on initial content - use `onCreate` to sync initial state
+- Input fields that parse on change create poor UX - parse on blur instead for multi-character delimiters
+- Zustand persist `merge` function needs explicit null-checking for reliable hydration
+- Helper functions that remove "empty" values can break create-then-edit workflows
+
+**What we'll do differently:**
+- Test overlay editors with actual typing, not just visual inspection
+- Initialize state stores on component mount, not just on user interaction
+- Distinguish between "empty value" and "remove field" in data helpers
+- Test persistence by actually refreshing the page during development
 
 ---
 
@@ -1043,3 +1117,5 @@ Initial table implementation looked complete but interactive review uncovered 8 
 | 0.4.0 | 2026-01-30 | Phase 1 complete, ADR-013 (Floating UI), core editing features |
 | 0.5.0 | 2026-01-30 | Phase 1.5 complete, ADRs 014-015 (Shiki, themes), 4-theme system |
 | 0.6.0 | 2026-01-30 | Phase 2 research complete, ADRs 016-018, technical brief || 0.7.0 | 2026-01-30 | Phase 2 complete, ADR-019 (GFM guards), tables + file ops |
+| 0.8.0 | 2026-01-30 | Phase 2.5 complete, table toolbar with alignment + grid picker |
+| 0.9.0 | 2026-01-30 | Phase 3 complete, source view + frontmatter panel + view mode persistence |

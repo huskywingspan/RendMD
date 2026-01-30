@@ -6,6 +6,9 @@ export interface EditorState {
   fileName: string | null;
 }
 
+// View mode types
+export type ViewMode = 'render' | 'source' | 'split';
+
 // Frontmatter types
 export interface Frontmatter {
   title?: string;

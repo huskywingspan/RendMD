@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { EditorState, Frontmatter, ThemeName, SidebarState } from '@/types';
+import { persist } from 'zustand/middleware';
+import type { EditorState, Frontmatter, ThemeName, SidebarState, ViewMode } from '@/types';
 
 interface EditorStore extends EditorState {
   // Content actions
@@ -23,47 +24,91 @@ interface EditorStore extends EditorState {
   toggleSidebar: () => void;
   setSidebarPanel: (panel: 'toc' | 'files' | null) => void;
   
-  // Source view
+  // View mode (render / source / split)
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+  cycleViewMode: () => void;
+  
+  // Legacy compatibility
   showSource: boolean;
   toggleSource: () => void;
 }
 
-export const useEditorStore = create<EditorStore>((set) => ({
-  // Initial state
-  content: '',
-  isDirty: false,
-  filePath: null,
-  fileName: null,
-  frontmatter: null,
-  theme: 'dark-basic',
-  sidebar: {
-    isOpen: true,
-    activePanel: 'toc',
-  },
-  showSource: false,
+// Persisted state for view preferences
+interface PersistedState {
+  viewMode: ViewMode;
+  theme: ThemeName;
+}
 
-  // Content actions
-  setContent: (content) => set({ content, isDirty: true }),
-  markClean: () => set({ isDirty: false }),
-  markDirty: () => set({ isDirty: true }),
+export const useEditorStore = create<EditorStore>()(
+  persist(
+    (set, get) => ({
+      // Initial state
+      content: '',
+      isDirty: false,
+      filePath: null,
+      fileName: null,
+      frontmatter: null,
+      theme: 'dark-basic',
+      sidebar: {
+        isOpen: true,
+        activePanel: 'toc',
+      },
+      viewMode: 'render',
+      
+      // Legacy compatibility
+      get showSource() {
+        return get().viewMode === 'source';
+      },
 
-  // File actions
-  setFilePath: (path, name) => set({ filePath: path, fileName: name }),
+      // Content actions
+      setContent: (content) => set({ content, isDirty: true }),
+      markClean: () => set({ isDirty: false }),
+      markDirty: () => set({ isDirty: true }),
 
-  // Frontmatter
-  setFrontmatter: (frontmatter) => set({ frontmatter }),
+      // File actions
+      setFilePath: (path, name) => set({ filePath: path, fileName: name }),
 
-  // Theme
-  setTheme: (theme) => set({ theme }),
+      // Frontmatter
+      setFrontmatter: (frontmatter) => set({ frontmatter }),
 
-  // Sidebar
-  toggleSidebar: () => set((state) => ({
-    sidebar: { ...state.sidebar, isOpen: !state.sidebar.isOpen }
-  })),
-  setSidebarPanel: (panel) => set((state) => ({
-    sidebar: { ...state.sidebar, activePanel: panel }
-  })),
+      // Theme
+      setTheme: (theme) => set({ theme }),
 
-  // Source view
-  toggleSource: () => set((state) => ({ showSource: !state.showSource })),
-}));
+      // Sidebar
+      toggleSidebar: () => set((state) => ({
+        sidebar: { ...state.sidebar, isOpen: !state.sidebar.isOpen }
+      })),
+      setSidebarPanel: (panel) => set((state) => ({
+        sidebar: { ...state.sidebar, activePanel: panel }
+      })),
+
+      // View mode
+      setViewMode: (viewMode) => set({ viewMode }),
+      cycleViewMode: () => set((state) => {
+        const modes: ViewMode[] = ['render', 'split', 'source'];
+        const currentIndex = modes.indexOf(state.viewMode);
+        const nextIndex = (currentIndex + 1) % modes.length;
+        return { viewMode: modes[nextIndex] };
+      }),
+      
+      // Legacy toggle (cycles through modes)
+      toggleSource: () => get().cycleViewMode(),
+    }),
+    {
+      name: 'rendmd-preferences',
+      partialize: (state): PersistedState => ({
+        viewMode: state.viewMode,
+        theme: state.theme,
+      }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as PersistedState | undefined;
+        return {
+          ...currentState,
+          viewMode: persisted?.viewMode ?? currentState.viewMode,
+          theme: persisted?.theme ?? currentState.theme,
+        };
+      },
+    }
+  )
+);

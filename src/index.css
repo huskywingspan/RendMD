@@ -178,3 +178,23 @@ body {
   pointer-events: none;
   height: 0;
 }
+
+/* Source Editor - Override Shiki's generated styles for perfect alignment */
+.source-editor .source-highlight pre,
+.source-editor .source-highlight pre code,
+.source-editor .source-highlight code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  tab-size: 2 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.source-editor .source-highlight pre {
+  margin: 0 !important;
+  padding: 0 !important;
+}

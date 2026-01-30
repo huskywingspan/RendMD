@@ -2,18 +2,31 @@ import { useEffect, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Editor } from '@/components/Editor';
+import { SourceEditor } from '@/components/SourceView';
+import { FrontmatterPanel } from '@/components/Frontmatter';
 import { useTheme, useFileSystem, useAutoSave } from '@/hooks';
 import { useEditorStore } from '@/stores/editorStore';
+import { serializeFrontmatter, parseFrontmatter } from '@/utils/frontmatterParser';
 
 function App(): JSX.Element {
   // Initialize theme system - applies theme class to document root
   useTheme();
   
-  const { isDirty } = useEditorStore();
+  const { isDirty, content, frontmatter, setContent, setFrontmatter, viewMode, cycleViewMode } = useEditorStore();
   const { openFile, saveFile, saveFileAs, fileHandleRef } = useFileSystem();
   
   // Auto-save functionality (2-second debounce after edits)
   const { isSaving, lastSaved } = useAutoSave(fileHandleRef);
+
+  // Combine frontmatter + content for source view
+  const fullMarkdown = serializeFrontmatter(frontmatter, content);
+
+  // Handle source editor changes (parse frontmatter and content)
+  const handleSourceChange = useCallback((newSource: string) => {
+    const parsed = parseFrontmatter(newSource);
+    setFrontmatter(parsed.frontmatter);
+    setContent(parsed.content);
+  }, [setContent, setFrontmatter]);
 
   // Beforeunload warning for unsaved changes
   useEffect(() => {
@@ -41,8 +54,11 @@ function App(): JSX.Element {
     } else if (isMod && e.key === 's') {
       e.preventDefault();
       await saveFile();
+    } else if (isMod && e.key === '/') {
+      e.preventDefault();
+      cycleViewMode();
     }
-  }, [openFile, saveFile, saveFileAs]);
+  }, [openFile, saveFile, saveFileAs, cycleViewMode]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -55,7 +71,29 @@ function App(): JSX.Element {
       <div className="flex-1 flex overflow-hidden">
         <Sidebar />
         <main className="flex-1 flex flex-col overflow-hidden">
-          <Editor />
+          {/* Frontmatter panel - shows above editors */}
+          <FrontmatterPanel />
+          
+          {/* Editor area - conditional based on viewMode */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Rendered editor - shown in 'render' and 'split' modes */}
+            {(viewMode === 'render' || viewMode === 'split') && (
+              <div className={viewMode === 'split' ? 'w-1/2 border-r border-[var(--theme-border-primary)]' : 'flex-1'}>
+                <Editor />
+              </div>
+            )}
+            
+            {/* Source editor - shown in 'source' and 'split' modes */}
+            {(viewMode === 'source' || viewMode === 'split') && (
+              <div className={viewMode === 'split' ? 'w-1/2' : 'flex-1'}>
+                <SourceEditor 
+                  value={fullMarkdown}
+                  onChange={handleSourceChange}
+                  className="h-full"
+                />
+              </div>
+            )}
+          </div>
         </main>
       </div>
     </div>
