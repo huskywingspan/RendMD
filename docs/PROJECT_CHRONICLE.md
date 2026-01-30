@@ -337,18 +337,256 @@ Started RendMD project - a rendered-first markdown editor. The goal is to edit m
 
 ---
 
+## 2026-01-29 - Phase 0 Complete
+
+### Completion Summary
+
+**Status:** ✅ Approved by Reviewer  
+**Bundle Size:** 732KB (baseline, optimization planned for Phase 5)  
+**Build:** Passing (TypeScript, ESLint, Vite)  
+**Commits:** 5 commits following conventional commit format
+
+### What Was Built
+- Vite + React + TypeScript project scaffold
+- TipTap editor with tiptap-markdown extension
+- Zustand store for state management
+- Header, Sidebar, Editor components
+- Dark basic theme with CSS variables
+- Source view toggle (read-only display)
+- Path aliases (`@/components`, etc.)
+
+### Known Issues (Acceptable)
+| Issue | Severity | Mitigation |
+|-------|----------|------------|
+| `tiptap-markdown` lacks TypeScript types | Low | `@ts-expect-error` comment with explanation |
+| VS Code shows false positive import errors | Low | Build works, non-blocking |
+| Bundle size 732KB | Medium | Code-splitting planned for Phase 5 |
+
+### Key Decisions Made
+
+---
+
+#### ADR-010: Markdown Round-Trip Testing Strategy
+**Status:** Accepted  
+**Date:** 2026-01-29
+
+**Context:** Markdown round-trip fidelity is core to product identity. We need to validate tiptap-markdown before building features on top of it.
+
+**Decision:** Create Phase 0.5 focused on validation and debugging infrastructure.
+
+**Testing Strategy:**
+
+1. **Test Data Generation**
+   - Create `tests/fixtures/markdown-test-suite.md` with:
+     - All GFM elements (headings, lists, tables, code, links, images)
+     - Edge cases (nested lists 3+ deep, complex tables, mixed formatting)
+     - Frontmatter variations
+     - Known problematic patterns
+
+2. **Validation Approach**
+   - Unit tests comparing input → output markdown
+   - Visual diff for rendered output
+   - Automated CI checks
+
+3. **Debug Infrastructure**
+   - Dev-only debug panel showing:
+     - Raw input markdown
+     - ProseMirror document JSON (internal state)
+     - Serialized output markdown
+     - Diff highlighting between input/output
+   - Console logging for parse/serialize (toggleable)
+
+**Rationale:**
+- Catch issues early before they compound
+- Debugging visibility reduces troubleshooting time
+- Test file becomes regression suite
+- Documented limitations prevent user confusion
+
+**Consequences:**
+- ✅ High confidence in core functionality
+- ✅ Easier debugging throughout development
+- ✅ Known limitations documented upfront
+- ⚠️ Small time investment before Phase 1
+
+---
+
+#### ADR-011: Phase 1.5 for Polish Items
+**Status:** Accepted  
+**Date:** 2026-01-29
+
+**Context:** Phase 1 scope includes Shiki syntax highlighting and theme toggle wiring. These are valuable but could delay core editing features.
+
+**Decision:** Create Phase 1.5 as a brief follow-up sprint for polish items:
+- Shiki syntax highlighting
+- Theme toggle wiring
+- Code block language selector
+- Developer experience improvements
+
+**Rationale:**
+- Keeps Phase 1 focused on core editing
+- Avoids scope creep in main sprint
+- Polish items are still done, just sequenced better
+- Maintains predictable sprint velocity
+
+**Consequences:**
+- ✅ Phase 1 stays focused
+- ✅ Clear boundary between "must have" and "polish"
+- ⚠️ Slightly more phases to track
+
+---
+
+#### ADR-012: Bundle Size Target
+**Status:** Accepted  
+**Date:** 2026-01-29
+
+**Context:** Phase 0 bundle is 732KB. Our principle is "lightweight."
+
+**Decision:** Target <500KB initial bundle by Phase 5, using code-splitting.
+
+**Optimization Strategy:**
+1. Analyze with `vite-bundle-visualizer`
+2. Lazy-load source view panel
+3. Lazy-load Shiki (on first code block)
+4. Lazy-load export functionality
+5. Consider alternatives if major deps are too heavy
+
+**Rationale:**
+- 732KB is acceptable for MVP but not ideal
+- Code-splitting is low-risk optimization
+- Don't optimize prematurely; wait for Phase 5
+
+**Consequences:**
+- ✅ Track issue without blocking progress
+- ✅ Clear target for Phase 5
+- ⚠️ May need to revisit if bundle grows significantly
+
+---
+
+## 2026-01-29 - Phase 0.5 Complete
+
+### Completion Summary
+
+**Status:** ✅ Round-trip validation complete  
+**Test Suite:** 505 lines, 13 sections of GFM elements  
+**Result:** Acceptable fidelity with documented transformations
+
+### What Was Built
+
+1. **Test Fixture** - `tests/fixtures/markdown-test-suite.md`
+   - Comprehensive GFM coverage (headings, lists, tables, code, links, images)
+   - Edge cases (deep nesting, unicode, emoji, whitespace)
+   - Validation checklist embedded in document
+
+2. **Debug Panel** - `src/components/Editor/DebugPanel.tsx`
+   - Dev-only component (guarded by `import.meta.env.DEV`)
+   - Four tabs: Input, Output, Document (ProseMirror JSON), Diff
+   - Line-by-line diff visualization
+   - Collapsible at bottom of editor
+
+3. **Round-Trip Utility** - `src/utils/roundtrip.ts`
+   - `testRoundTrip()` - Compare input/output markdown
+   - `formatRoundTripResult()` - Console-friendly output
+   - Line difference tracking with stats
+
+4. **Dev Testing API** - Window globals for browser console testing
+   - `window.loadTestMarkdown(md)` - Load and track round-trip
+   - `window.getMarkdown()` - Get current serialized output
+   - `window.editor` - Direct TipTap editor access
+
+### Round-Trip Test Results
+
+| Category | Status | Notes |
+|----------|--------|-------|
+| Headings (H1-H6) | ✅ Pass | All levels preserved |
+| Text formatting | ✅ Pass | Bold, italic, code, strikethrough |
+| Links | ✅ Pass | URLs and titles preserved |
+| Images | ✅ Pass | Alt text and titles preserved |
+| Lists (nested) | ✅ Pass | 4+ levels work |
+| Task lists | ✅ Pass | Checkbox states preserved |
+| Blockquotes | ✅ Pass | Nesting preserved |
+| Code blocks | ✅ Pass | Language tags preserved |
+| Tables | ✅ Pass | Alignment markers preserved |
+| Frontmatter | ⚠️ Separate | Handled by `frontmatter.ts` |
+| Horizontal rules | ⚠️ Normalized | `***`, `___` → `---` |
+| Reference links | ⚠️ Normalized | Converted to inline |
+| Hard line breaks | ⚠️ Lost | `  \n` not preserved |
+| HTML | ❌ Disabled | By design (`html: false`) |
+
+### Known Transformations (Acceptable)
+
+These are semantic-preserving normalizations:
+
+| Input | Output | Impact |
+|-------|--------|--------|
+| `* item` | `- item` | List marker style (semantic same) |
+| `***` or `___` | `---` | Horizontal rule (semantic same) |
+| Indented code | Fenced code | More explicit format |
+| `[text][ref]` + `[ref]: url` | `[text](url)` | Reference → inline link |
+
+### Action Items for Phase 1
+
+**High Priority:**
+- [ ] Add TipTap HardBreak extension for `  \n` support
+
+**Deferred (Acceptable):**
+- Reference link preservation (low impact)
+- Horizontal rule marker preservation (low impact)
+- List marker style preservation (low impact)
+
+### Artifacts
+
+- Test results: `tests/results/phase0.5-roundtrip-results.md`
+- Test fixture: `tests/fixtures/markdown-test-suite.md`
+- Debug panel: `src/components/Editor/DebugPanel.tsx`
+- Round-trip utility: `src/utils/roundtrip.ts`
+
+---
+
 ## Session Log
 
 | Date | Session | Key Activities | Outcomes |
 |------|---------|----------------|----------|
 | 2026-01-29 | Kickoff | Project conception, brainstorming, initial documentation | Design doc, project plan, chronicle created |
 | 2026-01-29 | Strategy | Competitive analysis, feature philosophy, AI planning | ADRs 007-009, market positioning defined |
+| 2026-01-29 | Phase 0 | Project scaffolding, TipTap setup, basic layout | Foundation complete, Reviewer approved |
+| 2026-01-29 | Retrospective | Review Phase 0, plan testing strategy, scope Phase 1 | ADRs 010-012, Phase 0.5 and 1.5 added |
+| 2026-01-29 | Phase 0.5 | Round-trip validation, debug infrastructure | Fidelity confirmed, debug panel built |
 
 ---
 
 ## Lessons Learned
 
-*This section will be populated as development progresses.*
+### 2026-01-29 - Phase 0 Foundation
+
+**What happened:**
+Phase 0 completed successfully but revealed that `tiptap-markdown` lacks TypeScript definitions, requiring `@ts-expect-error` workarounds.
+
+**What we learned:**
+- Always check npm package typing status before committing to dependencies
+- Community TipTap extensions may have gaps in type coverage
+- Build passing doesn't mean IDE experience is perfect
+
+**What we'll do differently:**
+- Research typing status during tech evaluation
+- Consider creating local type declarations for untyped packages
+- Document workarounds immediately in code comments
+
+---
+
+### 2026-01-29 - Scope Management
+
+**What happened:**
+Reviewer feedback led to creating Phase 0.5 and 1.5 to manage scope.
+
+**What we learned:**
+- Validating core assumptions (markdown round-trip) should happen before building features
+- Polish items can delay core features if not managed
+- Brief follow-up sprints keep main sprints focused
+
+**What we'll do differently:**
+- Always validate core dependencies early
+- Separate "must have" from "polish" explicitly
+- Use .5 phases for validation and polish
 
 ### Template for Future Entries
 
@@ -412,3 +650,5 @@ Started RendMD project - a rendered-first markdown editor. The goal is to edit m
 | Version | Date | Changes |
 |---------|------|---------|
 | 0.1.0 | 2026-01-29 | Initial document creation |
+| 0.2.0 | 2026-01-29 | Phase 0 complete, ADRs 010-012, lessons learned |
+| 0.3.0 | 2026-01-29 | Phase 0.5 complete, round-trip validation, debug infrastructure |

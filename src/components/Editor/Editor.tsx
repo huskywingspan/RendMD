@@ -3,7 +3,8 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Markdown } from 'tiptap-markdown';
 import { useEditorStore } from '@/stores/editorStore';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { DebugPanel } from './DebugPanel';
 
 const INITIAL_CONTENT = `# Welcome to RendMD
 
@@ -42,6 +43,10 @@ function getMarkdownFromEditor(editor: ReturnType<typeof useEditor>): string {
 
 export function Editor(): JSX.Element {
   const { content, setContent, showSource } = useEditorStore();
+  
+  // Track original input for debug comparison
+  const [inputMarkdown, setInputMarkdown] = useState(INITIAL_CONTENT);
+  const [outputMarkdown, setOutputMarkdown] = useState('');
 
   const editor = useEditor({
     extensions: [
@@ -68,8 +73,32 @@ export function Editor(): JSX.Element {
     onUpdate: ({ editor }) => {
       const markdown = getMarkdownFromEditor(editor);
       setContent(markdown);
+      setOutputMarkdown(markdown);
     },
   });
+
+  // Load test markdown and track input/output
+  const loadTestMarkdown = useCallback((markdown: string) => {
+    if (!editor) return;
+    setInputMarkdown(markdown);
+    editor.commands.setContent(markdown);
+    // After a tick, capture the output
+    setTimeout(() => {
+      setOutputMarkdown(getMarkdownFromEditor(editor));
+    }, 100);
+  }, [editor]);
+
+  // Expose helpers on window for dev testing
+  useEffect(() => {
+    if (import.meta.env.DEV && editor) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).loadTestMarkdown = loadTestMarkdown;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).editor = editor;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).getMarkdown = () => getMarkdownFromEditor(editor);
+    }
+  }, [editor, loadTestMarkdown]);
 
   // Sync content when it changes externally
   useEffect(() => {
@@ -80,6 +109,13 @@ export function Editor(): JSX.Element {
       }
     }
   }, [content, editor]);
+
+  // Initialize outputMarkdown on first render
+  useEffect(() => {
+    if (editor) {
+      setOutputMarkdown(getMarkdownFromEditor(editor));
+    }
+  }, [editor]);
 
   return (
     <div className="flex-1 flex overflow-hidden">
@@ -103,6 +139,13 @@ export function Editor(): JSX.Element {
           </div>
         </div>
       )}
+
+      {/* Debug panel - dev only */}
+      <DebugPanel
+        inputMarkdown={inputMarkdown}
+        outputMarkdown={outputMarkdown}
+        proseMirrorDoc={editor?.getJSON()}
+      />
     </div>
   );
 }

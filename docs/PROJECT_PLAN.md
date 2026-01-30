@@ -1,8 +1,8 @@
 # RendMD - Project Plan
 
-> **Version:** 0.1.0  
+> **Version:** 0.2.0  
 > **Last Updated:** 2026-01-29  
-> **Status:** Planning
+> **Status:** Phase 0 Complete, Preparing Phase 1
 
 ---
 
@@ -20,41 +20,78 @@
 
 ## Development Phases
 
-### Phase 0: Foundation (Week 1)
+### Phase 0: Foundation (Week 1) ✅ COMPLETE
 **Goal:** Project setup, basic rendering, development environment
 
 #### Project Scaffolding
-- [ ] Initialize Vite + React + TypeScript project
-- [ ] Configure path aliases (`@/components`, `@/hooks`, etc.)
-- [ ] Set up ESLint + Prettier with consistent rules
-- [ ] Create folder structure per architecture spec
-- [ ] Add `.github/copilot-instructions.md`
+- [x] Initialize Vite + React + TypeScript project
+- [x] Configure path aliases (`@/components`, `@/hooks`, etc.)
+- [x] Set up ESLint + Prettier with consistent rules
+- [x] Create folder structure per architecture spec
+- [x] Add `.github/copilot-instructions.md`
 
 #### Styling Foundation
-- [ ] Configure Tailwind CSS with CSS variables
-- [ ] Create `themes/base.css` with variable definitions
-- [ ] Implement dark basic theme (primary dev theme)
-- [ ] Set up theme switching infrastructure
+- [x] Configure Tailwind CSS with CSS variables
+- [x] Create `themes/base.css` with variable definitions
+- [x] Implement dark basic theme (primary dev theme)
+- [x] Set up theme switching infrastructure
 
 #### Editor Setup
-- [ ] Install TipTap and required extensions
-- [ ] Set up basic markdown extension (tiptap-markdown)
-- [ ] Create `Editor.tsx` wrapper component
-- [ ] Verify markdown round-trip (load → edit → serialize)
+- [x] Install TipTap and required extensions
+- [x] Set up basic markdown extension (tiptap-markdown)
+- [x] Create `Editor.tsx` wrapper component
+- [x] Verify markdown round-trip (load → edit → serialize)
 
 #### Layout
-- [ ] Create base layout (header, sidebar, main editor area)
-- [ ] Implement responsive container
-- [ ] Add placeholder components for future features
-- [ ] Basic markdown file loading (hardcoded test file)
+- [x] Create base layout (header, sidebar, main editor area)
+- [x] Implement responsive container
+- [x] Add placeholder components for future features
+- [x] Basic markdown file loading (hardcoded test file)
 
-**Deliverable:** Can open a markdown string and edit basic text
+**Deliverable:** Can open a markdown string and edit basic text ✅
 
 **Success Criteria:**
-1. `npm run dev` starts without errors
-2. Can type in editor and see formatted output
-3. Markdown serializes correctly on change
-4. Dark theme looks intentional (not broken)
+1. ✅ `npm run dev` starts without errors
+2. ✅ Can type in editor and see formatted output
+3. ✅ Markdown serializes correctly on change
+4. ✅ Dark theme looks intentional (not broken)
+
+**Phase 0 Completion Notes:**
+- Completed: 2026-01-29
+- Bundle size: 732KB (tracked for optimization in Phase 5)
+- Known issue: `tiptap-markdown` lacks TypeScript types (documented workaround)
+- Reviewer approved, all success criteria met
+
+---
+
+### Phase 0.5: Markdown Round-Trip Validation (Pre-Phase 1)
+**Goal:** Validate core markdown processing before building on top of it
+
+#### Test Data Generation
+- [ ] Create `tests/fixtures/markdown-test-suite.md` with comprehensive test cases
+- [ ] Include all GFM elements: headings, lists, tables, code blocks, links, images
+- [ ] Include edge cases: nested lists (3+ levels), complex tables, mixed formatting
+- [ ] Include frontmatter variations
+
+#### Validation Strategy
+- [ ] Create `tests/utils/roundtrip.test.ts` for automated validation
+- [ ] Implement visual diff tool for rendered output comparison
+- [ ] Document any known limitations in Chronicle
+
+#### Debug Infrastructure
+- [ ] Add markdown debug panel (dev mode only) showing:
+  - Raw input markdown
+  - ProseMirror document JSON
+  - Serialized output markdown
+  - Diff highlighting between input/output
+- [ ] Add console logging for parse/serialize steps (toggleable)
+
+**Deliverable:** Confidence that markdown processing is reliable
+
+**Success Criteria:**
+1. All GFM elements survive round-trip
+2. Known limitations documented
+3. Debug tools available for troubleshooting
 
 ---
 
@@ -75,8 +112,8 @@
 - [ ] Image display and edit popover
 - [ ] Blockquote editing
 - [ ] Horizontal rule handling
-- [ ] Code block with syntax highlighting (Shiki)
-- [ ] Code block language selector
+- [ ] Code block display (basic styling, no syntax highlighting yet)
+- [ ] Code block language indicator
 
 **Deliverable:** Can edit all standard markdown elements inline
 
@@ -85,8 +122,34 @@
 2. Click any element to edit it
 3. Bubble menu appears on text selection
 4. Links are clickable (Ctrl+Click opens, Click edits)
-5. Code blocks have syntax highlighting
+5. Code blocks display correctly (styling deferred to 1.5)
 6. Round-trip preserves all formatting
+
+---
+
+### Phase 1.5: Polish & Enhancements (Post-Phase 1 Sprint)
+**Goal:** Quick wins and polish items that didn't fit in Phase 1 scope
+
+#### Code Block Enhancements
+- [ ] Shiki integration for syntax highlighting
+- [ ] Code block language selector dropdown
+- [ ] Copy code button
+
+#### Theme System
+- [ ] Wire up theme toggle in header (dark/light quick switch)
+- [ ] Theme dropdown with all four options
+- [ ] Theme persistence to localStorage
+
+#### Developer Experience
+- [ ] Markdown debug panel refinements
+- [ ] Performance baseline measurement
+
+**Deliverable:** Polished Phase 1 with syntax highlighting and theme switching
+
+**Success Criteria:**
+1. Code blocks have accurate syntax highlighting
+2. Theme toggle works and persists
+3. All four theme options selectable
 
 ---
 
@@ -175,7 +238,7 @@
 ---
 
 ### Phase 5: Polish & Advanced (Week 7)
-**Goal:** Export, search, UX polish
+**Goal:** Export, search, UX polish, performance optimization
 
 #### Export Features
 - [ ] Export to PDF (browser print with print stylesheet)
@@ -198,7 +261,17 @@
 - [ ] Recent files list
 - [ ] Folder navigation sidebar (optional)
 
-**Deliverable:** Feature-complete application
+#### Bundle Size Optimization
+- [ ] Analyze bundle with `vite-bundle-visualizer`
+- [ ] Identify largest dependencies
+- [ ] Implement code-splitting for:
+  - [ ] Source view panel (lazy load)
+  - [ ] Shiki highlighter (lazy load on first code block)
+  - [ ] Export functionality (lazy load)
+- [ ] Target: <500KB initial bundle (currently 732KB)
+- [ ] Document optimization decisions
+
+**Deliverable:** Feature-complete, optimized application
 
 ---
 
@@ -236,15 +309,17 @@
 
 ## Milestones Summary
 
-| Milestone | Target | Key Deliverable |
-|-----------|--------|-----------------|
-| M0: Foundation | End of Week 1 | Basic editing works |
-| M1: Core Editing | End of Week 3 | All elements editable |
-| M2: Files & Tables | End of Week 4 | File ops + tables |
-| M3: Source & Themes | End of Week 5 | Source view, frontmatter, 4 themes |
-| M4: Images & Nav | End of Week 6 | Images + TOC |
-| M5: Polish | End of Week 7 | Export + search |
-| M6: Release | End of Week 8 | v1.0.0 |
+| Milestone | Target | Key Deliverable | Status |
+|-----------|--------|-----------------|--------|
+| M0: Foundation | End of Week 1 | Basic editing works | ✅ Complete |
+| M0.5: Validation | Pre-Phase 1 | Markdown round-trip verified | 🔄 Next |
+| M1: Core Editing | End of Week 3 | All elements editable | ⏳ Planned |
+| M1.5: Enhancements | Post-Week 3 | Syntax highlighting, themes | ⏳ Planned |
+| M2: Files & Tables | End of Week 4 | File ops + tables | ⏳ Planned |
+| M3: Source & Themes | End of Week 5 | Source view, frontmatter, 4 themes | ⏳ Planned |
+| M4: Images & Nav | End of Week 6 | Images + TOC | ⏳ Planned |
+| M5: Polish | End of Week 7 | Export + search + optimization | ⏳ Planned |
+| M6: Release | End of Week 8 | v1.0.0 | ⏳ Planned |
 
 ---
 
@@ -334,15 +409,30 @@ The following are explicitly NOT in v1.0:
 
 ## Sprint Planning Notes
 
-### Tonight's Goals (2026-01-29)
+### Phase 0 (2026-01-29) ✅ COMPLETE
 Focus on Phase 0 foundation:
-1. Project scaffolding (Vite + React + TS)
-2. Tailwind configuration with CSS variables
-3. Basic layout structure
-4. TipTap integration with markdown
-5. Dark basic theme implementation
+1. ✅ Project scaffolding (Vite + React + TS)
+2. ✅ Tailwind configuration with CSS variables
+3. ✅ Basic layout structure
+4. ✅ TipTap integration with markdown
+5. ✅ Dark basic theme implementation
 
-This sets up the development environment and proves the core concept works.
+**Result:** Development environment working, core concept proven.
+
+### Next: Phase 0.5 - Markdown Validation
+Before building more features, validate the foundation:
+1. Create comprehensive markdown test file
+2. Build debug infrastructure for visibility
+3. Test and document round-trip fidelity
+4. Identify any tiptap-markdown limitations
+
+### Then: Phase 1 - Core Editing
+With validated foundation, build editing features:
+1. Bubble menu and toolbar
+2. All text formatting
+3. Lists and task lists
+4. Links and images
+5. Blockquotes and code blocks (basic)
 
 ---
 
