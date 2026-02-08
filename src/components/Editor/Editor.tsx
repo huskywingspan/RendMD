@@ -2,6 +2,8 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import type { Editor as TipTapEditor } from '@tiptap/react';
 import { useEditorStore, useIsDark } from '@/stores/editorStore';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { ChevronUp } from 'lucide-react';
+import { cn } from '@/utils/cn';
 import { DebugPanel } from './DebugPanel';
 import { BubbleMenu } from './BubbleMenu';
 import { LinkPopover } from './LinkPopover';
@@ -55,6 +57,7 @@ export interface EditorProps {
 
 export function Editor({ onEditorReady, onImageFile }: EditorProps): JSX.Element {
   const { content, setContent } = useEditorStore();
+  const { toolbarCollapsed, toggleToolbar } = useEditorStore();
   const isDark = useIsDark();
   
   // Track original input for debug comparison
@@ -277,10 +280,24 @@ export function Editor({ onEditorReady, onImageFile }: EditorProps): JSX.Element
 
       {/* Rendered editor */}
       <div className="w-full flex flex-col overflow-hidden">
-        {/* Editor toolbar - formatting + table controls */}
+        {/* Editor toolbar - formatting + table controls (collapsible) */}
         {editor && (
-          <div className="sticky top-0 z-10 p-2 bg-[var(--theme-bg-primary)] border-b border-[var(--theme-border-primary)]">
-            <EditorToolbar editor={editor} onLinkClick={() => setLinkPopoverOpen(true)} onImageClick={openImagePicker} />
+          <div className="sticky top-0 z-10 bg-[var(--theme-bg-primary)] border-b border-[var(--theme-border-primary)]">
+            <div className="flex items-center">
+              {!toolbarCollapsed && (
+                <div className="flex-1 p-2">
+                  <EditorToolbar editor={editor} onLinkClick={() => setLinkPopoverOpen(true)} onImageClick={openImagePicker} />
+                </div>
+              )}
+              <button
+                onClick={toggleToolbar}
+                className="px-2 py-1 text-[var(--theme-text-muted)] hover:text-[var(--theme-text-secondary)] transition-colors"
+                aria-label={toolbarCollapsed ? 'Show toolbar' : 'Hide toolbar'}
+                title={toolbarCollapsed ? 'Show toolbar' : 'Hide toolbar'}
+              >
+                <ChevronUp size={14} className={cn('transition-transform', toolbarCollapsed && 'rotate-180')} />
+              </button>
+            </div>
           </div>
         )}
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}

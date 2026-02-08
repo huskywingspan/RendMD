@@ -48,6 +48,11 @@ interface EditorStore extends EditorState {
   autoSaveEnabled: boolean;
   setAutoSaveEnabled: (enabled: boolean) => void;
 
+  // Toolbar
+  toolbarCollapsed: boolean;
+  setToolbarCollapsed: (collapsed: boolean) => void;
+  toggleToolbar: () => void;
+
   // Legacy compatibility
   showSource: boolean;
   toggleSource: () => void;
@@ -59,6 +64,7 @@ interface PersistedState {
   theme: ThemeName;
   fontSize: number;
   autoSaveEnabled: boolean;
+  toolbarCollapsed: boolean;
   // Document state
   content: string;
   frontmatter: Frontmatter | null;
@@ -86,6 +92,7 @@ export const useEditorStore = create<EditorStore>()(
       shortcutsModalOpen: false,
       fontSize: 16,
       autoSaveEnabled: true,
+      toolbarCollapsed: false,
       
       // Legacy compatibility — plain value, not a getter
       // (Getters using get() crash during Zustand hydration merge)
@@ -148,6 +155,10 @@ export const useEditorStore = create<EditorStore>()(
       setFontSize: (fontSize) => set({ fontSize }),
       setAutoSaveEnabled: (autoSaveEnabled) => set({ autoSaveEnabled }),
 
+      // Toolbar
+      setToolbarCollapsed: (toolbarCollapsed) => set({ toolbarCollapsed }),
+      toggleToolbar: () => set((state) => ({ toolbarCollapsed: !state.toolbarCollapsed })),
+
       // View mode
       setViewMode: (viewMode) => set({ viewMode }),
       cycleViewMode: () => set((state) => {
@@ -167,6 +178,7 @@ export const useEditorStore = create<EditorStore>()(
         theme: state.theme,
         fontSize: state.fontSize,
         autoSaveEnabled: state.autoSaveEnabled,
+        toolbarCollapsed: state.toolbarCollapsed,
         content: state.content,
         frontmatter: state.frontmatter,
         fileName: state.fileName,
@@ -193,6 +205,7 @@ export const useEditorStore = create<EditorStore>()(
           theme: persisted?.theme ?? currentState.theme,
           fontSize: persisted?.fontSize ?? currentState.fontSize,
           autoSaveEnabled: persisted?.autoSaveEnabled ?? currentState.autoSaveEnabled,
+          toolbarCollapsed: persisted?.toolbarCollapsed ?? currentState.toolbarCollapsed,
           content: persisted?.content ?? currentState.content,
           frontmatter: persisted?.frontmatter ?? currentState.frontmatter,
           fileName: persisted?.fileName ?? currentState.fileName,

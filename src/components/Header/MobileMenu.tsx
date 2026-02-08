@@ -108,10 +108,10 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps): JSX.Ele
     close();
   }, [setViewMode, close]);
 
+  // Don't close menu — let user compare themes by tapping through them
   const handleTheme = useCallback((t: ThemeName) => {
     setTheme(t);
-    close();
-  }, [setTheme, close]);
+  }, [setTheme]);
 
   const handleSettings = useCallback(() => {
     close();

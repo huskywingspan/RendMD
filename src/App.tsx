@@ -6,7 +6,7 @@ import { Editor } from '@/components/Editor';
 import { FrontmatterPanel } from '@/components/Frontmatter';
 import { ToastContainer } from '@/components/UI/Toast';
 import { EmptyState } from '@/components/UI/EmptyState';
-import { useFileSystem, useAutoSave, useTOC, scrollToHeading } from '@/hooks';
+import { useFileSystem, useAutoSave, useTOC, scrollToHeading, useSwipeGesture } from '@/hooks';
 import { useEditorStore } from '@/stores/editorStore';
 import { serializeFrontmatter, parseFrontmatter } from '@/utils/frontmatterParser';
 import { fileToBase64 } from '@/utils/imageHelpers';
@@ -21,7 +21,7 @@ const SettingsModal = lazy(() => import('@/components/Modals/SettingsModal'));
 function App(): JSX.Element {
   const { 
     isDirty, content, frontmatter, filePath: storedFilePath, fileName, setContent, setFrontmatter, 
-    viewMode, cycleViewMode, 
+    viewMode, setViewMode, cycleViewMode, 
     shortcutsModalOpen, setShortcutsModalOpen,
     fontSize,
     newFile
@@ -47,6 +47,10 @@ function App(): JSX.Element {
   // Combine frontmatter + content for source view
   const fullMarkdown = serializeFrontmatter(frontmatter, content);
 
+  // Swipe gesture for mobile view switching
+  const editorAreaRef = useRef<HTMLDivElement>(null);
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
   // Compute effective view mode — no split on mobile (< 768px)
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1024
@@ -60,6 +64,16 @@ function App(): JSX.Element {
     if (viewMode === 'split' && windowWidth < 768) return 'render';
     return viewMode;
   }, [viewMode, windowWidth]);
+
+  useSwipeGesture(editorAreaRef, {
+    onSwipeLeft: () => {
+      if (effectiveViewMode === 'render') setViewMode('source');
+    },
+    onSwipeRight: () => {
+      if (effectiveViewMode === 'source') setViewMode('render');
+    },
+    enabled: isTouchDevice,
+  });
 
   // Handle source editor changes (parse frontmatter and content)
   const handleSourceChange = useCallback((newSource: string) => {
@@ -162,6 +176,7 @@ function App(): JSX.Element {
             theme: state.theme,
             fontSize: state.fontSize,
             autoSaveEnabled: state.autoSaveEnabled,
+            toolbarCollapsed: state.toolbarCollapsed,
             content: state.content,
             frontmatter: state.frontmatter,
             fileName: state.fileName,
@@ -248,7 +263,7 @@ function App(): JSX.Element {
           <FrontmatterPanel />
           
           {/* Editor area - conditional based on effectiveViewMode */}
-          <div className="flex-1 flex overflow-hidden">
+          <div ref={editorAreaRef} className="flex-1 flex overflow-hidden">
             {/* Empty state when no content and no file loaded */}
             {!content && !storedFilePath && !fileName ? (
               <EmptyState />

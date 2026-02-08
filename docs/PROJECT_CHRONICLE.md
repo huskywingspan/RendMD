@@ -1811,3 +1811,26 @@ All three tasks implemented. 0 TypeScript errors, 101/101 tests passing.
 - ✅ `newFile()` can clear the file handle directly
 - ✅ Backward-compatible — existing `getSharedFileHandle`/`setSharedFileHandle` imports still work
 - ⚠️ One more utility file, but it's small and single-purpose
+
+---
+
+## 2026-02-08 - v1.0.3 Mobile UX Improvements
+
+### Changes Implemented
+
+**Mobile View Toggle + Swipe Gestures:**
+- `ViewModeToggle` moved out of `hidden sm:flex` container — always visible in header
+- On mobile: Render + Source buttons (Split already hidden via `md:inline-flex`)
+- New `useSwipeGesture` hook: swipe left → source, swipe right → render
+- Touch-only, 50px threshold, vertical scroll guard prevents interference with page scrolling
+
+**Theme Menu Stays Open:**
+- Removed `close()` from `handleTheme` in MobileMenu — users can tap through all 4 themes to compare without reopening the menu
+
+**Toolbar Wrap + Collapsible:**
+- Changed toolbar from `overflow-x-auto` (horizontal scroll) to `flex-wrap` — all buttons visible at once, wrapping to multiple rows on narrow screens
+- Added collapse toggle (chevron button) — hides toolbar for distraction-free writing
+- Collapse state persisted in Zustand store
+- Table grid picker right-edge overflow fixed (anchors right on mobile)
+
+**Builder Handoff:** `.github/agents/HANDOFF_BUILDER_v1.0.3.md`

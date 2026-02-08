@@ -8,3 +8,5 @@ export { useTOC, scrollToHeading } from './useTOC';
 
 export { useImageAssets } from './useImageAssets';
 export type { UseImageAssetsReturn } from './useImageAssets';
+
+export { useSwipeGesture } from './useSwipeGesture';

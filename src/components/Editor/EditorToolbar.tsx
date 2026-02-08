@@ -338,7 +338,7 @@ function TableInsertButton({ editor }: { editor: Editor }): JSX.Element {
       </Tooltip>
 
       {showGridPicker && (
-        <div className="absolute top-full left-0 mt-1 z-50">
+        <div className="absolute top-full mt-1 z-50 right-0 sm:left-0 sm:right-auto">
           <TableGridPicker onSelect={handleGridSelect} onClose={handleGridClose} />
         </div>
       )}
@@ -394,7 +394,7 @@ function TableControls({ editor }: { editor: Editor }): JSX.Element {
   const canAddRowBefore = !inHeaderCell;
 
   return (
-    <div className="editor-toolbar flex items-center gap-1 overflow-x-auto scrollbar-none md:flex-wrap md:overflow-x-visible">
+    <div className="editor-toolbar flex items-center gap-1 flex-wrap">
       {/* Row operations */}
       <div className="flex items-center gap-0.5 pr-2 border-r border-[var(--theme-border-primary)]">
         <span className="text-xs text-[var(--theme-text-muted)] px-1">Row:</span>

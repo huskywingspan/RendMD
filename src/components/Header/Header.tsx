@@ -44,7 +44,7 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
         </div>
       </div>
 
-      {/* Center section - File actions & View toggle — hidden on mobile */}
+      {/* Center section - File actions — hidden on mobile */}
       <div className="hidden sm:flex items-center gap-3">
         {/* File actions */}
         <div className="flex items-center gap-1">
@@ -80,13 +80,13 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
           </Tooltip>
           <ExportDropdown editor={editor ?? null} />
         </div>
-
-        {/* View mode toggle */}
-        <ViewModeToggle viewMode={viewMode} setViewMode={setViewMode} />
       </div>
 
       {/* Right section */}
       <div className="flex items-center gap-1">
+        {/* View toggle — always visible (Split button already hidden md:inline-flex) */}
+        <ViewModeToggle viewMode={viewMode} setViewMode={setViewMode} />
+
         {/* Mobile: dirty indicator — visible only below sm */}
         <div className="sm:hidden">
           <MobileDirtyDot />
