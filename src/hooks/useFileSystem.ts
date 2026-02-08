@@ -1,5 +1,9 @@
 import { useCallback, useRef } from 'react';
 import { useEditorStore } from '@/stores/editorStore';
+import { setSharedFileHandle } from '@/utils/fileHandle';
+
+// Re-export for consumers that already import from here
+export { getSharedFileHandle, setSharedFileHandle } from '@/utils/fileHandle';
 
 /**
  * File System Access API types
@@ -35,17 +39,7 @@ const MARKDOWN_FILE_TYPES: FilePickerAcceptType[] = [
   },
 ];
 
-// Module-level singleton to share file handle across all hook instances
-// This avoids the issue of each useFileSystem() call creating separate refs
-let sharedFileHandle: FileSystemFileHandle | null = null;
-
-export function getSharedFileHandle(): FileSystemFileHandle | null {
-  return sharedFileHandle;
-}
-
-export function setSharedFileHandle(handle: FileSystemFileHandle | null): void {
-  sharedFileHandle = handle;
-}
+// Module-level singleton moved to @/utils/fileHandle to avoid circular deps
 
 export interface UseFileSystemReturn {
   openFile: () => Promise<void>;

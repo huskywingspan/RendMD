@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { codeToHtml } from 'shiki';
-import { useTheme } from '@/hooks';
+import { useIsDark } from '@/stores/editorStore';
 import { cn } from '@/utils/cn';
 
 interface SourceEditorProps {
@@ -27,7 +27,7 @@ const TEXT_STYLES = {
  * (font, size, line-height) for proper alignment.
  */
 export function SourceEditor({ value, onChange, className }: SourceEditorProps): JSX.Element {
-  const { isDark } = useTheme();
+  const isDark = useIsDark();
   const [highlightedHtml, setHighlightedHtml] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);

@@ -90,10 +90,13 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keydown', handleTabTrap);
 
-    // Focus search input on open
-    requestAnimationFrame(() => {
-      searchInputRef.current?.focus();
-    });
+    // Focus search input on open (skip on touch to avoid soft keyboard)
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouch) {
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+      });
+    }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -131,7 +134,7 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-start pt-12 sm:items-center sm:pt-0 justify-center"
       role="presentation"
     >
       {/* Backdrop */}

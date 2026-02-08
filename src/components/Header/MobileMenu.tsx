@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { MoreVertical, FolderOpen, Save, FileText, Printer, ClipboardCopy, Eye, Code, Palette, Settings, Keyboard } from 'lucide-react';
+import { MoreVertical, FolderOpen, Save, FileText, Printer, ClipboardCopy, Eye, Code, Palette, Settings, Keyboard, FilePlus } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
 import { useEditorStore } from '@/stores/editorStore';
 import { useFileSystem } from '@/hooks';
@@ -26,7 +26,7 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps): JSX.Ele
   const menuRef = useRef<HTMLDivElement>(null);
   const { openFile, saveFile, saveFileAs } = useFileSystem();
   const { addToast } = useToastStore();
-  const { fileName, viewMode, setViewMode, theme, setTheme, setShortcutsModalOpen } = useEditorStore();
+  const { fileName, viewMode, setViewMode, theme, setTheme, setShortcutsModalOpen, newFile } = useEditorStore();
 
   // Close on outside click
   useEffect(() => {
@@ -63,6 +63,11 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps): JSX.Ele
     close();
     await openFile();
   }, [close, openFile]);
+
+  const handleNew = useCallback(() => {
+    close();
+    newFile();
+  }, [close, newFile]);
 
   const handleSave = useCallback(async () => {
     close();
@@ -139,6 +144,9 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps): JSX.Ele
           role="menu"
         >
           {/* File operations */}
+          <button onClick={handleNew} className={itemClass} role="menuitem">
+            <FilePlus size={16} /> New File
+          </button>
           <button onClick={handleOpen} className={itemClass} role="menuitem">
             <FolderOpen size={16} /> Open File
           </button>

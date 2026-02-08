@@ -28,6 +28,7 @@ export const SHORTCUTS: ShortcutEntry[] = [
   { action: 'Insert Image', keys: 'Ctrl+Shift+I', category: 'editing' },
 
   // File
+  { action: 'New', keys: 'Ctrl+N', category: 'file' },
   { action: 'Open', keys: 'Ctrl+O', category: 'file' },
   { action: 'Save', keys: 'Ctrl+S', category: 'file' },
   { action: 'Save As', keys: 'Ctrl+Shift+S', category: 'file' },

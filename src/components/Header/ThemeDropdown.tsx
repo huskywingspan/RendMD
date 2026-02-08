@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Sun, Moon, Sparkles } from 'lucide-react';
-import { useTheme } from '@/hooks';
+import { useEditorStore, useIsDark } from '@/stores/editorStore';
 import type { ThemeName } from '@/types';
 import { cn } from '@/utils/cn';
 
@@ -19,7 +19,8 @@ const themeOptions: ThemeOption[] = [
 ];
 
 export function ThemeDropdown(): JSX.Element {
-  const { theme, setTheme, toggleDarkLight, isDark } = useTheme();
+  const { theme, setTheme, toggleDarkLight } = useEditorStore();
+  const isDark = useIsDark();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

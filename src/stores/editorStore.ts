@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { EditorState, Frontmatter, ThemeName, SidebarState, ViewMode, TOCItem } from '@/types';
+import { setSharedFileHandle } from '@/utils/fileHandle';
 
 interface EditorStore extends EditorState {
   // Content actions
   setContent: (content: string) => void;
   markClean: () => void;
   markDirty: () => void;
+  newFile: (content?: string) => void;
 
   // File actions
   setFilePath: (path: string | null, name: string | null) => void;
@@ -18,6 +20,7 @@ interface EditorStore extends EditorState {
   // Theme
   theme: ThemeName;
   setTheme: (theme: ThemeName) => void;
+  toggleDarkLight: () => void;
   
   // Sidebar
   sidebar: SidebarState;
@@ -92,6 +95,16 @@ export const useEditorStore = create<EditorStore>()(
       setContent: (content) => set({ content, isDirty: true }),
       markClean: () => set({ isDirty: false }),
       markDirty: () => set({ isDirty: true }),
+      newFile: (content = '') => {
+        setSharedFileHandle(null);
+        set({
+          content,
+          frontmatter: null,
+          filePath: null,
+          fileName: null,
+          isDirty: false,
+        });
+      },
 
       // File actions
       setFilePath: (path, name) => set({ filePath: path, fileName: name }),
@@ -99,8 +112,22 @@ export const useEditorStore = create<EditorStore>()(
       // Frontmatter
       setFrontmatter: (frontmatter) => set({ frontmatter }),
 
-      // Theme
-      setTheme: (theme) => set({ theme }),
+      // Theme — applies CSS class to <html> so every component picks it up
+      setTheme: (theme) => {
+        const root = document.documentElement;
+        root.classList.remove('dark-basic', 'light-basic', 'dark-glass', 'light-glass');
+        root.classList.add(theme);
+        set({ theme });
+      },
+      toggleDarkLight: () => {
+        const current = get().theme;
+        const isGlass = current.includes('glass');
+        const isDark = current.startsWith('dark');
+        const next: ThemeName = isGlass
+          ? (isDark ? 'light-glass' : 'dark-glass')
+          : (isDark ? 'light-basic' : 'dark-basic');
+        get().setTheme(next);
+      },
 
       // Sidebar
       toggleSidebar: () => set((state) => ({
@@ -146,9 +173,15 @@ export const useEditorStore = create<EditorStore>()(
         isDirty: state.isDirty,
       }),
       onRehydrateStorage: () => {
-        return (_state, error) => {
+        return (state, error) => {
           if (error) {
             console.warn('[RendMD] Failed to rehydrate:', error);
+          }
+          // Apply persisted theme to DOM on startup
+          if (state?.theme) {
+            const root = document.documentElement;
+            root.classList.remove('dark-basic', 'light-basic', 'dark-glass', 'light-glass');
+            root.classList.add(state.theme);
           }
         };
       },
@@ -169,3 +202,8 @@ export const useEditorStore = create<EditorStore>()(
     }
   )
 );
+
+/** Selector: true when the active theme is a dark variant */
+export function useIsDark(): boolean {
+  return useEditorStore((s) => s.theme.startsWith('dark'));
+}

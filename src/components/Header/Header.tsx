@@ -1,4 +1,4 @@
-import { Menu, Settings, FolderOpen, Save, Eye, Columns2, Code, Keyboard } from 'lucide-react';
+import { Menu, Settings, FolderOpen, Save, Eye, Columns2, Code, Keyboard, FilePlus } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
 import { useEditorStore } from '@/stores/editorStore';
 import { useFileSystem } from '@/hooks';
@@ -18,7 +18,7 @@ interface HeaderProps {
 }
 
 export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderProps): JSX.Element {
-  const { viewMode, setViewMode, toggleSidebar, shortcutsModalOpen, setShortcutsModalOpen } = useEditorStore();
+  const { viewMode, setViewMode, toggleSidebar, shortcutsModalOpen, setShortcutsModalOpen, newFile } = useEditorStore();
   const { openFile, saveFile } = useFileSystem();
 
   return (
@@ -48,6 +48,16 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
       <div className="hidden sm:flex items-center gap-3">
         {/* File actions */}
         <div className="flex items-center gap-1">
+          <Tooltip content="New file (Ctrl+N)">
+            <button
+              onClick={() => newFile()}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-secondary)] transition-colors"
+              aria-label="New file (Ctrl+N)"
+            >
+              <FilePlus size={14} />
+              <span className="hidden sm:inline">New</span>
+            </button>
+          </Tooltip>
           <Tooltip content="Open file (Ctrl+O)">
             <button
               onClick={() => openFile()}

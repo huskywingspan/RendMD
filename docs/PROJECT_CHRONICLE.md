@@ -1751,3 +1751,63 @@ After deploying to Cloudflare Pages (`rendmd.pages.dev`), testing on a phone rev
 **Rationale:** 768px is the standard tablet/desktop threshold. Touch detection via `ontouchstart` + `maxTouchPoints` is reliable. Overlay sidebar is the proven mobile pattern (Google Docs, Notion, etc.).
 
 **Full Spec:** `docs/specs/mobile-optimization.md`
+
+---
+
+## 2026-02-08 - v1.0.2 Issues Found During Mobile Testing
+
+### Theme System Bug — Dual Theme Systems
+
+**Severity:** High — theme selection broken in MobileMenu and SettingsModal.
+
+**Root cause:** Two independent theme systems exist. The `useTheme()` hook (used by ThemeDropdown) manages its own `useState` + localStorage (`rendmd-theme`) and applies CSS classes to the DOM. The Zustand store's `setTheme()` (used by MobileMenu and SettingsModal) only updates store state — it never touches the DOM. Result: desktop theme dropdown works, mobile menu and settings theme selectors don't.
+
+**Decision:** Unify into Zustand store as single source of truth. Delete `useTheme` hook. Store's `setTheme` will apply CSS classes directly. `onRehydrateStorage` applies theme on page load. Also remove redundant theme selector from SettingsModal.
+
+### Missing "New File" Feature
+
+No way to create a new document or reset the editor. Once content is loaded, the only option is "Open File" from disk. Adding `newFile()` store action + starter templates (Blank, TODO List, Meeting Notes, Project README) to showcase RendMD's rendering capabilities.
+
+### ShortcutsModal Mobile Keyboard
+
+Auto-focus on the search input triggers the software keyboard on mobile, blocking the modal content. Fix: conditional focus (skip on touch devices) + top-align modal on mobile instead of vertically centered.
+
+**Builder Handoff:** `.github/agents/HANDOFF_BUILDER_v1.0.2.md`
+
+### v1.0.2 Implementation Complete
+
+**Date:** 2026-02-08
+
+All three tasks implemented. 0 TypeScript errors, 101/101 tests passing.
+
+**Task A — Unified Theme System:**
+- `setTheme` in Zustand store now applies CSS classes to `<html>` directly
+- Added `toggleDarkLight` action and `useIsDark` selector to store
+- Theme applied on hydration via `onRehydrateStorage`
+- ThemeDropdown, Editor, SourceEditor migrated to use store
+- Deleted standalone `useTheme` hook — single source of truth achieved
+- Removed redundant theme selector from SettingsModal
+
+**Task B — New File + Templates:**
+- `newFile()` store action resets content, frontmatter, filePath, fileName, file handle
+- 4 starter templates: Blank, Note, README, Blog Post (with dynamic date)
+- Template picker grid in EmptyState (2×2 mobile, 4-col desktop)
+- "New" button in Header + MobileMenu, Ctrl+N keyboard shortcut
+
+**Task C — ShortcutsModal Mobile Fix:**
+- Conditional auto-focus: skips on touch devices, focuses on desktop
+- Modal top-aligned on mobile (`items-start pt-12`), centered on desktop
+
+#### ADR-032: Extract Shared File Handle to Avoid Circular Dependencies
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** The `newFile()` action in `editorStore.ts` needs to clear the file handle (so "Save" doesn't overwrite the previous file). The file handle was stored as a module-level variable in `useFileSystem.ts`, which imports from `editorStore.ts`. Having `editorStore.ts` import from `useFileSystem.ts` would create a circular dependency.
+
+**Decision:** Extract the shared file handle into a standalone module `src/utils/fileHandle.ts`. Both `editorStore.ts` and `useFileSystem.ts` import from it. Re-exports from `useFileSystem.ts` maintain backward compatibility.
+
+**Consequences:**
+- ✅ No circular dependency
+- ✅ `newFile()` can clear the file handle directly
+- ✅ Backward-compatible — existing `getSharedFileHandle`/`setSharedFileHandle` imports still work
+- ⚠️ One more utility file, but it's small and single-purpose

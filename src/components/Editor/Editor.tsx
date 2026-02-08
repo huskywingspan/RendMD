@@ -1,7 +1,6 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import type { Editor as TipTapEditor } from '@tiptap/react';
-import { useEditorStore } from '@/stores/editorStore';
-import { useTheme } from '@/hooks';
+import { useEditorStore, useIsDark } from '@/stores/editorStore';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { DebugPanel } from './DebugPanel';
 import { BubbleMenu } from './BubbleMenu';
@@ -56,7 +55,7 @@ export interface EditorProps {
 
 export function Editor({ onEditorReady, onImageFile }: EditorProps): JSX.Element {
   const { content, setContent } = useEditorStore();
-  const { isDark } = useTheme();
+  const isDark = useIsDark();
   
   // Track original input for debug comparison
   const [inputMarkdown, setInputMarkdown] = useState(INITIAL_CONTENT);

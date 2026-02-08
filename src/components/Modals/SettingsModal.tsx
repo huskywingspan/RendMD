@@ -1,25 +1,17 @@
 import React, { useEffect } from 'react';
 import { X, Minus, Plus } from 'lucide-react';
 import { useEditorStore } from '@/stores/editorStore';
-import type { ThemeName } from '@/types';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const THEMES: { value: ThemeName; label: string }[] = [
-  { value: 'dark-basic', label: 'Dark' },
-  { value: 'light-basic', label: 'Light' },
-  { value: 'dark-glass', label: 'Dark Glass' },
-  { value: 'light-glass', label: 'Light Glass' },
-];
-
 const FONT_MIN = 12;
 const FONT_MAX = 24;
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.ReactElement | null {
-  const { theme, setTheme, fontSize, setFontSize, autoSaveEnabled, setAutoSaveEnabled } = useEditorStore();
+  const { fontSize, setFontSize, autoSaveEnabled, setAutoSaveEnabled } = useEditorStore();
 
   // Global Escape key handler
   useEffect(() => {
@@ -59,19 +51,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
 
         {/* Body */}
         <div className="px-6 py-4 space-y-6">
-          {/* Theme selector */}
-          <SettingRow label="Theme">
-            <select
-              value={theme}
-              onChange={(e) => setTheme(e.target.value as ThemeName)}
-              className="px-3 py-1.5 text-sm rounded-md border border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] text-[var(--theme-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent-primary)]"
-            >
-              {THEMES.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </SettingRow>
-
           {/* Font size */}
           <SettingRow label="Editor font size">
             <div className="flex items-center gap-2">

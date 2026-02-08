@@ -6,7 +6,7 @@ import { Editor } from '@/components/Editor';
 import { FrontmatterPanel } from '@/components/Frontmatter';
 import { ToastContainer } from '@/components/UI/Toast';
 import { EmptyState } from '@/components/UI/EmptyState';
-import { useTheme, useFileSystem, useAutoSave, useTOC, scrollToHeading } from '@/hooks';
+import { useFileSystem, useAutoSave, useTOC, scrollToHeading } from '@/hooks';
 import { useEditorStore } from '@/stores/editorStore';
 import { serializeFrontmatter, parseFrontmatter } from '@/utils/frontmatterParser';
 import { fileToBase64 } from '@/utils/imageHelpers';
@@ -19,14 +19,12 @@ const ImageInsertModal = lazy(() => import('@/components/Modals/ImageInsertModal
 const SettingsModal = lazy(() => import('@/components/Modals/SettingsModal'));
 
 function App(): JSX.Element {
-  // Initialize theme system - applies theme class to document root
-  useTheme();
-
   const { 
     isDirty, content, frontmatter, filePath: storedFilePath, fileName, setContent, setFrontmatter, 
     viewMode, cycleViewMode, 
     shortcutsModalOpen, setShortcutsModalOpen,
-    fontSize
+    fontSize,
+    newFile
   } = useEditorStore();
   const { openFile, saveFile, saveFileAs, fileHandleRef } = useFileSystem();
   
@@ -214,6 +212,9 @@ function App(): JSX.Element {
     if (isMod && e.key === 'o') {
       e.preventDefault();
       await openFile();
+    } else if (isMod && e.key === 'n') {
+      e.preventDefault();
+      newFile();
     } else if (isMod && e.shiftKey && e.key === 'S') {
       e.preventDefault();
       await saveFileAs();
@@ -230,7 +231,7 @@ function App(): JSX.Element {
       e.preventDefault();
       setShortcutsModalOpen(!shortcutsModalOpen);
     }
-  }, [openFile, saveFile, saveFileAs, openImagePicker, cycleViewMode, shortcutsModalOpen, setShortcutsModalOpen]);
+  }, [openFile, saveFile, saveFileAs, openImagePicker, cycleViewMode, shortcutsModalOpen, setShortcutsModalOpen, newFile]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
