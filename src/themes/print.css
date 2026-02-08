@@ -1,0 +1,104 @@
+/* Print stylesheet for PDF export (window.print()) */
+@media print {
+  /* Hide all UI chrome */
+  header,
+  aside,
+  [role="toolbar"],
+  .toast-container,
+  .frontmatter-panel,
+  .table-toolbar,
+  .editor-toolbar,
+  .fixed.bottom-0 {
+    display: none !important;
+  }
+
+  /* Hide buttons outside the editor content */
+  body > div > header button,
+  body > div > div > aside button {
+    display: none !important;
+  }
+
+  /* Reset the page to clean document */
+  body,
+  html {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Make the editor content fill the page */
+  .ProseMirror {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    min-height: auto !important;
+    max-width: 100% !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Ensure content is readable */
+  .ProseMirror h1,
+  .ProseMirror h2,
+  .ProseMirror h3,
+  .ProseMirror h4,
+  .ProseMirror h5,
+  .ProseMirror h6 {
+    color: black !important;
+    page-break-after: avoid;
+  }
+
+  .ProseMirror p,
+  .ProseMirror li {
+    color: #1a1a1a !important;
+  }
+
+  .ProseMirror a {
+    color: #1a1a1a !important;
+    text-decoration: underline !important;
+  }
+
+  .ProseMirror blockquote {
+    border-left-color: #999 !important;
+    color: #333 !important;
+  }
+
+  .ProseMirror code {
+    background: #f5f5f5 !important;
+    color: #1a1a1a !important;
+  }
+
+  .ProseMirror pre {
+    background: #f5f5f5 !important;
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid;
+  }
+
+  .ProseMirror img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  .ProseMirror table {
+    page-break-inside: avoid;
+  }
+
+  .ProseMirror th,
+  .ProseMirror td {
+    border-color: #999 !important;
+    color: #1a1a1a !important;
+  }
+
+  .ProseMirror th {
+    background: #f0f0f0 !important;
+  }
+
+  .ProseMirror hr {
+    border-color: #ccc !important;
+  }
+
+  /* Prevent blank pages */
+  * {
+    overflow: visible !important;
+  }
+}

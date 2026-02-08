@@ -949,6 +949,360 @@ Always call `fixTables()` after delete operations to ensure ProseMirror table mo
 
 ---
 
+## 2026-02-08 - Phase 4 Complete
+
+### Completion Summary
+
+**Status:** ✅ Approved by Reviewer (after 5+ rounds of bug fixes)  
+**Build:** Passing (0 errors, 0 warnings)  
+
+### What Was Built
+
+1. **Image Handling**
+   - `ImageInsertModal` — 3-tab dialog (URL / Local File / Embed as Base64)
+   - Drag-drop and clipboard paste both route through ImageInsertModal
+   - `CustomImage` TipTap extension with `localPath` attribute
+   - `imageHelpers.ts` — base64 conversion, filename sanitization, file size formatting
+   - `useImageAssets` hook — FS API wrapper (partially unused after redesign)
+   - BubbleMenu image button + Ctrl+Shift+I shortcut
+   - Ctrl+Space to force BubbleMenu at cursor position
+
+2. **Table of Contents**
+   - `useTOC` hook — extracts headings from ProseMirror document tree
+   - `TOCPanel` sidebar component with hierarchical indent + active highlight
+   - Click-to-scroll using `requestAnimationFrame` + `scrollIntoView`
+   - Active heading tracking via scroll listener + manual set on click
+
+3. **Keyboard Shortcuts Help**
+   - `ShortcutsModal` — grouped by category, searchable
+   - `shortcuts.ts` — centralized shortcut definitions
+   - Ctrl+H trigger (changed from Ctrl+? due to browser conflict)
+   - Header keyboard button
+
+### Key Decisions Made
+
+---
+
+#### ADR-021: Local File Tab Redesign (Drop FS API Dependency)
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** The original spec called for an assets-folder approach using the File System Access API to save images to `assets/` next to the `.md` file. Testing on Brave browser revealed that the FS API is blocked entirely, even with Shields down.
+
+**Decision:** Replace FS API-dependent Local File tab with a simple editable path field. User types a relative path (e.g., `photo.png` or `assets/photo.png`), and the app:
+1. Reads the file data into a base64 data URL for editor display
+2. Stores the relative path in the `localPath` attribute
+3. On markdown serialization, outputs the `localPath` instead of the data URL
+
+**Alternatives Considered:**
+| Option | Pros | Cons | Verdict |
+|--------|------|------|---------|
+| FS API + assets folder | Full management, auto-save images | Blocked on Brave, Firefox, Safari | Rejected |
+| Path field (chosen) | Works everywhere, simple, no API dependency | User must manage files separately | Accepted |
+| Base64 only | Zero setup | Bloats markdown files | Available as separate tab |
+
+**Consequences:**
+- ✅ Works on all browsers identically
+- ✅ Simpler code, fewer moving parts
+- ✅ `useImageAssets.saveImage` kept for potential future use
+- ⚠️ User must place image files in the correct location manually
+- ⚠️ Round-trip is lossy: re-opening doesn't restore data URL display
+
+---
+
+#### ADR-022: CustomImage Extension for Dual-Path Display
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** When a user inserts a local image with a relative path like `photo.png`, the browser resolves it to `http://localhost:5173/photo.png` which fails. The image needs to display in the editor (data URL) while serializing differently to markdown (relative path).
+
+**Decision:** Extend TipTap's `Image` with a `localPath` attribute. The custom markdown serializer checks for `localPath` first, falling back to `src`. Stored as `data-local-path` HTML attribute.
+
+**Data Flow:**
+```
+User picks file → Read as data URL → Store in src (display)
+                → Type path → Store in localPath (markdown output)
+Serialize → if localPath: ![alt](localPath) else: ![alt](src)
+```
+
+**Consequences:**
+- ✅ Images display correctly in editor via data URL
+- ✅ Markdown contains clean relative paths
+- ⚠️ Intentionally lossy round-trip for local images (data URL lost on re-open)
+- ⚠️ VS Code extension will solve this naturally (full filesystem access)
+
+---
+
+#### ADR-023: VS Code Extension — Option A (After v1.0)
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** RendMD's rendered-first editing is an ideal fit for a VS Code custom editor. User stated this is the "ultimate use case, more so than the web version." Research confirmed `CustomTextEditorProvider` API is purpose-built for this, with ~70-80% code reuse from the web app.
+
+**Options Evaluated:**
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| A (chosen) | Build VS Code extension after web v1.0 | Battle-tested core, clean extraction | Delays "ultimate use case" |
+| B | Parallel development now | Earlier VS Code delivery | Premature abstraction, split focus |
+| C | Pivot to VS Code-first after Phase 4 | Fastest to personal use case | Web app stalls |
+
+**Decision:** Option A — finish web v1.0, then extract shared core into monorepo and build VS Code extension wrapper as v1.2.
+
+**Architecture (researched):**
+- `CustomTextEditorProvider` registers for `*.md` / `*.markdown`
+- Priority: `"option"` (users choose "Open With", not forced default)
+- Webview loads bundled React/TipTap app
+- Sync: TextDocument ↔ Webview via `postMessage` / `WorkspaceEdit`
+- Theming: map `--vscode-*` CSS variables → RendMD `--color-*` variables
+
+**Monorepo Structure (planned):**
+```
+packages/core/    — Shared TipTap extensions, components, hooks
+packages/web/     — Web app (current Vite build)
+packages/vscode/  — VS Code extension wrapper
+```
+
+**Consequences:**
+- ✅ Web app becomes battle-tested before extraction
+- ✅ Clean separation of concerns
+- ✅ Nearly zero competition in VS Code marketplace
+- ⚠️ Delays VS Code extension to ~v1.2 timeframe
+- ⚠️ Monorepo migration is non-trivial refactor
+
+**Research Reference:** See `docs/research/VSCODE_EXTENSION.md`
+
+---
+
+### Bugs Found & Fixed During Phase 4 Review
+
+| # | Severity | Issue | Root Cause | Fix |
+|---|----------|-------|------------|-----|
+| 1 | 🔴 Critical | TOC freeze on click | `setTextSelection` with stale ProseMirror positions | Removed `setTextSelection`, use DOM `scrollIntoView` |
+| 2 | 🔴 Critical | Local File tab always shows "Save first" | FS API check returns false on Brave | Complete redesign: editable path field, no FS API |
+| 3 | 🟡 Medium | Ctrl+? not working | Browser intercepts Ctrl+Shift+/ | Changed to Ctrl+H |
+| 4 | 🟡 Medium | TOC active highlight not updating on click | No manual `setActiveTocId` after scroll | Added explicit `setActiveTocId` call |
+| 5 | 🟡 Medium | Relative image path not displaying | Browser resolves to `localhost:5173/` | CustomImage ext: data URL for display, localPath for markdown |
+| 6 | 🟢 Minor | No H3 button in BubbleMenu | Not in original implementation | Added `Heading3` button |
+| 7 | 🟢 Minor | No Image button in BubbleMenu | Not in original implementation | Added `Image` button with callback |
+
+---
+
+## 2026-02-08 - Phase 5 Complete
+
+### Completion Summary
+
+**Status:** ✅ Approved by Reviewer (after 1 round of fixes)  
+**Build:** 0 errors, 0 warnings  
+**Bundle:** Main chunk 370 KB (113 KB gzip) — down from 1,121 KB
+
+### What Was Built
+
+1. **Export Features**
+   - `ExportDropdown` with HTML export, PDF (print), copy as rich text
+   - `exportHelpers.ts` — `captureThemeVariables()` resolves CSS variables to concrete values for standalone HTML
+   - `print.css` — comprehensive print stylesheet hiding UI, black on white, page break control
+   - Clipboard API integration with HTML + plain text MIME types
+
+2. **Bundle Optimization**
+   - `manualChunks` function in Vite splitting TipTap/ProseMirror into 749 KB vendor chunk
+   - `React.lazy` for SourceEditor, ImageInsertModal, ShortcutsModal, SettingsModal
+   - All lazy components wrapped in conditional guards to prevent premature chunk loading
+   - **Result: 370 KB main chunk (was 1,121 KB) — 67% reduction**
+
+3. **Toast Notifications**
+   - Separate `toastStore.ts` Zustand store with auto-dismiss (4 seconds)
+   - Entry + exit animations (opacity slide, `requestAnimationFrame` based)
+   - 3 types: success, error, info; `role="alert"` for accessibility
+
+4. **UX Polish**
+   - `EmptyState.tsx` — welcome screen on fresh load (Open File + Shortcuts buttons)
+   - `Tooltip.tsx` — applied to all icon buttons in Header (6) and BubbleMenu (13) with shortcut hints
+   - Suspense loading fallbacks for lazy components
+
+5. **Settings Modal**
+   - Theme selector, font size control, auto-save toggle
+   - Font size via CSS variable `--editor-font-size`, persisted
+   - `useAutoSave` respects `autoSaveEnabled` flag
+   - Global Escape key handler via `document.addEventListener`
+
+### Key Decisions Made
+
+---
+
+#### ADR-024: Separate Toast Store
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** Toast notifications need global access from exports, file ops, and future features. Options: extend `editorStore` or create a dedicated store.
+
+**Decision:** Separate `toastStore.ts` with its own Zustand instance.
+
+**Rationale:**
+- Single responsibility — toasts are transient UI, not editor state
+- No need for persistence (toasts are ephemeral)
+- Module-level `nextId` counter keeps it simple
+- Any module can `import { addToast } from '@/stores/toastStore'` without coupling to editor state
+
+**Consequences:**
+- ✅ Clean separation of concerns
+- ✅ Minimal API surface (`addToast`, `removeToast`, `toasts`)
+- ⚠️ Two stores to know about (acceptable given simplicity)
+
+---
+
+#### ADR-025: Browser Print for PDF Export
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** Users need PDF export. Options: (1) `window.print()` with CSS, (2) jsPDF library, (3) html2canvas + jsPDF, (4) Puppeteer/headless browser.
+
+**Decision:** Use `window.print()` with a dedicated `print.css` stylesheet.
+
+**Rationale:**
+- Zero additional bundle cost (CSS only)
+- Browser handles pagination, headers/footers, margins
+- Users choose printer AND "Save as PDF" from the same dialog
+- Print stylesheets are well-understood technology
+- jsPDF would add ~200KB+ for marginal benefit
+
+**print.css approach:**
+- Hide all UI (header, sidebar, toolbar, debug panel, toast)
+- Show only editor content
+- Force black text on white background (ignore theme)
+- `break-inside: avoid` on code blocks, tables, blockquotes
+- Scoped selectors to avoid affecting third-party content
+
+**Consequences:**
+- ✅ Zero bundle cost
+- ✅ Consistent with user expectations (print dialog = PDF)
+- ⚠️ Limited control over PDF appearance (browser-dependent)
+- ⚠️ Not suitable for programmatic PDF generation
+
+---
+
+#### ADR-026: CSS Variable Font Size with Persistence
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** Users want to control editor font size. Need a mechanism that affects both the rendered editor (ProseMirror) and the source editor (textarea overlay) simultaneously.
+
+**Decision:** Use a CSS custom property `--editor-font-size` set via inline style on the root `App` div, consumed by both ProseMirror and SourceEditor CSS. Value persisted via Zustand persist middleware.
+
+**Data Flow:**
+```
+Settings Modal → editorStore.setFontSize(n) → Zustand persist → localStorage
+App.tsx reads fontSize → sets style={{ '--editor-font-size': `${fontSize}px` }}
+ProseMirror CSS: font-size: var(--editor-font-size, 16px)
+SourceEditor CSS: font-size: var(--editor-font-size, 14px)
+```
+
+**Note:** ProseMirror defaults to 16px, SourceEditor to 14px for their respective fallbacks. This is intentional — monospace reads better slightly smaller.
+
+**Consequences:**
+- ✅ Single control point for both editors
+- ✅ CSS cascading handles specificity naturally
+- ✅ Persists across sessions
+- ⚠️ Different defaults between views (documented as intentional)
+
+---
+
+#### ADR-027: Deferred Features — Search, File Browser, Recent Files
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** The Phase 5 spec included in-document search, recent files, and folder navigation. These were evaluated and deferred.
+
+**Deferred Items:**
+
+| Feature | Reason | Target |
+|---------|--------|--------|
+| In-document search | Browser Ctrl+F works; VS Code extension gets it free; TipTap search plugin would be ~300 LOC | v1.1 or VS Code ext |
+| Recent files | Requires IndexedDB for FileSystemFileHandle storage; moderate complexity | v1.1 |
+| File browser sidebar | `SidebarState` already supports `'files'` panel type; needs FS API directory handles | v1.1 |
+| Default view mode setting | Low impact — users can toggle manually | v1.1 |
+| Sidebar default setting | Low impact | v1.1 |
+
+**Consequences:**
+- ✅ Phase 5 ships focused and polished
+- ✅ Deferred items have clear homes in future versions
+- ⚠️ No in-document search for v1.0 (browser Ctrl+F is the mitigation)
+
+---
+
+### Bugs Found & Fixed During Phase 5 Review
+
+| # | Severity | Issue | Root Cause | Fix |
+|---|----------|-------|------------|-----|
+| 1 | 🟡 Medium | ShortcutsModal lazy chunk loaded on startup | Not wrapped in conditional guard | Wrapped in `{shortcutsModalOpen && <Suspense>...}` |
+| 2 | 🟡 Medium | EmptyState created but never shown | Not wired into App.tsx | Shows when `!content && !storedFilePath` |
+| 3 | 🟡 Medium | SettingsModal Escape only works with inner div focus | Used `onKeyDown` on div | Switched to `useEffect` + `document.addEventListener('keydown')` |
+| 4 | 🟡 Medium | Tooltip component unused | Created but not applied | Applied to all Header (6) and BubbleMenu (13) buttons |
+| 5 | 🟢 Minor | Toast entry animation missing | No enter transition | Added `isEntered` state with `requestAnimationFrame` |
+| 6 | 🟢 Minor | PDF export no user feedback | `window.print()` is silent | Added `addToast('Opening print dialog…', 'info')` |
+| 7 | 🟢 Minor | Print CSS `button` selector too broad | Targeted all buttons | Scoped to `body > div > header button` and `aside button` |
+
+---
+
+## 2026-02-08 — Phase 6: Testing, Documentation & v1.0 Release
+
+### Summary
+
+Phase 6 delivered the quality, confidence, and documentation needed for v1.0.0. Vitest was configured with 77 unit tests across 5 test files covering pure utility functions and store logic. An accessibility audit with `eslint-plugin-jsx-a11y` achieved 0 lint errors. Full documentation was created: README rewrite, MIT LICENSE, and CONTRIBUTING.md. `package.json` bumped to 1.0.0. All dev artifacts are behind `import.meta.env.DEV` guards.
+
+Reviewer identified 2 medium issues: (1) round-trip integration tests not created, (2) PROJECT_PLAN.md not updated. Fix #2 resolved immediately. Fix #1 requires Builder to create `src/test/roundtrip.test.ts` with headless TipTap editor in jsdom — see implementation spec below.
+
+#### ADR-028: Test Strategy — Vitest + Headless TipTap
+
+**Date:** 2026-02-08  
+**Status:** Accepted
+
+**Context:** Need automated tests for v1.0 confidence. Two categories: (1) pure utility functions with no DOM dependency, (2) markdown round-trip fidelity requiring a TipTap editor instance.
+
+**Decision:** Use Vitest with jsdom environment. Unit tests for pure functions (frontmatterParser, imageHelpers, cn, editorStore, exportHelpers). Integration tests for round-trip use headless `new Editor()` from `@tiptap/core` with a test-specific extension set that replaces `CodeBlockShiki` (which uses `ReactNodeViewRenderer` — incompatible with jsdom) with plain `CodeBlock`.
+
+**Rationale:**
+- Vitest integrates natively with Vite — zero extra config for path aliases, plugins, etc.
+- jsdom is sufficient for store tests and headless editor (no visual rendering needed)
+- Swapping CodeBlockShiki for CodeBlock in tests preserves markdown serialization behavior while avoiding ReactNodeViewRenderer DOM requirements
+- 77 unit tests cover the highest-risk pure logic; round-trip tests validate the editor's core promise
+
+**Consequences:**
+- ✅ Fast, reliable test suite (~2s total run time)
+- ✅ No browser test infrastructure needed for v1.0
+- ⚠️ CodeBlockShiki rendering is not tested (visual-only, covered by manual testing)
+- ⚠️ No component rendering tests — deferred to v1.1 with more complex test setup
+
+#### ADR-029: MIT License
+
+**Date:** 2026-02-08  
+**Status:** Accepted
+
+**Context:** v1.0 release needs a license. Options: MIT, Apache 2.0, GPL, ISC.
+
+**Decision:** MIT License.
+
+**Rationale:**
+- Aligns with entire dependency ecosystem (TipTap: MIT, React: MIT, Vite: MIT, Zustand: MIT)
+- Maximum permissiveness encourages adoption and contribution
+- Simple, well-understood, no patent clauses to worry about
+- Matches project philosophy: "open source package" for everyone
+
+**Consequences:**
+- ✅ No friction for contributors, forks, or commercial use
+- ⚠️ No copyleft protection — forks can close source (acceptable trade-off for adoption)
+
+---
+
+### Issues Found During Phase 6 Review
+
+| # | Severity | Issue | Root Cause | Fix |
+|---|----------|-------|------------|-----|
+| 1 | 🟡 Medium | Round-trip integration tests not created | Builder didn't implement spec 6B | Create `src/test/roundtrip.test.ts` with headless TipTap |
+| 2 | 🟡 Medium | PROJECT_PLAN.md not updated to v1.0.0 | Missed spec 6E.4 | ✅ Fixed — version, status, phases, milestones all updated |
+| 3 | 🟢 Minor | LICENSE year says "2025" | Spec said "2026" | Cosmetic — actual copyright year is debatable |
+
+---
+
 ## Session Log
 
 | Date | Session | Key Activities | Outcomes |
@@ -965,6 +1319,10 @@ Always call `fixTables()` after delete operations to ensure ProseMirror table mo
 | 2026-01-30 | Phase 2.5 Research | Table enhancement feasibility (alignment, resize, merge) | ADR-020, limitations documented, research complete |
 | 2026-01-30 | Phase 2.5 | Table toolbar with alignment, grid picker, keyboard nav | Column alignment working, grid picker for table creation |
 | 2026-01-30 | Phase 3 | Source view, frontmatter panel, view mode persistence | Three-way view mode, Shiki-highlighted source, YAML frontmatter UI |
+| 2026-02-08 | Phase 4 Review | Image handling, TOC, shortcuts help, 5+ bug fix rounds | ADRs 021-023, Local File tab redesigned, CustomImage extension |
+| 2026-02-08 | VS Code Research | Evaluated CustomTextEditorProvider, webview API, competition | Research doc created, decided Option A (after v1.0) |
+| 2026-02-08 | Phase 5 Review | Export, bundle optimization, UX polish, settings | 7 fixes, main chunk 370 KB (was 1,121 KB), all 10 criteria met |
+| 2026-02-08 | Phase 6 | Tests (77 unit), a11y audit, docs (README/LICENSE/CONTRIBUTING), v1.0.0 | ADRs 028-029, 2 medium issues found, Fix #2 done, Fix #1 pending |
 
 ---
 
@@ -1050,6 +1408,115 @@ Implemented three-way view mode (render/split/source) with Shiki syntax highligh
 
 ---
 
+## 2026-02-08 — v1.0.1 User Testing & Research
+
+### Context
+v1.0.0 shipped with 97 tests passing, 0 lint/build errors. Manual user testing revealed 3 bugs and a UX discoverability gap. Additionally researched video/media support for future versions.
+
+### Bugs Found
+
+| Bug | Severity | Root Cause |
+|-----|----------|------------|
+| Editor can't scroll | **Critical** | CSS height chain broken — `w-full` div in Editor.tsx not a flex column, child `h-full overflow-y-auto` never activates (no constrained height) |
+| PDF/print shows UI chrome | Medium | `print.css` missing selectors for `.frontmatter-panel`, `.table-toolbar`, debug panel |
+| Rich text paste looks awful | Medium | `editor.getHTML()` has no inline styles; `editor.getText()` strips all formatting for plain text fallback |
+
+### UX Issue: Toolbar Discoverability
+"Insert Table" was the only visible toolbar button. BubbleMenu with 13 formatting buttons (Bold, Italic, Headings, Lists, Link, Image, etc.) is invisible until text selection or Ctrl+Space — users who don't know these shortcuts see an editor with no formatting tools.
+
+**Decision:** Create a persistent `EditorToolbar` with the same buttons as BubbleMenu, always visible. Keep BubbleMenu for contextual use on selection. Add "Ctrl+Space for inline menu" hint.
+
+### ADR-030: Video/Media Support (Deferred)
+**Status:** Proposed (deferred to v1.1+)  
+**Date:** 2026-02-08
+
+**Context:** User asked about GIF/mp4/webm/YouTube support.
+
+**Research Findings:**
+- **GIFs already work** — they're images, rendered via `<img>` tag
+- `@tiptap/extension-youtube` — official extension, paste-to-embed, iframe-based
+- Custom Video node feasible following CustomImage pattern (render `<video controls>`)
+- TipTap v3.10.0+ has `ResizableNodeView` for resize handles on media nodes
+
+**Markdown serialization challenge:** Standard markdown has no video syntax.
+- **Option A (recommended):** Image syntax with extension detection — `![video](clip.mp4)`. Editor detects `.mp4`/`.webm` extensions and renders `<video>` instead of `<img>`. Other renderers show broken image or link. Most portable.
+- **Option B:** HTML tags `<video src="clip.mp4">` — blocked by our `html: false` markdown config
+- **Option C:** Custom directives `:::video{src="clip.mp4"}:::` — TipTap v3 approach, non-standard markdown
+
+**Decision:** Defer to v1.1+. Option A (image syntax for local files) + `@tiptap/extension-youtube` for embeds. Estimated effort: M-L.
+
+### Artifacts Created
+- `docs/specs/v1.0.1-user-testing-bugs.md` — Detailed bug analysis with root causes and fix code
+- `.github/agents/HANDOFF_BUILDER_v1.0.1.md` — Complete builder handoff spec
+- `tests/fixtures/stress-test.md` — Adversarial 16-section stress test file
+
+### Lessons Learned
+- **Flex layout debugging:** When `overflow-y-auto` doesn't scroll, trace the height chain upward — every ancestor needs a constrained height (`h-screen`, `flex-1`, or explicit height). A single `w-full` without `overflow-hidden` breaks the chain.
+- **Rich text clipboard:** `editor.getHTML()` outputs semantic HTML with no styles — paste targets (Word, Gmail, Docs) need inline CSS. Always provide both `text/html` and `text/plain` MIME types via `ClipboardItem`.
+- **Print CSS auditing:** After adding any new UI component, check `@media print` rules. Easy to forget.
+- **Toolbar discoverability:** If a feature requires keyboard shortcuts or hidden gestures, add a static entry point. "Hidden power tools" are invisible to new users.
+
+### 2026-02-08 - Phase 4 Image & Navigation Implementation
+
+**What happened:**
+Phase 4 required 5+ rounds of reviewer bug fixes before approval. Two critical bugs stood out: (1) TOC click froze the editor due to stale ProseMirror positions, and (2) Local File tab was completely broken on Brave because the File System Access API is blocked. The Local File tab was redesigned mid-review to remove the FS API dependency entirely.
+
+**What we learned:**
+- **Never use `setTextSelection` with positions from a cached list** — ProseMirror positions become stale after any document change. Use DOM-based scrolling (`scrollIntoView`) instead.
+- **Don't assume Chrome-like browser APIs are available** — Brave is Chromium-based but blocks FS API. Always feature-detect AND have a non-API fallback that's equally functional.
+- **Dual-attribute TipTap extensions are powerful** — CustomImage stores data URL in `src` for display and relative path in `localPath` for serialization. This pattern applies to any case where editor display differs from output format.
+- **Browser keyboard shortcuts are a minefield** — Ctrl+? (Ctrl+Shift+/) is intercepted by browsers. Always test shortcut combinations in multiple browsers before committing.
+- **Simpler solutions often emerge during review** — The editable path field is simpler, more portable, and more maintainable than the original FS API-based assets folder approach.
+
+**What we'll do differently:**
+- Test on Brave (and other privacy-focused browsers) during development, not just review
+- Prefer DOM APIs over ProseMirror position-based operations for navigation
+- Test keyboard shortcuts in Chrome, Firefox, Edge, AND Brave
+- Consider "what if the browser API doesn't exist?" for every new browser API dependency
+
+---
+
+### 2026-02-08 - Phase 5 Bundle Optimization & Polish
+
+**What happened:**
+Phase 5 focused on bundle optimization, exports, and UX polish. The main chunk dropped from 1,121 KB to 370 KB (67% reduction) through vendor splitting and `React.lazy`. However, the reviewer found that 4 of the 7 new features were created but not properly wired up: ShortcutsModal was lazy-loaded but its chunk was fetched on startup (missing conditional guard), EmptyState was created but never rendered, Tooltip component existed but was applied to zero buttons, and SettingsModal's Escape key only worked when a specific div had focus.
+
+**What we learned:**
+- **`React.lazy` needs conditional guards, not just `<Suspense>`** — wrapping a lazy component in `<Suspense>` alone still triggers the chunk load when React encounters the component in the tree. Must also wrap in `{condition && <Suspense><LazyComponent/></Suspense>}` to defer chunk loading until actually needed.
+- **"Create component" ≠ "integrate component"** — a component file can exist, pass lint, pass build, and still not appear anywhere in the rendered app. Always verify integration, not just creation.
+- **Global keyboard listeners beat `onKeyDown` for modals** — `onKeyDown` on a div requires the div to have focus, which is fragile. `useEffect` + `document.addEventListener('keydown')` catches Escape regardless of focus state.
+- **Print CSS selectors need tight scoping** — a bare `button { display: none }` in `@media print` hides every button on any page. Scope to the app's DOM structure: `body > div > header button`.
+- **Animations need two frames** — CSS transitions from `opacity: 0` to `opacity: 1` don't animate if the element starts at `opacity: 0` in the same render frame. Use `requestAnimationFrame` to set the "entered" state after mount, giving the browser a paint frame at the initial state first.
+- **`manualChunks` as a function catches transitive deps** — the object-style config (`{ 'vendor-react': ['react'] }`) only matches direct imports. A function that checks `id.includes('node_modules/@tiptap')` captures ProseMirror internals like `orderedmap`, `rope-sequence`, `crelt` that the object style misses.
+
+**What we'll do differently:**
+- Always verify lazy-loaded components are NOT fetched on pageload (check Network tab)
+- Add integration verification to review checklist: "Is the component actually rendered?"
+- Use `document.addEventListener` pattern for all modal Escape handlers
+- Test `@media print` in browser print preview during development
+- For entry animations, always use the `requestAnimationFrame` mounted-state pattern
+
+---
+
+### 2026-02-08 - Phase 6 Testing & Release Preparation
+
+**What happened:**
+Phase 6 delivered 77 unit tests across 5 files, an a11y audit with eslint-plugin-jsx-a11y (0 errors), complete documentation (README rewrite, MIT LICENSE, CONTRIBUTING.md), and a clean v1.0.0 version bump. However, the round-trip integration tests (spec 6B) were not implemented by Builder despite being listed as Priority 4 / High Impact. The existing `roundtrip.ts` utility provides the core logic (`testRoundTrip` function), but creating a headless TipTap editor in jsdom requires swapping `CodeBlockShiki` for plain `CodeBlock` because `ReactNodeViewRenderer` doesn't work without a real DOM.
+
+**What we learned:**
+- **Separation of "unit" and "integration" is critical in specs** — Builder implemented all 5 unit test files (pure functions, no DOM) but skipped the integration test that requires creating editor instances. The effort boundary wasn't explicit enough.
+- **ReactNodeViewRenderer blocks headless testing** — Any TipTap extension that uses `ReactNodeViewRenderer` (like CodeBlockShiki) requires a full React DOM. Headless `new Editor()` with jsdom can handle plain ProseMirror extensions only. Solution: create a test-specific extension set.
+- **Documentation updates are easily forgotten** — PROJECT_PLAN.md was listed in the spec but wasn't updated. Needs to be a checklist item, not buried in a sub-phase.
+- **77 unit tests provide high confidence for pure logic** — frontmatterParser edge cases (CRLF, unicode, special chars), imageHelpers sanitization, and store action tests caught the kinds of bugs that would otherwise surface during manual testing.
+
+**What we'll do differently:**
+- Explicitly separate "no-DOM" tests from "needs-editor" tests in future specs
+- Provide a ready-to-use `createTestEditor()` factory in specs that require headless TipTap
+- Add "update PROJECT_PLAN.md" as a mandatory final checklist item
+- For any TipTap extension using ReactNodeViewRenderer, document the test workaround upfront
+
+---
+
 ### Template for Future Entries
 
 ```markdown
@@ -1119,3 +1586,168 @@ Implemented three-way view mode (render/split/source) with Shiki syntax highligh
 | 0.6.0 | 2026-01-30 | Phase 2 research complete, ADRs 016-018, technical brief || 0.7.0 | 2026-01-30 | Phase 2 complete, ADR-019 (GFM guards), tables + file ops |
 | 0.8.0 | 2026-01-30 | Phase 2.5 complete, table toolbar with alignment + grid picker |
 | 0.9.0 | 2026-01-30 | Phase 3 complete, source view + frontmatter panel + view mode persistence |
+| 1.0.0 | 2026-02-08 | Phase 4 complete, ADRs 021-023, image handling + TOC + shortcuts modal |
+| — | 2026-02-08 | VS Code extension research complete, ADR-023 (Option A: after v1.0) |
+| 1.1.0 | 2026-02-08 | Phase 5 complete, ADRs 024-027, exports + bundle optimization + UX polish |
+| 1.2.0 | 2026-02-08 | Phase 6 complete, ADRs 028-029, 77 tests + a11y + docs + v1.0.0 release |
+| 1.3.0 | 2026-02-08 | v1.0.1 user testing: 3 bugs found + toolbar UX gap + media research |
+| 1.4.0 | 2026-02-08 | Draft persistence: ADR-030, Zustand getter hydration bug found & fixed |
+
+---
+
+## 2026-02-08 - Draft Persistence & The Zustand Getter Hydration Bug
+
+### Context
+Implementing draft persistence so that unsaved editor content, frontmatter, and file name survive page refresh (F5). Used Zustand's `persist` middleware with `partialize`/`merge` to selectively persist document state alongside existing view preferences in `rendmd-preferences` localStorage key.
+
+### What Was Built
+- Expanded `PersistedState` in `editorStore.ts` to include `content`, `frontmatter`, `fileName`, `isDirty` (was only `viewMode`, `theme`, `fontSize`, `autoSaveEnabled`)
+- Added `visibilitychange` handler in `App.tsx` to flush draft to localStorage when tab goes hidden (protects against tab discard)
+- Custom `merge` function with `??` fallbacks for safe partial hydration
+- 4 new persistence tests (total now 101)
+
+### The Bug: Zustand Getter + Hydration Merge Crash
+
+**Severity:** Critical — silently broke ALL persistence (content AND preferences)  
+**Time to diagnose:** ~4 hours across multiple sessions  
+**Root cause:** A JavaScript getter on the Zustand store's initial state object
+
+#### The Problem
+
+The store had a legacy compatibility property using a getter:
+
+```typescript
+// BROKEN — this crashes during Zustand hydration
+get showSource() {
+  return get().viewMode === 'source';
+}
+```
+
+During Zustand's persist middleware hydration, the `merge` function does:
+
+```typescript
+merge: (persistedState, currentState) => ({
+  ...currentState,     // ← This spread TRIGGERS the getter
+  ...persistedState,
+})
+```
+
+When JavaScript spreads `currentState`, it evaluates ALL getters. The `showSource` getter calls `get()`, but during hydration merge, the store's `get()` function returns `undefined` because the store hasn't been fully initialized yet. This throws:
+
+```
+TypeError: Cannot read properties of undefined (reading 'viewMode')
+```
+
+Zustand catches this error internally and **silently falls back to an empty state**, making it appear as though localStorage was never read. No console error appears unless you add `onRehydrateStorage` error logging.
+
+#### Why It Was Hard to Find
+
+1. **No visible error** — Zustand catches the merge exception and logs nothing by default
+2. **Worked before persistence expansion** — The old `partialize` only saved 4 preference fields, and the default `merge` (shallow spread) happened to avoid triggering the getter in certain code paths
+3. **Red herrings** — We investigated:
+   - Custom `createJSONStorage` wrappers (removed, didn't help)
+   - Hydration timing / async gates (`useState`, `useSyncExternalStore`, `onFinishHydration` — all failed)
+   - Editor `onCreate` overwriting restored content with `INITIAL_CONTENT`
+4. **The getter looked innocent** — `get showSource()` is standard JavaScript, and it worked fine during normal runtime. The failure only occurs during the narrow window of hydration merge
+
+#### The Fix
+
+Replace the getter with a plain property:
+
+```typescript
+// FIXED — plain value, no getter
+showSource: false,
+```
+
+This is safe because:
+- `showSource` was unused by any component (dead legacy code)
+- `toggleSource` already delegates to `cycleViewMode()`
+- If a computed `showSource` is ever needed, use a Zustand selector: `useEditorStore(s => s.viewMode === 'source')`
+
+#### Diagnostic Approach That Cracked It
+
+The breakthrough was adding layered diagnostic logging:
+
+1. **Pre-Zustand raw check** — `localStorage.getItem()` at module scope BEFORE Zustand initializes → Confirmed data WAS in localStorage
+2. **`onRehydrateStorage` error callback** — Caught the `TypeError: Cannot read properties of undefined (reading 'viewMode')` that Zustand normally swallows
+3. **`merge` function logging** — Confirmed merge was called with correct data but crashed during `{ ...currentState }` spread
+
+The stack trace pointed directly at the `get showSource()` getter line, making the fix obvious once visible.
+
+---
+
+### ADR-030: No JavaScript Getters in Zustand Store Initial State
+**Status:** Accepted  
+**Date:** 2026-02-08
+
+**Context:** A legacy `get showSource()` getter in the Zustand store's initial state object caused a silent crash during persist middleware hydration. The getter called `get()` (the Zustand store accessor), which returns `undefined` during the hydration merge phase. This silently broke all persistence.
+
+**Decision:** Never use JavaScript getters (`get prop()`) in Zustand store initial state objects. Use plain properties or external selectors instead.
+
+**Rationale:**
+- Object spread (`{ ...obj }`) evaluates getters, and Zustand's persist middleware spreads `currentState` during merge
+- During hydration, the store's `get()` function is not yet initialized
+- The failure is silent — Zustand catches the error internally and falls back to empty state
+- This cost ~4 hours of debugging across multiple sessions
+
+**Alternatives Considered:**
+- Wrapping getter in try/catch — fragile, masks deeper issues
+- Using `Object.defineProperty` — same spread problem
+- Making `merge` avoid spreading `currentState` — breaks Zustand's contract
+
+**Rules:**
+```typescript
+// ❌ NEVER — getters calling get() crash during hydration merge
+get derivedProp() { return get().someField === 'value'; }
+
+// ✅ OK — plain property  
+derivedProp: false,
+
+// ✅ OK — external selector (computed outside store)
+const useDerivedProp = () => useEditorStore(s => s.someField === 'value');
+```
+
+**Consequences:**
+- ✅ Persistence works reliably
+- ✅ No silent hydration failures
+- ⚠️ Computed properties must use selectors instead of getters (minor ergonomic cost)
+
+---
+
+## 2026-02-08 - Mobile Responsiveness Audit
+
+### Context
+After deploying to Cloudflare Pages (`rendmd.pages.dev`), testing on a phone revealed the app is **barely functional on mobile**. A comprehensive audit of all 18+ component files identified **20 issues** across 3 severity levels.
+
+### Key Findings
+- **Zero responsive `@media` queries** (only `@media print`)
+- **Only 8 uses of `sm:` breakpoint** — no `md:`, `lg:`, `xl:` anywhere
+- **No touch-specific handlers** in the entire codebase
+- **No safe-area-inset, no PWA, no `viewport-fit=cover`**
+
+### Critical Issues (P0)
+1. **Sidebar** — Fixed `w-56` (224px) leaves 151px for editor on 375px screen
+2. **BubbleMenu** — ~550px minimum width overflows entire viewport
+3. **Header** — 14+ interactive elements crammed into 375px
+4. **Split view** — Hard-coded `w-1/2` = 187px per pane on phone
+
+### Architecture Decision
+
+#### ADR-031: Mobile-First Responsive Strategy
+**Status:** Proposed  
+**Date:** 2026-02-08
+
+**Context:** RendMD was built desktop-first with no mobile considerations. Now deployed publicly, mobile access is essential.
+
+**Decision:** Implement responsive design using `md:` (768px) as the primary mobile/desktop breakpoint. Key patterns:
+- Sidebar becomes an overlay drawer on mobile (fixed + z-index + backdrop)
+- Header collapses secondary actions into an overflow menu (⋮)
+- Split view disabled below 768px
+- BubbleMenu disabled on touch devices (persistent toolbar covers all formatting)
+- Tooltips disabled on touch (no hover exists)
+- Use `h-dvh` instead of `h-screen` for iOS Safari
+- `@media (pointer: coarse)` for touch-specific adjustments (44px tap targets)
+
+**Rationale:** 768px is the standard tablet/desktop threshold. Touch detection via `ontouchstart` + `maxTouchPoints` is reliable. Overlay sidebar is the proven mobile pattern (Google Docs, Notion, etc.).
+
+**Full Spec:** `docs/specs/mobile-optimization.md`

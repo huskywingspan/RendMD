@@ -41,7 +41,12 @@ body {
   color: var(--theme-text-primary);
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   transition: background-color var(--transition-normal), color var(--transition-normal);
+  /* Safe area padding for notch phones */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Scrollbar styling */
@@ -66,6 +71,7 @@ body {
 /* TipTap Editor Styles */
 .ProseMirror {
   outline: none;
+  font-size: var(--editor-font-size, 16px);
 }
 
 .ProseMirror p {
@@ -73,7 +79,7 @@ body {
 }
 
 .ProseMirror h1 {
-  font-size: 2.25rem;
+  font-size: clamp(1.5rem, 4vw + 0.5rem, 2.25rem);
   font-weight: 700;
   line-height: var(--line-height-heading);
   margin: 1.5rem 0 1rem;
@@ -81,7 +87,7 @@ body {
 }
 
 .ProseMirror h2 {
-  font-size: 1.75rem;
+  font-size: clamp(1.25rem, 3vw + 0.4rem, 1.75rem);
   font-weight: 600;
   line-height: var(--line-height-heading);
   margin: 1.5rem 0 0.75rem;
@@ -89,7 +95,7 @@ body {
 }
 
 .ProseMirror h3 {
-  font-size: 1.375rem;
+  font-size: clamp(1.125rem, 2vw + 0.3rem, 1.375rem);
   font-weight: 600;
   line-height: var(--line-height-heading);
   margin: 1.25rem 0 0.5rem;
@@ -184,7 +190,7 @@ body {
 .source-editor .source-highlight pre code,
 .source-editor .source-highlight code {
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace !important;
-  font-size: 14px !important;
+  font-size: var(--editor-font-size, 14px) !important;
   line-height: 1.6 !important;
   tab-size: 2 !important;
   margin: 0 !important;
@@ -197,4 +203,15 @@ body {
 .source-editor .source-highlight pre {
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Touch device optimizations */
+@media (pointer: coarse) {
+  /* Ensure minimum tap target sizes */
+  .toolbar-btn,
+  .editor-toolbar button,
+  header button {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }

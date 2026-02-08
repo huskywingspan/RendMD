@@ -12,7 +12,7 @@ interface SourceEditorProps {
 // Shared text styling for perfect alignment between textarea and Shiki output
 const TEXT_STYLES = {
   fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace",
-  fontSize: '14px',
+  fontSize: 'var(--editor-font-size, 14px)',
   lineHeight: '1.6',
   tabSize: 2,
 } as const;
@@ -134,3 +134,5 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+export default SourceEditor;

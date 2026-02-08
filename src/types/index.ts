@@ -35,6 +35,21 @@ export interface ParsedDocument {
   raw: string;
 }
 
+// Table of Contents types
+export interface TOCItem {
+  id: string;
+  text: string;
+  level: number;
+  pos: number;
+}
+
+// Keyboard shortcut types
+export interface ShortcutEntry {
+  action: string;
+  keys: string;
+  category: 'editing' | 'formatting' | 'navigation' | 'file' | 'view';
+}
+
 // UI types
 export interface SidebarState {
   isOpen: boolean;

@@ -55,7 +55,7 @@ export function FileIndicator({ isSaving, lastSaved }: FileIndicatorProps): JSX.
       <FileText size={16} className="text-[var(--theme-text-muted)]" />
       
       {/* File name */}
-      <span className="text-[var(--theme-text-primary)] font-medium max-w-48 truncate">
+      <span className="text-[var(--theme-text-primary)] font-medium max-w-24 sm:max-w-48 truncate">
         {fileName || 'Untitled'}
       </span>
       

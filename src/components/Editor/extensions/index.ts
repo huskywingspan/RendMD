@@ -60,17 +60,49 @@ const CustomTableHeader = TableHeader.extend({
 });
 
 /**
- * Editor extensions for Phase 1 - Core Editing
- * 
- * Includes:
- * - StarterKit (headings, bold, italic, lists, code, blockquotes, etc.)
- * - TaskList/TaskItem for checkbox lists
- * - Link with custom click handling
- * - Image with click-to-edit
- * - Table support (GFM tables)
- * - Markdown serialization
- * - CodeBlockShiki for Shiki-powered syntax highlighting
+ * Extended Image with localPath attribute support.
+ * When localPath is set, the markdown serializer outputs it instead of the src (data URL).
+ * This allows local file references to display with data URLs in the editor
+ * while serializing as relative paths in the markdown.
  */
+const CustomImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      localPath: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-local-path') || null,
+        renderHTML: (attributes: Record<string, unknown>) => {
+          if (!attributes.localPath) {
+            return {};
+          }
+          return { 'data-local-path': attributes.localPath as string };
+        },
+      },
+    };
+  },
+  addStorage() {
+    return {
+      markdown: {
+        serialize(
+          state: { write: (s: string) => void; esc: (s: string) => string },
+          node: { attrs: { src?: string; alt?: string; title?: string; localPath?: string } }
+        ) {
+          // Use localPath for markdown output when available, otherwise use src
+          const src = node.attrs.localPath || node.attrs.src || '';
+          const alt = state.esc(node.attrs.alt || '');
+          const title = node.attrs.title;
+          state.write(
+            `![${alt}](${src.replace(/[()]/g, '\\$&')}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`
+          );
+        },
+        parse: {
+          // handled by markdown-it
+        },
+      },
+    };
+  },
+});
 
 /**
  * Create editor extensions with theme awareness
@@ -104,7 +136,7 @@ export function createEditorExtensions(isDark: boolean = true) {
         class: 'editor-link',
       },
     }),
-    Image.configure({
+    CustomImage.configure({
       HTMLAttributes: {
         class: 'editor-image',
       },

@@ -101,11 +101,14 @@ export function ImagePopover({ editor, isOpen, onClose, nodePos }: ImagePopoverP
   if (!isOpen || !editor) return null;
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       ref={refs.setFloating}
       style={floatingStyles}
       className="z-50 p-4 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)] rounded-lg shadow-xl min-w-[320px]"
       onKeyDown={handleKeyDown}
+      role="dialog"
+      aria-label="Edit image"
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-sm font-medium text-[var(--theme-text-primary)]">
@@ -122,10 +125,11 @@ export function ImagePopover({ editor, isOpen, onClose, nodePos }: ImagePopoverP
       
       <div className="space-y-3">
         <div>
-          <label className="block text-xs text-[var(--theme-text-secondary)] mb-1">
+          <label htmlFor="image-popover-src" className="block text-xs text-[var(--theme-text-secondary)] mb-1">
             Image URL
           </label>
           <input
+            id="image-popover-src"
             ref={srcInputRef}
             type="url"
             value={src}
@@ -136,10 +140,11 @@ export function ImagePopover({ editor, isOpen, onClose, nodePos }: ImagePopoverP
         </div>
         
         <div>
-          <label className="block text-xs text-[var(--theme-text-secondary)] mb-1">
+          <label htmlFor="image-popover-alt" className="block text-xs text-[var(--theme-text-secondary)] mb-1">
             Alt Text
           </label>
           <input
+            id="image-popover-alt"
             type="text"
             value={alt}
             onChange={(e) => setAlt(e.target.value)}

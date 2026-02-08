@@ -1,8 +1,8 @@
 # RendMD - Project Plan
 
-> **Version:** 0.5.0  
-> **Last Updated:** 2026-01-31  
-> **Status:** Phase 2 Complete, Preparing Phase 2.5
+> **Version:** 1.0.0  
+> **Last Updated:** 2026-02-08  
+> **Status:** Phase 6 Complete — v1.0.0 Released
 
 ---
 
@@ -185,8 +185,8 @@
 - [x] Add/remove column buttons
 - [x] GFM compliance guards (protect header, prevent nesting)
 - [x] Contextual TableToolbar with smart button states
-- [ ] Column alignment controls *(deferred to Phase 2.5)*
-- [ ] Tab navigation between cells *(deferred to Phase 2.5)*
+- [x] Column alignment controls *(completed in Phase 2.5)*
+- [x] Tab navigation between cells *(completed in Phase 2.5)*
 
 #### File Operations
 - [x] File System Access API integration (useFileSystem hook)
@@ -208,153 +208,211 @@
 
 ---
 
-### Phase 2.5: Table Enhancements (Post-Phase 2 Sprint)
+### Phase 2.5: Table Enhancements (Post-Phase 2 Sprint) ✅ COMPLETE
 **Goal:** Advanced table UX and remaining table features
 
 #### Grid Selection for Table Insertion
-- [ ] Grid picker component (like Google Docs/Word)
-- [ ] Hover to preview table size (e.g., "3×4 table")
-- [ ] Click to insert with selected dimensions
-- [ ] Replace current table insert button/command
+- [x] Grid picker component (like Google Docs/Word)
+- [x] Hover to preview table size (e.g., "3×4 table")
+- [x] Click to insert with selected dimensions
+- [x] Replace current table insert button/command
 
 #### Table Navigation & Alignment
-- [ ] Tab navigation between cells (Tab = next, Shift+Tab = prev)
-- [ ] Enter creates new row at end of table
-- [ ] Column alignment controls (left/center/right)
-- [ ] Visual alignment indicators in header
+- [x] Tab navigation between cells (Tab = next, Shift+Tab = prev)
+- [x] Enter creates new row at end of table
+- [x] Column alignment controls (left/center/right)
+- [x] Visual alignment indicators in header
 
-**Deliverable:** Premium table insertion and navigation experience
+**Deliverable:** Premium table insertion and navigation experience ✅
+
+**Phase 2.5 Completion Notes:**
+- Completed: 2026-01-30
+- TableGridPicker component for visual table size selection
+- Tab/Shift+Tab cell navigation
+- Column alignment toolbar (visual-only per ADR-020, GFM limitation)
+- Alignment markers (`:---:`) not persisted to markdown (documented)
 
 ---
 
-### Phase 3: Source View & Frontmatter (Week 5)
+### Phase 3: Source View & Frontmatter (Week 5) ✅ COMPLETE
 **Goal:** Source toggle, frontmatter support, remaining themes
 
 #### Source View
-- [ ] Toggle button in header
-- [ ] Source panel component (side panel)
-- [ ] **Editable source view** (not read-only)
-- [ ] Bidirectional sync (edit either view)
-- [ ] Syntax highlighting for markdown source
-- [ ] Same keyboard shortcuts work in both views
-- [ ] Sync scroll between rendered/source
-- [ ] Keyboard shortcut (Ctrl+/)
-- [ ] Persist preference
+- [x] Toggle button in header (three-way: render / split / source)
+- [x] Source panel component (side panel)
+- [x] **Editable source view** (not read-only)
+- [x] Bidirectional sync (edit either view)
+- [x] Syntax highlighting for markdown source (Shiki)
+- [x] Same keyboard shortcuts work in both views
+- [ ] Sync scroll between rendered/source *(deferred)*
+- [x] Keyboard shortcut (Ctrl+/)
+- [x] Persist preference
 
 #### Frontmatter
-- [ ] YAML parsing with `yaml` library
-- [ ] Frontmatter panel UI (collapsible)
-- [ ] Form fields for common properties (title, author, date, tags)
-- [ ] Custom field editor (key-value pairs)
-- [ ] Sync changes back to markdown
-- [ ] Theme override from frontmatter
+- [x] YAML parsing with `yaml` library
+- [x] Frontmatter panel UI (collapsible, above editor)
+- [x] Form fields for common properties (title, author, date, tags)
+- [x] Custom field editor (key-value pairs)
+- [x] Sync changes back to markdown
+- [ ] Theme override from frontmatter *(deferred)*
 
 #### Theming Completion
-- [ ] Light basic theme
-- [ ] Dark glassmorphism theme
-- [ ] Light glassmorphism theme
-- [ ] Theme switcher UI in header
-- [ ] Theme persistence (localStorage)
+- [x] Light basic theme *(completed in Phase 1.5)*
+- [x] Dark glassmorphism theme *(completed in Phase 1.5)*
+- [x] Light glassmorphism theme *(completed in Phase 1.5)*
+- [x] Theme switcher UI in header *(completed in Phase 1.5)*
+- [x] Theme persistence (localStorage) *(completed in Phase 1.5)*
 
-**Deliverable:** Source view works, frontmatter editable, all themes complete
+**Deliverable:** Source view works, frontmatter editable, all themes complete ✅
+
+**Phase 3 Completion Notes:**
+- Completed: 2026-01-30 (commit 94bfe11)
+- Three-way view mode toggle (render / split / source)
+- Shiki-highlighted source editor with overlay textarea
+- YAML frontmatter panel with collapsible UI above editor
+- Form fields for title, author, date, tags + custom key-value pairs
+- View mode persisted to localStorage via Zustand persist
+- 5 bugs found and fixed during manual testing (CSS overlay, initial sync, tag parsing, custom field persistence, Zustand hydration)
 
 ---
 
-### Phase 4: Images & Navigation (Week 6)
+### Phase 4: Images & Navigation (Week 6) ✅ COMPLETE
 **Goal:** Image handling, table of contents, keyboard shortcuts
 
 #### Image Handling
-- [ ] Image popover (alt text, URL editing)
-- [ ] Drag-drop image upload
-- [ ] Paste image from clipboard
-- [ ] "Store locally or URL" choice dialog
-- [ ] Create `assets/` folder when needed
-- [ ] Copy image to assets with unique name
-- [ ] Relative path generation
+- [x] Image popover (alt text, URL editing) *(Phase 1)*
+- [x] Drag-drop image onto editor → opens ImageInsertModal
+- [x] Paste image from clipboard → same flow
+- [x] ImageInsertModal with 3 tabs: URL / Local File / Embed (Base64)
+- [x] CustomImage extension with `localPath` attribute for markdown serialization
+- [x] Base64 embed with lazy conversion and >5MB file size warning
+- [x] Local File tab with editable path field (no FS API dependency)
+- [x] Image button in BubbleMenu + Ctrl+Shift+I shortcut
+- [x] Ctrl+Space to force BubbleMenu at cursor without selection
+- [ ] ~~Assets folder auto-creation~~ *(descoped — replaced by simpler path-field approach)*
 
 #### Table of Contents
-- [ ] Auto-generate from headings
-- [ ] Sidebar panel with toggle
-- [ ] Click to scroll to section
-- [ ] Highlight current section on scroll
-- [ ] Nesting depth visualization
+- [x] `useTOC` hook: extract headings from ProseMirror document
+- [x] TOCPanel sidebar component with hierarchical indent
+- [x] Click to scroll to section (requestAnimationFrame + scrollIntoView)
+- [x] Active heading highlight on scroll + manual set on click
+- [x] Nesting depth visualization via indentation
 
 #### Keyboard Shortcuts
-- [ ] Full shortcut implementation (see Design Doc)
-- [ ] Shortcut help modal (Ctrl+?)
-- [ ] Undo/redo with proper history
+- [x] ShortcutsModal: grouped by category, searchable
+- [x] Ctrl+H shortcut trigger *(changed from Ctrl+? due to browser conflict)*
+- [x] Header keyboard button to open shortcuts modal
+- [x] Undo/redo via TipTap history extension *(existing from Phase 0)*
 
-**Deliverable:** Full image workflow, navigable documents
+**Deliverable:** Full image workflow, navigable documents ✅
+
+**Phase 4 Completion Notes:**
+- Completed: 2026-02-08
+- 5+ rounds of reviewer bug fixes
+- Local File tab redesigned mid-review: FS API dependency removed for browser portability
+- CustomImage extension stores data URL in `src` (display) + relative path in `localPath` (markdown output)
+- TOC freeze bug fixed: removed `setTextSelection`, uses DOM `scrollIntoView` instead
+- Ctrl+? changed to Ctrl+H due to browser shortcut conflict
+- Build: 0 errors, 0 warnings
 
 ---
 
-### Phase 5: Polish & Advanced (Week 7)
+### Phase 5: Polish & Advanced (Week 7) ✅ COMPLETE
 **Goal:** Export, search, UX polish, performance optimization
 
 #### Export Features
-- [ ] Export to PDF (browser print with print stylesheet)
-- [ ] Export to standalone HTML
-- [ ] Copy as rich text (for pasting into other apps)
+- [x] Export to PDF (browser `window.print()` with print stylesheet)
+- [x] Export to standalone HTML (embedded theme CSS, computed variable values)
+- [x] Copy as rich text (HTML + plain text MIME types via Clipboard API)
+- [x] ExportDropdown component with keyboard/a11y support
 
 #### Search
-- [ ] Find in document (Ctrl+F)
-- [ ] Highlight matches
-- [ ] Navigate between matches
+- [ ] ~~Find in document~~ *(deferred — browser Ctrl+F works; VS Code extension gets it free)*
+- [ ] ~~Highlight matches~~ *(deferred)*
+- [ ] ~~Navigate between matches~~ *(deferred)*
 
 #### UX Polish
-- [ ] Loading states
-- [ ] Error handling and user feedback
-- [ ] Empty state design (no file open)
-- [ ] Welcome/onboarding for first use
-- [ ] Tooltips on all buttons
+- [x] Loading states (Suspense fallbacks for lazy-loaded components)
+- [x] Error handling and user feedback (toast notification system)
+- [x] Empty state design (welcome screen with Open File + Shortcuts buttons)
+- [x] Tooltips on all icon-only buttons (Header + BubbleMenu, with shortcut hints)
+
+#### Settings
+- [x] SettingsModal: theme, font size, auto-save toggle (lazy-loaded)
+- [x] Font size persisted via CSS variable `--editor-font-size`
+- [x] Auto-save toggle persisted, `useAutoSave` respects flag
+- [ ] ~~Default view mode setting~~ *(deferred — low priority)*
+- [ ] ~~Sidebar default setting~~ *(deferred — low priority)*
 
 #### File Browser
-- [ ] Recent files list
-- [ ] Folder navigation sidebar (optional)
+- [ ] ~~Recent files list~~ *(deferred to v1.1 — requires IndexedDB handle storage)*
+- [ ] ~~Folder navigation sidebar~~ *(deferred to v1.1)*
 
 #### Bundle Size Optimization
-- [ ] Analyze bundle with `vite-bundle-visualizer`
-- [ ] Identify largest dependencies
-- [ ] Implement code-splitting for:
-  - [ ] Source view panel (lazy load)
-  - [ ] Shiki highlighter (lazy load on first code block)
-  - [ ] Export functionality (lazy load)
-- [ ] Target: <500KB initial bundle (currently 732KB)
-- [ ] Document optimization decisions
+- [x] `manualChunks` function for TipTap/ProseMirror vendor splitting
+- [x] `React.lazy` for SourceEditor, ImageInsertModal, ShortcutsModal, SettingsModal
+- [x] Suspense fallbacks for all lazy-loaded components
+- [x] **Main chunk: 370 KB (113 KB gzip)** — down from 1,121 KB, well under 500 KB target
 
-**Deliverable:** Feature-complete, optimized application
+**Deliverable:** Feature-complete, optimized application ✅
+
+**Phase 5 Completion Notes:**
+- Completed: 2026-02-08
+- 1 round of reviewer fixes (7 issues: lazy load guards, empty state wiring, tooltips applied, toast animation, print CSS scoping)
+- Bundle: 370 KB main (113 KB gzip), 749 KB vendor-tiptap, 4 lazy chunks
+- Toast system: separate Zustand store, auto-dismiss, entry/exit animations
+- Theme variables captured via `getComputedStyle` for standalone HTML export
+- Build: 0 errors, 0 warnings
 
 ---
 
-### Phase 6: Testing & Release (Week 8)
+### Phase 6: Testing & Release (Week 8) ✅ COMPLETE
 **Goal:** Bug fixes, performance, documentation, v1.0 release
 
 #### Testing
-- [ ] Performance profiling (large documents)
-- [ ] Edge case handling (malformed markdown)
-- [ ] Complex table round-trip testing
-- [ ] Frontmatter edge cases
-- [ ] Cross-browser testing (Chrome, Firefox, Edge)
+- [x] Vitest installed + configured (jsdom, globals, setup file)
+- [x] 77 unit tests across 5 files, all passing
+- [x] `frontmatterParser.test.ts` — 30 tests (parse, serialize, update, tags, edge cases)
+- [x] `imageHelpers.test.ts` — 19 tests (sanitize, generate, isImage, formatSize)
+- [x] `cn.test.ts` — 9 tests (merge, conditional, Tailwind conflicts)
+- [x] `editorStore.test.ts` — 17 tests (all actions, view cycling, sidebar, settings)
+- [x] `exportHelpers.test.ts` — 2 tests (HTML escape, print call)
+- [x] `roundtrip.test.ts` — markdown round-trip integration tests
+- [x] Test scripts: `test`, `test:watch`, `test:coverage`
+- [ ] ~~Performance profiling (large documents)~~ *(deferred — manual spot-check sufficient for v1.0)*
+- [ ] ~~Cross-browser automated testing~~ *(manual verification performed)*
 
 #### Accessibility
-- [ ] Keyboard navigation audit
-- [ ] Screen reader testing
-- [ ] Color contrast verification
-- [ ] Focus indicators
+- [x] `eslint-plugin-jsx-a11y` installed and configured (flat config)
+- [x] 0 lint errors (including a11y rules)
+- [x] ARIA attributes added: ImagePopover, LinkPopover, TableGridPicker, ImageInsertModal, SettingsModal
+- [x] `role="dialog"`, `aria-modal`, `aria-label` on all modals
+- [x] `role="grid"`, `role="gridcell"`, keyboard handler on TableGridPicker
+- [x] `htmlFor`/`id` on all label+input pairs
+- [ ] ~~Screen reader testing~~ *(deferred — structural a11y in place)*
+- [ ] ~~Color contrast automated verification~~ *(manual check sufficient)*
 
 #### Documentation
-- [ ] README with setup instructions
-- [ ] User guide / help documentation
-- [ ] Contributing guide
-- [ ] License selection (open source)
+- [x] README.md — full rewrite with features, setup, shortcuts, browser support, roadmap
+- [x] LICENSE — MIT license
+- [x] CONTRIBUTING.md — setup, standards, TipTap/theme guides, PR process
 
 #### Release
-- [ ] Final UI polish pass
-- [ ] Version bump to 1.0.0
-- [ ] GitHub repository setup
-- [ ] Release notes
+- [x] Dev artifacts guarded behind `import.meta.env.DEV`
+- [x] No unguarded `console.log` in production build
+- [x] Version bump to 1.0.0
+- [ ] ~~GitHub repository setup~~ *(deferred — separate from code)*
+- [ ] ~~Release notes~~ *(deferred — derivable from chronicle)*
 
-**Deliverable:** v1.0.0 release
+**Deliverable:** v1.0.0 release ✅
+
+**Phase 6 Completion Notes:**
+- Completed: 2026-02-08
+- 77 unit tests + round-trip integration tests, all passing
+- jsx-a11y lint: 0 errors, ARIA attributes on all interactive components
+- README, LICENSE (MIT), CONTRIBUTING.md — all created
+- Build: 0 errors, 0 warnings, 370 KB main (113 KB gzip)
+- `package.json` version: 1.0.0
 
 ---
 
@@ -367,11 +425,11 @@
 | M1: Core Editing | End of Week 3 | All elements editable | ✅ Complete |
 | M1.5: Enhancements | Post-Week 3 | Syntax highlighting, themes | ✅ Complete |
 | M2: Files & Tables | End of Week 4 | File ops + tables | ✅ Complete |
-| M2.5: Table UX | Post-Week 4 | Grid insert, tab nav, alignment | ⏳ Planned |
-| M3: Source & Themes | End of Week 5 | Source view, frontmatter, 4 themes | ⏳ Planned |
-| M4: Images & Nav | End of Week 6 | Images + TOC | ⏳ Planned |
-| M5: Polish | End of Week 7 | Export + search + optimization | ⏳ Planned |
-| M6: Release | End of Week 8 | v1.0.0 | ⏳ Planned |
+| M2.5: Table UX | Post-Week 4 | Grid insert, tab nav, alignment | ✅ Complete |
+| M3: Source & Themes | End of Week 5 | Source view, frontmatter, 4 themes | ✅ Complete |
+| M4: Images & Nav | End of Week 6 | Images + TOC | ✅ Complete |
+| M5: Polish | End of Week 7 | Export + search + optimization | ✅ Complete |
+| M6: Release | End of Week 8 | v1.0.0 | ✅ Complete |
 
 ---
 
@@ -446,7 +504,9 @@ The following are explicitly NOT in v1.0:
 - [ ] Summarize, expand, translate features
 - [ ] Custom prompt support
 
-### v1.2 - Advanced Features
+### v1.2 - VS Code Extension + Advanced Features
+- [ ] **VS Code Extension** (CustomTextEditorProvider, see `docs/research/VSCODE_EXTENSION.md`)
+- [ ] Monorepo refactor: extract `packages/core`, `packages/web`, `packages/vscode`
 - [ ] Mermaid diagram support
 - [ ] Math/KaTeX equations
 - [ ] Document templates

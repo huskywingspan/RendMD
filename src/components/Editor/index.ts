@@ -1,4 +1,5 @@
 export { Editor } from './Editor';
+export type { EditorProps } from './Editor';
 export { DebugPanel } from './DebugPanel';
 export { BubbleMenu } from './BubbleMenu';
 export { LinkPopover } from './LinkPopover';

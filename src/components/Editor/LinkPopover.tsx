@@ -98,11 +98,14 @@ export function LinkPopover({ editor, isOpen, onClose }: LinkPopoverProps) {
   if (!isOpen || !editor) return null;
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       ref={refs.setFloating}
       style={floatingStyles}
       className="z-50 p-4 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)] rounded-lg shadow-xl min-w-[320px]"
       onKeyDown={handleKeyDown}
+      role="dialog"
+      aria-label="Edit link"
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-[var(--theme-text-primary)]">
@@ -118,10 +121,11 @@ export function LinkPopover({ editor, isOpen, onClose }: LinkPopoverProps) {
       
       <div className="space-y-3">
         <div>
-          <label className="block text-xs text-[var(--theme-text-secondary)] mb-1">
+          <label htmlFor="link-popover-url" className="block text-xs text-[var(--theme-text-secondary)] mb-1">
             URL
           </label>
           <input
+            id="link-popover-url"
             ref={inputRef}
             type="url"
             value={url}

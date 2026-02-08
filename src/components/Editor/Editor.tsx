@@ -1,13 +1,15 @@
 import { useEditor, EditorContent } from '@tiptap/react';
+import type { Editor as TipTapEditor } from '@tiptap/react';
 import { useEditorStore } from '@/stores/editorStore';
 import { useTheme } from '@/hooks';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { DebugPanel } from './DebugPanel';
 import { BubbleMenu } from './BubbleMenu';
 import { LinkPopover } from './LinkPopover';
 import { ImagePopover } from './ImagePopover';
-import { TableToolbar } from './TableToolbar';
+import { EditorToolbar } from './EditorToolbar';
 import { createEditorExtensions } from './extensions';
+import { isImageFile } from '@/utils/imageHelpers';
 import './editor-styles.css';
 
 const INITIAL_CONTENT = `# Welcome to RendMD
@@ -45,8 +47,15 @@ function getMarkdownFromEditor(editor: ReturnType<typeof useEditor>): string {
   return storage.markdown?.getMarkdown?.() ?? '';
 }
 
-export function Editor(): JSX.Element {
-  const { content, setContent, showSource } = useEditorStore();
+export interface EditorProps {
+  /** Callback when the TipTap editor instance is ready */
+  onEditorReady?: (editor: TipTapEditor) => void;
+  /** Callback when an image file is dropped or pasted */
+  onImageFile?: (file: File) => void;
+}
+
+export function Editor({ onEditorReady, onImageFile }: EditorProps): JSX.Element {
+  const { content, setContent } = useEditorStore();
   const { isDark } = useTheme();
   
   // Track original input for debug comparison
@@ -59,6 +68,12 @@ export function Editor(): JSX.Element {
   // Image popover state
   const [imagePopoverOpen, setImagePopoverOpen] = useState(false);
   const [selectedImagePos, setSelectedImagePos] = useState<number | null>(null);
+  
+  // Bubble menu force-visible state (for Ctrl+Space)
+  const [bubbleMenuForced, setBubbleMenuForced] = useState(false);
+  
+  // Hidden image input ref
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   // Create extensions with theme awareness
   const extensions = useMemo(() => createEditorExtensions(isDark), [isDark]);
@@ -79,6 +94,7 @@ export function Editor(): JSX.Element {
         setContent(markdown);
       }
       setOutputMarkdown(markdown);
+      onEditorReady?.(editor);
     },
     onUpdate: ({ editor }) => {
       const markdown = getMarkdownFromEditor(editor);
@@ -127,6 +143,46 @@ export function Editor(): JSX.Element {
     }
   }, [editor]);
 
+  // Open image picker from bubble menu
+  const openImagePicker = useCallback(() => {
+    if (!imageInputRef.current) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      imageInputRef.current = input;
+    }
+    
+    const input = imageInputRef.current;
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (file && onImageFile) {
+        onImageFile(file);
+      }
+      input.value = ''; // Reset for next use
+      setBubbleMenuForced(false);
+    };
+    input.click();
+  }, [onImageFile]);
+
+  // Ctrl+Space to toggle bubble menu at cursor
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === ' ') {
+        e.preventDefault();
+        setBubbleMenuForced(prev => !prev);
+      }
+      // Close bubble menu on Escape
+      if (e.key === 'Escape' && bubbleMenuForced) {
+        setBubbleMenuForced(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [bubbleMenuForced]);
+
   // Handle link and image clicks
   const handleEditorClick = useCallback((event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
@@ -158,13 +214,47 @@ export function Editor(): JSX.Element {
     }
   }, [editor]);
 
+  // Handle image drops onto editor
+  const handleDrop = useCallback((event: React.DragEvent) => {
+    const files = event.dataTransfer?.files;
+    if (!files?.length || !onImageFile) return;
+
+    for (const file of Array.from(files)) {
+      if (isImageFile(file)) {
+        event.preventDefault();
+        event.stopPropagation();
+        onImageFile(file);
+        return; // Handle one at a time
+      }
+    }
+  }, [onImageFile]);
+
+  // Handle image paste from clipboard
+  const handlePaste = useCallback((event: React.ClipboardEvent) => {
+    const items = event.clipboardData?.items;
+    if (!items || !onImageFile) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          event.preventDefault();
+          onImageFile(file);
+          return;
+        }
+      }
+    }
+  }, [onImageFile]);
+
   return (
     <div className="flex-1 flex overflow-hidden">
-      {/* Bubble menu for text selection */}
+      {/* Bubble menu for text selection or Ctrl+Space */}
       {editor && (
         <BubbleMenu 
           editor={editor} 
           onLinkClick={() => setLinkPopoverOpen(true)}
+          onImageClick={openImagePicker}
+          forceVisible={bubbleMenuForced}
         />
       )}
       
@@ -187,31 +277,27 @@ export function Editor(): JSX.Element {
       />
 
       {/* Rendered editor */}
-      <div className={showSource ? 'w-1/2 border-r border-[var(--theme-border-primary)]' : 'w-full'}>
-        {/* Table toolbar - shown when editing */}
+      <div className="w-full flex flex-col overflow-hidden">
+        {/* Editor toolbar - formatting + table controls */}
         {editor && (
           <div className="sticky top-0 z-10 p-2 bg-[var(--theme-bg-primary)] border-b border-[var(--theme-border-primary)]">
-            <TableToolbar editor={editor} />
+            <EditorToolbar editor={editor} onLinkClick={() => setLinkPopoverOpen(true)} onImageClick={openImagePicker} />
           </div>
         )}
-        <div className="h-full overflow-y-auto p-8" onClick={handleEditorClick}>
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+        <div 
+          className="flex-1 overflow-y-auto p-4 md:p-8" 
+          onClick={handleEditorClick}
+          onDrop={handleDrop}
+          onPaste={handlePaste}
+          onDragOver={(e) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); }}
+        >
           <EditorContent 
             editor={editor} 
             className="max-w-3xl mx-auto"
           />
         </div>
       </div>
-
-      {/* Source view */}
-      {showSource && (
-        <div className="w-1/2 bg-[var(--theme-bg-secondary)]">
-          <div className="h-full overflow-y-auto p-4">
-            <pre className="text-sm font-mono text-[var(--theme-text-secondary)] whitespace-pre-wrap">
-              {content || INITIAL_CONTENT}
-            </pre>
-          </div>
-        </div>
-      )}
 
       {/* Debug panel - dev only */}
       <DebugPanel

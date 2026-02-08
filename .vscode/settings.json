@@ -14,5 +14,10 @@
   ],
   "editor.quickSuggestions": {
     "strings": "on"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "npx vite": true,
+    "npx eslint": true,
+    "npx vitest": true
   }
 }

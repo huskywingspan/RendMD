@@ -35,6 +35,18 @@ const MARKDOWN_FILE_TYPES: FilePickerAcceptType[] = [
   },
 ];
 
+// Module-level singleton to share file handle across all hook instances
+// This avoids the issue of each useFileSystem() call creating separate refs
+let sharedFileHandle: FileSystemFileHandle | null = null;
+
+export function getSharedFileHandle(): FileSystemFileHandle | null {
+  return sharedFileHandle;
+}
+
+export function setSharedFileHandle(handle: FileSystemFileHandle | null): void {
+  sharedFileHandle = handle;
+}
+
 export interface UseFileSystemReturn {
   openFile: () => Promise<void>;
   saveFile: () => Promise<boolean>;
@@ -108,6 +120,7 @@ export function useFileSystem(): UseFileSystemReturn {
         const content = await readFileContent(file);
         
         fileHandleRef.current = handle;
+        setSharedFileHandle(handle);
         setContent(content);
         setFilePath(file.name, file.name);
         markClean();
@@ -135,6 +148,7 @@ export function useFileSystem(): UseFileSystemReturn {
           try {
             const content = await readFileContent(file);
             fileHandleRef.current = null; // No handle in fallback mode
+            setSharedFileHandle(null);
             setContent(content);
             setFilePath(file.name, file.name);
             markClean();
@@ -171,6 +185,7 @@ export function useFileSystem(): UseFileSystemReturn {
         await writable.close();
         
         fileHandleRef.current = handle;
+        setSharedFileHandle(handle);
         setFilePath(handle.name, handle.name);
         markClean();
         return true;

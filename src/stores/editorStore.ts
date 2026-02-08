@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { EditorState, Frontmatter, ThemeName, SidebarState, ViewMode } from '@/types';
+import type { EditorState, Frontmatter, ThemeName, SidebarState, ViewMode, TOCItem } from '@/types';
 
 interface EditorStore extends EditorState {
   // Content actions
@@ -29,15 +29,38 @@ interface EditorStore extends EditorState {
   setViewMode: (mode: ViewMode) => void;
   cycleViewMode: () => void;
   
+  // Table of Contents
+  tocItems: TOCItem[];
+  activeTocId: string | null;
+  setTocItems: (items: TOCItem[]) => void;
+  setActiveTocId: (id: string | null) => void;
+  
+  // Shortcuts modal
+  shortcutsModalOpen: boolean;
+  setShortcutsModalOpen: (open: boolean) => void;
+
+  // Settings
+  fontSize: number;
+  setFontSize: (size: number) => void;
+  autoSaveEnabled: boolean;
+  setAutoSaveEnabled: (enabled: boolean) => void;
+
   // Legacy compatibility
   showSource: boolean;
   toggleSource: () => void;
 }
 
-// Persisted state for view preferences
+// Persisted state for view preferences + document draft
 interface PersistedState {
   viewMode: ViewMode;
   theme: ThemeName;
+  fontSize: number;
+  autoSaveEnabled: boolean;
+  // Document state
+  content: string;
+  frontmatter: Frontmatter | null;
+  fileName: string | null;
+  isDirty: boolean;
 }
 
 export const useEditorStore = create<EditorStore>()(
@@ -55,11 +78,15 @@ export const useEditorStore = create<EditorStore>()(
         activePanel: 'toc',
       },
       viewMode: 'render',
+      tocItems: [],
+      activeTocId: null,
+      shortcutsModalOpen: false,
+      fontSize: 16,
+      autoSaveEnabled: true,
       
-      // Legacy compatibility
-      get showSource() {
-        return get().viewMode === 'source';
-      },
+      // Legacy compatibility — plain value, not a getter
+      // (Getters using get() crash during Zustand hydration merge)
+      showSource: false,
 
       // Content actions
       setContent: (content) => set({ content, isDirty: true }),
@@ -83,6 +110,17 @@ export const useEditorStore = create<EditorStore>()(
         sidebar: { ...state.sidebar, activePanel: panel }
       })),
 
+      // Table of Contents
+      setTocItems: (tocItems) => set({ tocItems }),
+      setActiveTocId: (activeTocId) => set({ activeTocId }),
+      
+      // Shortcuts modal
+      setShortcutsModalOpen: (shortcutsModalOpen) => set({ shortcutsModalOpen }),
+
+      // Settings
+      setFontSize: (fontSize) => set({ fontSize }),
+      setAutoSaveEnabled: (autoSaveEnabled) => set({ autoSaveEnabled }),
+
       // View mode
       setViewMode: (viewMode) => set({ viewMode }),
       cycleViewMode: () => set((state) => {
@@ -100,13 +138,32 @@ export const useEditorStore = create<EditorStore>()(
       partialize: (state): PersistedState => ({
         viewMode: state.viewMode,
         theme: state.theme,
+        fontSize: state.fontSize,
+        autoSaveEnabled: state.autoSaveEnabled,
+        content: state.content,
+        frontmatter: state.frontmatter,
+        fileName: state.fileName,
+        isDirty: state.isDirty,
       }),
+      onRehydrateStorage: () => {
+        return (_state, error) => {
+          if (error) {
+            console.warn('[RendMD] Failed to rehydrate:', error);
+          }
+        };
+      },
       merge: (persistedState, currentState) => {
         const persisted = persistedState as PersistedState | undefined;
         return {
           ...currentState,
           viewMode: persisted?.viewMode ?? currentState.viewMode,
           theme: persisted?.theme ?? currentState.theme,
+          fontSize: persisted?.fontSize ?? currentState.fontSize,
+          autoSaveEnabled: persisted?.autoSaveEnabled ?? currentState.autoSaveEnabled,
+          content: persisted?.content ?? currentState.content,
+          frontmatter: persisted?.frontmatter ?? currentState.frontmatter,
+          fileName: persisted?.fileName ?? currentState.fileName,
+          isDirty: persisted?.isDirty ?? currentState.isDirty,
         };
       },
     }

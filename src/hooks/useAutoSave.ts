@@ -18,7 +18,7 @@ export interface UseAutoSaveReturn {
 export function useAutoSave(
   fileHandleRef: React.MutableRefObject<FileSystemFileHandle | null>
 ): UseAutoSaveReturn {
-  const { content, isDirty, markClean } = useEditorStore();
+  const { content, isDirty, markClean, autoSaveEnabled } = useEditorStore();
   
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -73,8 +73,8 @@ export function useAutoSave(
       timeoutRef.current = null;
     }
     
-    // Only schedule save if dirty and we have a file handle
-    if (isDirty && fileHandleRef.current) {
+    // Only schedule save if auto-save enabled, dirty, and we have a file handle
+    if (autoSaveEnabled && isDirty && fileHandleRef.current) {
       timeoutRef.current = setTimeout(() => {
         performSave();
       }, AUTO_SAVE_DELAY_MS);
@@ -85,7 +85,7 @@ export function useAutoSave(
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [content, isDirty, fileHandleRef, performSave]);
+  }, [content, isDirty, autoSaveEnabled, fileHandleRef, performSave]);
 
   return {
     isSaving,

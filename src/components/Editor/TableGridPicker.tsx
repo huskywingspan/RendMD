@@ -152,8 +152,11 @@ export function TableGridPicker({ onSelect, onClose }: TableGridPickerProps): JS
                 )}
                 onMouseEnter={() => handleCellHover(row, col)}
                 onClick={() => handleCellClick(row, col)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCellClick(row, col); } }}
                 role="gridcell"
+                tabIndex={0}
                 aria-selected={highlighted}
+                aria-label={`${row} rows, ${col} columns`}
               />
             );
           })
