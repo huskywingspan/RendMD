@@ -9,6 +9,9 @@ export interface EditorState {
 // View mode types
 export type ViewMode = 'render' | 'source' | 'split';
 
+// UI density types
+export type UIDensity = 'compact' | 'comfortable';
+
 // Frontmatter types
 export interface Frontmatter {
   title?: string;

@@ -24,7 +24,8 @@ function App(): JSX.Element {
     viewMode, setViewMode, cycleViewMode, 
     shortcutsModalOpen, setShortcutsModalOpen,
     fontSize,
-    newFile
+    newFile,
+    uiDensity
   } = useEditorStore();
   const { openFile, saveFile, saveFileAs, fileHandleRef } = useFileSystem();
   
@@ -177,6 +178,7 @@ function App(): JSX.Element {
             fontSize: state.fontSize,
             autoSaveEnabled: state.autoSaveEnabled,
             toolbarCollapsed: state.toolbarCollapsed,
+            uiDensity: state.uiDensity,
             content: state.content,
             frontmatter: state.frontmatter,
             fileName: state.fileName,
@@ -254,7 +256,7 @@ function App(): JSX.Element {
   }, [handleKeyDown]);
 
   return (
-    <div className="h-dvh flex flex-col bg-[var(--theme-bg-primary)]" style={{ '--editor-font-size': `${fontSize}px`, height: '100dvh' } as React.CSSProperties}>
+    <div className="h-dvh flex flex-col bg-[var(--theme-bg-primary)]" style={{ '--editor-font-size': `${fontSize}px`, '--ui-density-scale': uiDensity === 'compact' ? '0.85' : '1', height: '100dvh' } as React.CSSProperties}>
       <Header isSaving={isSaving} lastSaved={lastSaved} editor={editorInstance} onOpenSettings={() => setSettingsOpen(true)} />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar onTocItemClick={handleTocItemClick} />

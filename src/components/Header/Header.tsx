@@ -22,7 +22,7 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
   const { openFile, saveFile } = useFileSystem();
 
   return (
-    <header className="h-12 bg-[var(--theme-bg-secondary)] border-b border-[var(--theme-border-primary)] flex items-center justify-between px-3 sm:px-4">
+    <header className="bg-[var(--theme-bg-secondary)] border-b border-[var(--theme-border-primary)] flex items-center justify-between" style={{ height: 'calc(3rem * var(--ui-density-scale, 1))', paddingLeft: 'var(--density-padding-md, 0.5rem)', paddingRight: 'var(--density-padding-md, 0.5rem)' }}>
       {/* Left section */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <Tooltip content="Toggle sidebar">
@@ -156,7 +156,7 @@ function ViewModeToggle({ viewMode, setViewMode }: ViewModeToggleProps): JSX.Ele
           <button
             onClick={() => setViewMode(value)}
             className={cn(
-              "p-1.5 rounded transition-colors",
+              "flex items-center justify-center p-1.5 rounded transition-colors",
               mobileHidden && "hidden md:inline-flex",
               viewMode === value
                 ? "bg-[var(--theme-accent-primary)] text-white"

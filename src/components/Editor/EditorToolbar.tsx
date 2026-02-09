@@ -99,9 +99,9 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
   // ── Formatting button active state helper ──────────────────────
   const buttonClass = (isActive: boolean): string =>
     cn(
-      'p-2 rounded transition-colors',
+      'p-[var(--density-button-padding)] rounded transition-colors',
       isActive
-        ? 'bg-[var(--theme-accent)] text-white'
+        ? 'bg-[var(--theme-accent-primary)] text-white'
         : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)]',
     );
 
@@ -112,7 +112,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
   }
 
   return (
-    <div className="editor-toolbar flex items-center gap-1 overflow-x-auto scrollbar-none md:flex-wrap md:overflow-x-visible">
+    <div className="editor-toolbar flex items-center flex-wrap" style={{ gap: 'var(--density-gap-sm, 0.25rem)' }}>
       {/* Text formatting */}
       <Tooltip content="Bold (Ctrl+B)" position="bottom">
         <button
@@ -155,7 +155,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </button>
       </Tooltip>
 
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
 
       {/* Headings */}
       <Tooltip content="Heading 1 (Ctrl+1)" position="bottom">
@@ -189,7 +189,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </button>
       </Tooltip>
 
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
 
       {/* Lists */}
       <Tooltip content="Bullet List" position="bottom">
@@ -223,7 +223,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </button>
       </Tooltip>
 
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
 
       {/* Blockquote */}
       <Tooltip content="Blockquote" position="bottom">
@@ -237,7 +237,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </button>
       </Tooltip>
 
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
 
       {/* Link */}
       <Tooltip content="Add Link (Ctrl+K)" position="bottom">
@@ -265,7 +265,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </Tooltip>
       )}
 
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
 
       {/* Table insert */}
       <TableInsertButton editor={editor} />

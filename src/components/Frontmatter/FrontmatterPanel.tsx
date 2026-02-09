@@ -17,7 +17,7 @@ import { cn } from '@/utils/cn';
  */
 export function FrontmatterPanel(): JSX.Element | null {
   const { frontmatter, setFrontmatter } = useEditorStore();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [newFieldKey, setNewFieldKey] = useState('');
 
   // Don't render if no frontmatter (but allow creating new)

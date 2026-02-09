@@ -1834,3 +1834,85 @@ All three tasks implemented. 0 TypeScript errors, 101/101 tests passing.
 - Table grid picker right-edge overflow fixed (anchors right on mobile)
 
 **Builder Handoff:** `.github/agents/HANDOFF_BUILDER_v1.0.3.md`
+
+---
+
+## v1.0.4 — Toolbar Bug Fix, Frontmatter, View Toggle (Implemented)
+
+Fixes rolled into v1.0.5 build:
+- Toolbar active button: `--theme-accent` → `--theme-accent-primary`
+- Toolbar container: `overflow-x-auto` → `flex-wrap`
+- Frontmatter panel: `useState(true)` → `useState(false)` (default collapsed)
+- View toggle centering addressed via density-aware layout
+
+---
+
+## v1.0.5 — Font Scaling, WCAG Compliance, GUI Density (Implemented 2026-02-08)
+
+### ADR-033: Relative Font Sizing for Headings
+
+**Date:** 2026-02-01
+**Status:** Accepted (implemented 2026-02-08)
+
+**Context:** The `fontSize` setting (12–24px) only affected `.ProseMirror` body text. Headings H1–H6 used absolute `clamp()` / `rem` values in `index.css` and did not respond to the font size preference at all.
+
+**Decision:** Replace absolute heading sizes with `em`-based values relative to `--editor-font-size`. H1 = `2em`, H2 = `1.6em`, H3 = `1.3em`, H4 = `1.15em`, H5 = `1.05em`, H6 = `1em`. This makes all text scale proportionally with the user's font size choice.
+
+**Rationale:** `em` units inherit from the element's parent font size. Since `.ProseMirror` sets `font-size: var(--editor-font-size)`, all child `em` values cascade correctly. No JavaScript changes needed — pure CSS fix.
+
+### ADR-034: WCAG 2.1 AA Color Compliance Audit
+
+**Date:** 2026-02-01
+**Status:** Accepted (implemented 2026-02-08)
+
+**Context:** User wisely observed that instead of adding a separate "colorblind mode," it's better to ensure all existing themes meet WCAG 2.1 AA contrast minimums (4.5:1 for normal text, 3:1 for large text/UI components).
+
+**Audit Results:**
+
+| Theme | Failures Found |
+|-------|---------------|
+| dark-basic | `text-muted` 3.58:1 (needs 4.5) |
+| light-basic | `text-muted` 2.56:1, `accent-primary` 3.68:1 |
+| dark-glass | None — all pass ✅ |
+| light-glass | `accent-primary` 2.77:1 |
+
+**Fixes:**
+- dark-basic: `--theme-text-muted` #64748b → #7c8ba0 (4.92:1)
+- light-basic: `--theme-text-muted` #94a3b8 → #6b7280 (4.83:1), `--theme-accent-primary` #3b82f6 → #2563eb (5.17:1) + cascade to hover/button/border/input-focus
+- light-glass: `--theme-accent-primary` #0ea5e9 → #0c7bb3 (4.67:1) + cascade to hover/button/border/input-focus
+
+**Consequences:**
+- ✅ All 4 themes now WCAG AA compliant for normal text
+- ✅ No separate accessibility mode needed — accessibility by default
+- ⚠️ Light themes get slightly darker accent colors — still look great but noticeably richer
+- ⚠️ Dark-basic muted text gets slightly lighter — improved readability
+
+### ADR-035: GUI Density System
+
+**Date:** 2026-02-01
+**Status:** Accepted (implemented 2026-02-08)
+
+**Context:** User wants an accessibility settings section with a quick toggle between compact and comfortable UI density.
+
+**Decision:** Add `uiDensity: 'compact' | 'comfortable'` to Zustand store (persisted). Set `--ui-density-scale` CSS variable on root (0.85 for compact, 1.0 for comfortable). Define density token CSS custom properties that multiply base spacing by this scale factor. Applied incrementally — start with toolbar and header, expand outward.
+
+**Rationale:** CSS custom properties with `calc()` multiplication require zero JS overhead after the initial variable set. The two-option toggle (not a slider) keeps the UX simple while providing meaningful differentiation. Persisted in Zustand like all other preferences.
+
+**Builder Handoff:** `.github/agents/HANDOFF_BUILDER_v1.0.5.md`
+
+### Implementation Summary
+
+**Build:** 0 TS errors | **Tests:** 101 passed
+
+**Files changed:**
+- `src/index.css` — Heading sizes now `em`-relative; 8 density token CSS variables in `:root`
+- `src/themes/dark-basic.css` — `text-muted` #64748b → #7c8ba0
+- `src/themes/light-basic.css` — `text-muted` + 6 accent cascade vars updated
+- `src/themes/light-glass.css` — 6 accent cascade vars updated
+- `src/types/index.ts` — Added `UIDensity` type
+- `src/stores/editorStore.ts` — `uiDensity` state + action + persistence + merge
+- `src/App.tsx` — `--ui-density-scale` CSS variable on root div
+- `src/components/Modals/SettingsModal.tsx` — Section headers (EDITOR/APPEARANCE), density segmented toggle
+- `src/components/Editor/EditorToolbar.tsx` — Buttons use `--density-button-padding`, container uses `--density-gap-sm`; fixed `--theme-accent-primary` (v1.0.4 bug)
+- `src/components/Header/Header.tsx` — Height & padding scale with density
+- `src/components/Frontmatter/FrontmatterPanel.tsx` — Default collapsed (v1.0.4 fix)

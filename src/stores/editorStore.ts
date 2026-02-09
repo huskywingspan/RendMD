@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { EditorState, Frontmatter, ThemeName, SidebarState, ViewMode, TOCItem } from '@/types';
+import type { EditorState, Frontmatter, ThemeName, SidebarState, ViewMode, TOCItem, UIDensity } from '@/types';
 import { setSharedFileHandle } from '@/utils/fileHandle';
 
 interface EditorStore extends EditorState {
@@ -53,6 +53,10 @@ interface EditorStore extends EditorState {
   setToolbarCollapsed: (collapsed: boolean) => void;
   toggleToolbar: () => void;
 
+  // UI Density
+  uiDensity: UIDensity;
+  setUIDensity: (density: UIDensity) => void;
+
   // Legacy compatibility
   showSource: boolean;
   toggleSource: () => void;
@@ -65,6 +69,7 @@ interface PersistedState {
   fontSize: number;
   autoSaveEnabled: boolean;
   toolbarCollapsed: boolean;
+  uiDensity: UIDensity;
   // Document state
   content: string;
   frontmatter: Frontmatter | null;
@@ -93,6 +98,7 @@ export const useEditorStore = create<EditorStore>()(
       fontSize: 16,
       autoSaveEnabled: true,
       toolbarCollapsed: false,
+      uiDensity: 'comfortable' as UIDensity,
       
       // Legacy compatibility — plain value, not a getter
       // (Getters using get() crash during Zustand hydration merge)
@@ -159,6 +165,9 @@ export const useEditorStore = create<EditorStore>()(
       setToolbarCollapsed: (toolbarCollapsed) => set({ toolbarCollapsed }),
       toggleToolbar: () => set((state) => ({ toolbarCollapsed: !state.toolbarCollapsed })),
 
+      // UI Density
+      setUIDensity: (uiDensity) => set({ uiDensity }),
+
       // View mode
       setViewMode: (viewMode) => set({ viewMode }),
       cycleViewMode: () => set((state) => {
@@ -179,6 +188,7 @@ export const useEditorStore = create<EditorStore>()(
         fontSize: state.fontSize,
         autoSaveEnabled: state.autoSaveEnabled,
         toolbarCollapsed: state.toolbarCollapsed,
+        uiDensity: state.uiDensity,
         content: state.content,
         frontmatter: state.frontmatter,
         fileName: state.fileName,
@@ -206,6 +216,7 @@ export const useEditorStore = create<EditorStore>()(
           fontSize: persisted?.fontSize ?? currentState.fontSize,
           autoSaveEnabled: persisted?.autoSaveEnabled ?? currentState.autoSaveEnabled,
           toolbarCollapsed: persisted?.toolbarCollapsed ?? currentState.toolbarCollapsed,
+          uiDensity: persisted?.uiDensity ?? currentState.uiDensity,
           content: persisted?.content ?? currentState.content,
           frontmatter: persisted?.frontmatter ?? currentState.frontmatter,
           fileName: persisted?.fileName ?? currentState.fileName,

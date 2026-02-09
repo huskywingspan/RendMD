@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { X, Minus, Plus } from 'lucide-react';
 import { useEditorStore } from '@/stores/editorStore';
+import type { UIDensity } from '@/types';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,8 +11,13 @@ interface SettingsModalProps {
 const FONT_MIN = 12;
 const FONT_MAX = 24;
 
+const DENSITY_OPTIONS: { value: UIDensity; label: string }[] = [
+  { value: 'compact', label: 'Compact' },
+  { value: 'comfortable', label: 'Comfortable' },
+];
+
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.ReactElement | null {
-  const { fontSize, setFontSize, autoSaveEnabled, setAutoSaveEnabled } = useEditorStore();
+  const { fontSize, setFontSize, autoSaveEnabled, setAutoSaveEnabled, uiDensity, setUIDensity } = useEditorStore();
 
   // Global Escape key handler
   useEffect(() => {
@@ -50,7 +56,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
         </div>
 
         {/* Body */}
-        <div className="px-6 py-4 space-y-6">
+        <div className="px-6 py-4 space-y-5">
+          {/* EDITOR section */}
+          <SectionHeader label="Editor" />
+
           {/* Font size */}
           <SettingRow label="Editor font size">
             <div className="flex items-center gap-2">
@@ -93,6 +102,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
               />
             </button>
           </SettingRow>
+
+          {/* APPEARANCE section */}
+          <SectionHeader label="Appearance" />
+
+          {/* UI Density toggle */}
+          <SettingRow label="UI density" description="Adjust spacing and padding across the interface">
+            <div className="flex rounded-lg border border-[var(--theme-border-primary)] overflow-hidden">
+              {DENSITY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setUIDensity(opt.value)}
+                  className={`px-3 py-1 text-xs font-medium transition-colors ${
+                    uiDensity === opt.value
+                      ? 'bg-[var(--theme-accent-primary)] text-white'
+                      : 'bg-[var(--theme-bg-secondary)] text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </SettingRow>
         </div>
 
         {/* Footer */}
@@ -105,6 +136,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface SectionHeaderProps {
+  label: string;
+}
+
+function SectionHeader({ label }: SectionHeaderProps): JSX.Element {
+  return (
+    <div className="text-xs font-semibold uppercase tracking-wide text-[var(--theme-text-muted)] mt-2 first:mt-0">
+      {label}
     </div>
   );
 }
