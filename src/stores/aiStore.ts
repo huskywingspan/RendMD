@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import type { AIChatMessage, AIProviderID, PendingResult, AIContext } from '@/services/ai/types';
-import { streamCompletion } from '@/services/ai/AIService';
+import { streamCompletion, PROVIDER_META, getDefaultModel } from '@/services/ai/AIService';
 import { buildMessages, SYSTEM_PROMPTS } from '@/services/ai/prompts';
 
 interface AIStore {
@@ -277,10 +277,20 @@ export const useAIStore = create<AIStore>()(
       }),
       merge: (persisted, current) => {
         const p = persisted as PersistedAIState | undefined;
+        const provider = p?.activeProvider ?? current.activeProvider;
+        let model = p?.activeModel ?? current.activeModel;
+
+        // Auto-correct stale model IDs that no longer exist in PROVIDER_META
+        const providerMeta = PROVIDER_META.find((pm) => pm.id === provider);
+        const modelExists = providerMeta?.models.some((m) => m.id === model);
+        if (!modelExists) {
+          model = getDefaultModel(provider);
+        }
+
         return {
           ...current,
-          activeProvider: p?.activeProvider ?? current.activeProvider,
-          activeModel: p?.activeModel ?? current.activeModel,
+          activeProvider: provider,
+          activeModel: model,
           apiKeys: p?.apiKeys ?? current.apiKeys,
           ghostTextEnabled: p?.ghostTextEnabled ?? current.ghostTextEnabled,
         };
