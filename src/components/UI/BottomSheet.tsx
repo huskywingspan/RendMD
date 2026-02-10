@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { cn } from '@/utils/cn';
 import { useBottomSheet } from '@/hooks/useBottomSheet';
 import type { BottomSheetDetent } from '@/hooks/useBottomSheet';
@@ -9,9 +9,12 @@ export interface BottomSheetProps {
   detents: BottomSheetDetent[];
   defaultDetent?: BottomSheetDetent;
   peekHeight?: number;
+  closedHeight?: number;
   showBackdrop?: boolean;
   children: React.ReactNode;
   className?: string;
+  /** Label shown in the closed detent bar */
+  closedLabel?: string;
 }
 
 export function BottomSheet({
@@ -20,20 +23,40 @@ export function BottomSheet({
   detents,
   defaultDetent,
   peekHeight = 180,
+  closedHeight = 48,
   showBackdrop = true,
   children,
   className,
+  closedLabel,
 }: BottomSheetProps): JSX.Element | null {
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const { currentDetent, isDragging, translateY, grabberProps, snapTo } = useBottomSheet({
     detents,
     defaultDetent,
     peekHeight,
+    closedHeight,
     onClose,
     scrollRef,
   });
+
+  // Track mobile keyboard via visualViewport API
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => {
+      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      setKeyboardOffset(Math.max(0, offset));
+    };
+    vv.addEventListener('resize', handler);
+    vv.addEventListener('scroll', handler);
+    return () => {
+      vv.removeEventListener('resize', handler);
+      vv.removeEventListener('scroll', handler);
+    };
+  }, []);
 
   // Close on Escape
   useEffect(() => {
@@ -77,31 +100,46 @@ export function BottomSheet({
         className={cn(
           'fixed bottom-0 left-0 right-0 z-50',
           'rounded-t-2xl',
-          'bg-[var(--theme-bg-secondary)] shadow-[0_-4px_20px_rgba(0,0,0,0.15)]',
+          'bg-[var(--theme-bg-secondary)] backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)]',
           !isDragging && 'transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
           className,
         )}
         style={{
           transform: `translateY(${translateY * 100}%)`,
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          bottom: keyboardOffset > 0 ? `${keyboardOffset}px` : undefined,
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
           touchAction: 'none',
           willChange: 'transform',
-          maxHeight: '90vh',
+          maxHeight: '90dvh',
         }}
       >
         {/* Grabber handle */}
         <div
           className="flex items-center justify-center py-2 cursor-grab active:cursor-grabbing"
           {...grabberProps}
+          onClick={() => {
+            // Tapping the grab bar when closed → snap to peek
+            if (currentDetent === 'closed') snapTo('peek');
+          }}
         >
           <div className="w-10 h-1 rounded-full bg-[var(--theme-text-secondary)] opacity-40" />
         </div>
 
-        {/* Content */}
+        {/* Closed-detent label bar */}
+        {currentDetent === 'closed' && closedLabel && (
+          <div
+            className="flex items-center justify-center pb-2 text-xs text-[var(--theme-text-muted)]"
+            onClick={() => snapTo('peek')}
+          >
+            {closedLabel}
+          </div>
+        )}
+
+        {/* Content — hidden when in closed detent */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto"
-          style={{ maxHeight: 'calc(90vh - 24px - env(safe-area-inset-bottom))' }}
+          className={cn('flex-1 overflow-y-auto', currentDetent === 'closed' && 'hidden')}
+          style={{ maxHeight: 'calc(90dvh - 24px - env(safe-area-inset-bottom) - 12px)' }}
         >
           {children}
         </div>

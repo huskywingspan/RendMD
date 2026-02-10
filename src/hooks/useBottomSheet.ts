@@ -1,20 +1,23 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 
-export type BottomSheetDetent = 'peek' | 'half' | 'full';
+export type BottomSheetDetent = 'closed' | 'peek' | 'half' | 'full';
 
 interface UseBottomSheetOptions {
   detents: BottomSheetDetent[];
   defaultDetent?: BottomSheetDetent;
   peekHeight?: number;
+  closedHeight?: number;
   onClose?: () => void;
   /** Ref to the scrollable inner content — if content is scrolled we let native scroll happen */
   scrollRef?: React.RefObject<HTMLElement | null>;
 }
 
 /** Height in viewport fraction for each detent */
-function detentToFraction(detent: BottomSheetDetent, peekHeight: number): number {
+function detentToFraction(detent: BottomSheetDetent, peekHeight: number, closedHeight: number): number {
   const vh = window.innerHeight;
   switch (detent) {
+    case 'closed':
+      return 1 - closedHeight / vh;
     case 'peek':
       return 1 - peekHeight / vh;
     case 'half':
@@ -45,6 +48,7 @@ export function useBottomSheet({
   detents,
   defaultDetent,
   peekHeight = 180,
+  closedHeight = 48,
   onClose,
   scrollRef,
 }: UseBottomSheetOptions): UseBottomSheetReturn {
@@ -53,7 +57,7 @@ export function useBottomSheet({
   );
   const [isDragging, setIsDragging] = useState(false);
   const [translateY, setTranslateY] = useState(() =>
-    detentToFraction(defaultDetent ?? detents[0] ?? 'peek', peekHeight),
+    detentToFraction(defaultDetent ?? detents[0] ?? 'peek', peekHeight, closedHeight),
   );
 
   const startY = useRef(0);
@@ -64,16 +68,16 @@ export function useBottomSheet({
 
   // Snap to default detent on mount
   useEffect(() => {
-    const target = detentToFraction(defaultDetent ?? detents[0] ?? 'peek', peekHeight);
+    const target = detentToFraction(defaultDetent ?? detents[0] ?? 'peek', peekHeight, closedHeight);
     setTranslateY(target);
-  }, [defaultDetent, detents, peekHeight]);
+  }, [defaultDetent, detents, peekHeight, closedHeight]);
 
   const snapTo = useCallback(
     (detent: BottomSheetDetent) => {
       setCurrentDetent(detent);
-      setTranslateY(detentToFraction(detent, peekHeight));
+      setTranslateY(detentToFraction(detent, peekHeight, closedHeight));
     },
-    [peekHeight],
+    [peekHeight, closedHeight],
   );
 
   const handleTouchStart = useCallback(
@@ -123,7 +127,7 @@ export function useBottomSheet({
     // Sort detents by their translateY position
     const detentPositions = detents.map((d) => ({
       detent: d,
-      pos: detentToFraction(d, peekHeight),
+      pos: detentToFraction(d, peekHeight, closedHeight),
     }));
     detentPositions.sort((a, b) => a.pos - b.pos);
 
@@ -167,7 +171,7 @@ export function useBottomSheet({
     }
 
     snapTo(targetDetent);
-  }, [isDragging, translateY, detents, peekHeight, currentDetent, onClose, snapTo]);
+  }, [isDragging, translateY, detents, peekHeight, closedHeight, currentDetent, onClose, snapTo]);
 
   return {
     currentDetent,

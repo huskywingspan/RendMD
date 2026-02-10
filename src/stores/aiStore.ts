@@ -109,12 +109,34 @@ export const useAIStore = create<AIStore>()(
           { role: 'system', content: SYSTEM_PROMPTS.chat },
         ];
 
+        // Create provider once (reused below for agent vs streaming decision)
+        const provider = await createProvider(state.activeProvider, encryptedKey);
+        const isAgentMode = !!(editor && provider.generateWithTools);
+
         // Add document context if provided
+        // In agent mode, inject lightweight metadata only (tools can read full content)
         if (context?.documentContent) {
-          completionMessages.push({
-            role: 'system',
-            content: `The user's document content (truncated to 2000 chars):\n${context.documentContent.slice(0, 2000)}`,
-          });
+          if (isAgentMode) {
+            // Lightweight summary — agent tools can retrieve full content
+            const lines = context.documentContent.split('\n');
+            const headingLine = lines.find(l => l.startsWith('#'));
+            const preview = context.documentContent.slice(0, 150).replace(/\n/g, ' ');
+            completionMessages.push({
+              role: 'system',
+              content: [
+                'Document metadata (use read_document tool for full content):',
+                headingLine ? `Title: ${headingLine.replace(/^#+\s*/, '')}` : null,
+                `Lines: ${lines.length}`,
+                `Length: ~${context.documentContent.length} chars`,
+                `Preview: ${preview}…`,
+              ].filter(Boolean).join('\n'),
+            });
+          } else {
+            completionMessages.push({
+              role: 'system',
+              content: `The user's document content (truncated to 2000 chars):\n${context.documentContent.slice(0, 2000)}`,
+            });
+          }
         }
         if (context?.selectedText) {
           completionMessages.push({
@@ -135,7 +157,6 @@ export const useAIStore = create<AIStore>()(
 
         try {
           // Check if provider supports tool calling and we have an editor instance
-          const provider = await createProvider(state.activeProvider, encryptedKey);
 
           if (provider.generateWithTools && editor) {
             // --- Agent mode ---

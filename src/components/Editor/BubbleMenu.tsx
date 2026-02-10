@@ -36,10 +36,9 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, onAIClick, aiKey
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
-  // Disable bubble menu on touch devices — toolbar covers all formatting
+  // Detect touch devices (computed once, stable across renders)
   const isTouchDevice = typeof window !== 'undefined' &&
     ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  if (isTouchDevice) return null;
 
   const updatePosition = useCallback(() => {
     if (!editor) {
@@ -90,15 +89,21 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, onAIClick, aiKey
   useEffect(() => {
     if (!editor) return;
 
-    // Update on selection change
+    // Use a stable reference so we can properly unsubscribe
+    const handleBlur = () => setIsVisible(false);
+
     editor.on('selectionUpdate', updatePosition);
-    editor.on('blur', () => setIsVisible(false));
+    editor.on('blur', handleBlur);
 
     return () => {
       editor.off('selectionUpdate', updatePosition);
-      editor.off('blur', () => setIsVisible(false));
+      editor.off('blur', handleBlur);
     };
   }, [editor, updatePosition]);
+
+  // Disable bubble menu on touch devices — toolbar covers all formatting
+  // (placed after all hooks to satisfy React rules of hooks)
+  if (isTouchDevice) return null;
 
   // Show if forced visible (Ctrl+Space) or has text selection
   const shouldShow = forceVisible || isVisible;

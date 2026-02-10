@@ -57,7 +57,7 @@ function App(): JSX.Element {
   const { isPanelOpen: aiPanelOpen } = useAIStore();
 
   // AI bottom sheet state (mobile)
-  const [aiBottomSheetOpen, setAIBottomSheetOpen] = useState(false);
+  const [, setAIBottomSheetOpen] = useState(false);
   const [mobileHasSelection, setMobileHasSelection] = useState(false);
 
   // Screen reader status announcements
@@ -377,11 +377,11 @@ function App(): JSX.Element {
         )}
       </div>
 
-      {/* AI Bottom Sheet — mobile */}
-      {aiBottomSheetOpen && (
+      {/* AI Bottom Sheet — mobile (always rendered on touch for closed-detent affordance) */}
+      {isTouchDevice && (
         <Suspense fallback={null}>
           <AIBottomSheet
-            isOpen={aiBottomSheetOpen}
+            isOpen={true}
             onClose={() => setAIBottomSheetOpen(false)}
             editor={editorInstance}
             hasSelection={mobileHasSelection}

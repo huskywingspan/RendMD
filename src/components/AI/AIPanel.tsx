@@ -28,6 +28,7 @@ export function AIPanel({ className, editor, onOpenSettings }: AIPanelProps): JS
     closePanel,
     apiKeys,
     activeProvider,
+    setPendingResult,
   } = useAIStore();
 
   const { content, fileName } = useEditorStore();
@@ -76,15 +77,15 @@ export function AIPanel({ className, editor, onOpenSettings }: AIPanelProps): JS
     (text: string) => {
       if (!editor) return;
       const { from, to } = editor.state.selection;
+      const original = from !== to ? editor.state.doc.textBetween(from, to, ' ') : '';
       if (from !== to) {
-        // Replace selection
         editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, text).run();
       } else {
-        // Insert at cursor
         editor.chain().focus().insertContentAt(from, text).run();
       }
+      setPendingResult({ original, replacement: text, action: 'apply' });
     },
-    [editor],
+    [editor, setPendingResult],
   );
 
   const hasKey = Boolean(apiKeys[activeProvider]);

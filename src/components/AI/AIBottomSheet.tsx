@@ -40,8 +40,8 @@ export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSet
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const detents: BottomSheetDetent[] = ['peek', 'half', 'full'];
-  const defaultDetent: BottomSheetDetent = messages.length > 0 ? 'half' : 'peek';
+  const detents: BottomSheetDetent[] = ['closed', 'peek', 'half', 'full'];
+  const defaultDetent: BottomSheetDetent = 'closed';
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -102,12 +102,14 @@ export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSet
   const handleApply = useCallback((content: string) => {
     if (!editor) return;
     const { from, to } = editor.state.selection;
+    const original = from !== to ? editor.state.doc.textBetween(from, to, ' ') : '';
     if (from !== to) {
       editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, content).run();
     } else {
       editor.chain().focus().insertContentAt(from, content).run();
     }
-  }, [editor]);
+    setPendingResult({ original, replacement: content, action: 'apply' });
+  }, [editor, setPendingResult]);
 
   // Continue writing (mobile alternative to ghost text)
   const handleContinueWriting = useCallback(async () => {
@@ -142,7 +144,9 @@ export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSet
       detents={detents}
       defaultDetent={defaultDetent}
       peekHeight={200}
+      closedHeight={48}
       showBackdrop={true}
+      closedLabel="AI Assistant ✨"
     >
       <div className="flex flex-col h-full px-3 pb-2">
         {/* No API key state */}
@@ -310,8 +314,8 @@ export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSet
                     handleSend();
                   }
                 }}
-                placeholder="Ask AI anything…"
-                rows={1}
+                placeholder="Ask AI anything… drag up for full chat"
+                rows={2}
                 className={cn(
                   'flex-1 resize-none rounded-lg px-3 py-2 text-sm',
                   'bg-[var(--theme-bg-primary)] text-[var(--theme-text-primary)]',
