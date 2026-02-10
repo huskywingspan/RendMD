@@ -291,7 +291,23 @@
   height: 0;
 }
 
-/* Focus ring for accessibility */
+/* Focus ring for accessibility — visible for keyboard users */
 .ProseMirror:focus {
+  outline: 2px solid var(--theme-accent-primary, #6366f1);
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+.ProseMirror:focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Search & Replace highlights */
+.search-highlight {
+  background-color: rgba(255, 235, 59, 0.4);
+  border-radius: 2px;
+}
+
+.search-highlight-active {
+  background-color: rgba(255, 152, 0, 0.6);
+  border-radius: 2px;
 }

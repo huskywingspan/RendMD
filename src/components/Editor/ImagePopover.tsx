@@ -101,13 +101,14 @@ export function ImagePopover({ editor, isOpen, onClose, nodePos }: ImagePopoverP
   if (!isOpen || !editor) return null;
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- WAI-ARIA dialog is interactive; onKeyDown handles Enter-to-save and Escape-to-close
     <div
       ref={refs.setFloating}
       style={floatingStyles}
       className="z-50 p-4 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)] rounded-lg shadow-xl min-w-[320px]"
       onKeyDown={handleKeyDown}
       role="dialog"
+      aria-modal="true"
       aria-label="Edit image"
     >
       <div className="flex items-center justify-between mb-3">

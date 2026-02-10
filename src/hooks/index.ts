@@ -10,3 +10,5 @@ export { useImageAssets } from './useImageAssets';
 export type { UseImageAssetsReturn } from './useImageAssets';
 
 export { useSwipeGesture } from './useSwipeGesture';
+
+export { useScrollSync } from './useScrollSync';

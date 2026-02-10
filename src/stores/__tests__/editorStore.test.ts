@@ -19,6 +19,7 @@ describe('editorStore', () => {
       shortcutsModalOpen: false,
       fontSize: 16,
       autoSaveEnabled: true,
+      recentFiles: [],
     });
   });
 
@@ -231,6 +232,59 @@ describe('editorStore', () => {
       // Document fields should remain at their current values (empty defaults)
       expect(state.viewMode).toBe('source');
       expect(state.fontSize).toBe(18);
+    });
+  });
+
+  describe('recent files', () => {
+    it('starts with empty recentFiles', () => {
+      expect(useEditorStore.getState().recentFiles).toEqual([]);
+    });
+
+    it('addRecentFile adds an entry at the front', () => {
+      useEditorStore.getState().addRecentFile({ name: 'a.md', lastOpened: 100 });
+      useEditorStore.getState().addRecentFile({ name: 'b.md', lastOpened: 200 });
+
+      const files = useEditorStore.getState().recentFiles;
+      expect(files).toHaveLength(2);
+      expect(files[0].name).toBe('b.md');
+      expect(files[1].name).toBe('a.md');
+    });
+
+    it('addRecentFile deduplicates by name (moves to front)', () => {
+      useEditorStore.getState().addRecentFile({ name: 'a.md', lastOpened: 100 });
+      useEditorStore.getState().addRecentFile({ name: 'b.md', lastOpened: 200 });
+      useEditorStore.getState().addRecentFile({ name: 'a.md', lastOpened: 300 });
+
+      const files = useEditorStore.getState().recentFiles;
+      expect(files).toHaveLength(2);
+      expect(files[0].name).toBe('a.md');
+      expect(files[0].lastOpened).toBe(300);
+    });
+
+    it('addRecentFile caps at MAX_RECENT (8)', () => {
+      for (let i = 0; i < 10; i++) {
+        useEditorStore.getState().addRecentFile({ name: `file${i}.md`, lastOpened: i });
+      }
+      expect(useEditorStore.getState().recentFiles).toHaveLength(8);
+      // Most recent should be first
+      expect(useEditorStore.getState().recentFiles[0].name).toBe('file9.md');
+    });
+
+    it('removeRecentFile removes by name', () => {
+      useEditorStore.getState().addRecentFile({ name: 'a.md', lastOpened: 100 });
+      useEditorStore.getState().addRecentFile({ name: 'b.md', lastOpened: 200 });
+      useEditorStore.getState().removeRecentFile('a.md');
+
+      const files = useEditorStore.getState().recentFiles;
+      expect(files).toHaveLength(1);
+      expect(files[0].name).toBe('b.md');
+    });
+
+    it('clearRecentFiles empties the list', () => {
+      useEditorStore.getState().addRecentFile({ name: 'a.md', lastOpened: 100 });
+      useEditorStore.getState().clearRecentFiles();
+
+      expect(useEditorStore.getState().recentFiles).toEqual([]);
     });
   });
 });

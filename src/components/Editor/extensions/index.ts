@@ -11,6 +11,7 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import { Markdown } from 'tiptap-markdown';
 import { CustomKeyboardShortcuts } from './keyboard-shortcuts';
 import { CodeBlockShiki } from './CodeBlockShiki';
+import { SearchExtension } from './search';
 
 /**
  * Extended TableCell with textAlign attribute support
@@ -157,6 +158,7 @@ export function createEditorExtensions(isDark: boolean = true) {
       transformCopiedText: true,
     }),
     CustomKeyboardShortcuts,
+    SearchExtension,
   ];
 }
 

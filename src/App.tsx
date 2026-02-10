@@ -6,7 +6,7 @@ import { Editor } from '@/components/Editor';
 import { FrontmatterPanel } from '@/components/Frontmatter';
 import { ToastContainer } from '@/components/UI/Toast';
 import { EmptyState } from '@/components/UI/EmptyState';
-import { useFileSystem, useAutoSave, useTOC, scrollToHeading, useSwipeGesture } from '@/hooks';
+import { useFileSystem, useAutoSave, useTOC, scrollToHeading, useSwipeGesture, useScrollSync } from '@/hooks';
 import { useEditorStore } from '@/stores/editorStore';
 import { serializeFrontmatter, parseFrontmatter } from '@/utils/frontmatterParser';
 import { fileToBase64 } from '@/utils/imageHelpers';
@@ -17,6 +17,7 @@ const SourceEditor = lazy(() => import('@/components/SourceView/SourceEditor'));
 const ShortcutsModal = lazy(() => import('@/components/Modals/ShortcutsModal'));
 const ImageInsertModal = lazy(() => import('@/components/Modals/ImageInsertModal'));
 const SettingsModal = lazy(() => import('@/components/Modals/SettingsModal'));
+const SearchBar = lazy(() => import('@/components/Editor/SearchBar'));
 
 function App(): JSX.Element {
   const { 
@@ -45,6 +46,15 @@ function App(): JSX.Element {
   // Settings modal state
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Search bar state
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchShowReplace, setSearchShowReplace] = useState(false);
+
+  // Screen reader status announcements
+  const [statusAnnouncement, setStatusAnnouncement] = useState('');
+
+  // Scroll sync for split mode
+  const { setRefA, setRefB, onScrollA, onScrollB } = useScrollSync();
   // Combine frontmatter + content for source view
   const fullMarkdown = serializeFrontmatter(frontmatter, content);
 
@@ -183,6 +193,7 @@ function App(): JSX.Element {
             frontmatter: state.frontmatter,
             fileName: state.fileName,
             isDirty: state.isDirty,
+            recentFiles: state.recentFiles,
           };
           localStorage.setItem(
             'rendmd-preferences',
@@ -229,24 +240,39 @@ function App(): JSX.Element {
     if (isMod && e.key === 'o') {
       e.preventDefault();
       await openFile();
+      setStatusAnnouncement('File opened');
     } else if (isMod && e.key === 'n') {
       e.preventDefault();
       newFile();
+      setStatusAnnouncement('New file created');
     } else if (isMod && e.shiftKey && e.key === 'S') {
       e.preventDefault();
-      await saveFileAs();
+      const saved = await saveFileAs();
+      if (saved) setStatusAnnouncement('File saved as');
     } else if (isMod && e.shiftKey && e.key === 'I') {
       e.preventDefault();
       openImagePicker();
     } else if (isMod && e.key === 's') {
       e.preventDefault();
-      await saveFile();
+      const saved = await saveFile();
+      if (saved) setStatusAnnouncement('File saved');
+    } else if (isMod && e.shiftKey && e.key === '/') {
+      // Ctrl+Shift+/ → toggle keyboard shortcuts modal
+      e.preventDefault();
+      setShortcutsModalOpen(!shortcutsModalOpen);
     } else if (isMod && !e.shiftKey && e.key === '/') {
       e.preventDefault();
       cycleViewMode();
     } else if (isMod && e.key === 'h') {
+      // Ctrl+H → find & replace (universal standard)
       e.preventDefault();
-      setShortcutsModalOpen(!shortcutsModalOpen);
+      setSearchShowReplace(true);
+      setIsSearchOpen(true);
+    } else if (isMod && e.key === 'f') {
+      // Ctrl+F → find in document
+      e.preventDefault();
+      setSearchShowReplace(false);
+      setIsSearchOpen(true);
     }
   }, [openFile, saveFile, saveFileAs, openImagePicker, cycleViewMode, shortcutsModalOpen, setShortcutsModalOpen, newFile]);
 
@@ -257,15 +283,33 @@ function App(): JSX.Element {
 
   return (
     <div className="h-dvh flex flex-col bg-[var(--theme-bg-primary)]" style={{ '--editor-font-size': `${fontSize}px`, '--ui-density-scale': uiDensity === 'compact' ? '0.85' : '1', height: '100dvh' } as React.CSSProperties}>
+      {/* Skip-to-content link for screen readers */}
+      <a
+        href="#main-editor"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[var(--theme-accent-primary)] focus:text-white focus:rounded-lg"
+      >
+        Skip to editor
+      </a>
+
       <Header isSaving={isSaving} lastSaved={lastSaved} editor={editorInstance} onOpenSettings={() => setSettingsOpen(true)} />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar onTocItemClick={handleTocItemClick} />
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main id="main-editor" className="flex-1 flex flex-col overflow-hidden">
           {/* Frontmatter panel - shows above editors */}
           <FrontmatterPanel />
           
           {/* Editor area - conditional based on effectiveViewMode */}
-          <div ref={editorAreaRef} className="flex-1 flex overflow-hidden">
+          <div ref={editorAreaRef} className="flex-1 flex overflow-hidden relative">
+            {/* Search bar — inside editor area, positioned absolute top-right */}
+            {isSearchOpen && editorInstance && (
+              <Suspense fallback={null}>
+                <SearchBar
+                  editor={editorInstance}
+                  onClose={() => setIsSearchOpen(false)}
+                  showReplace={searchShowReplace}
+                />
+              </Suspense>
+            )}
             {/* Empty state when no content and no file loaded */}
             {!content && !storedFilePath && !fileName ? (
               <EmptyState />
@@ -277,6 +321,8 @@ function App(): JSX.Element {
                     <Editor 
                       onEditorReady={handleEditorReady}
                       onImageFile={handleImageFile}
+                      scrollContainerRef={effectiveViewMode === 'split' ? setRefA : undefined}
+                      onScrollSync={effectiveViewMode === 'split' ? onScrollA : undefined}
                     />
                   </div>
                 )}
@@ -289,6 +335,8 @@ function App(): JSX.Element {
                         value={fullMarkdown}
                         onChange={handleSourceChange}
                         className="h-full"
+                        scrollContainerRef={effectiveViewMode === 'split' ? setRefB : undefined}
+                        onScrollSync={effectiveViewMode === 'split' ? onScrollB : undefined}
                       />
                     </Suspense>
                   </div>
@@ -331,6 +379,11 @@ function App(): JSX.Element {
       </Suspense>
 
       <ToastContainer />
+
+      {/* Screen reader status announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only" id="status-announcements">
+        {statusAnnouncement}
+      </div>
     </div>
   );
 }

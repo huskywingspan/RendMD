@@ -1,6 +1,8 @@
 import { useCallback, useRef } from 'react';
 import { useEditorStore } from '@/stores/editorStore';
 import { setSharedFileHandle } from '@/utils/fileHandle';
+import { storeFileHandle, getFileHandle, verifyPermission, removeFileHandle } from '@/utils/recentFiles';
+import type { RecentFileEntry } from '@/types';
 
 // Re-export for consumers that already import from here
 export { getSharedFileHandle, setSharedFileHandle } from '@/utils/fileHandle';
@@ -43,6 +45,7 @@ const MARKDOWN_FILE_TYPES: FilePickerAcceptType[] = [
 
 export interface UseFileSystemReturn {
   openFile: () => Promise<void>;
+  openRecentFile: (entry: RecentFileEntry) => Promise<boolean>;
   saveFile: () => Promise<boolean>;
   saveFileAs: () => Promise<boolean>;
   hasNativeFS: boolean;
@@ -118,6 +121,14 @@ export function useFileSystem(): UseFileSystemReturn {
         setContent(content);
         setFilePath(file.name, file.name);
         markClean();
+
+        // Track in recent files
+        const handleKey = await storeFileHandle(file.name, handle);
+        useEditorStore.getState().addRecentFile({
+          name: file.name,
+          lastOpened: Date.now(),
+          handleKey,
+        });
       } catch (error) {
         // User cancelled or permission denied
         if ((error as Error).name !== 'AbortError') {
@@ -146,6 +157,12 @@ export function useFileSystem(): UseFileSystemReturn {
             setContent(content);
             setFilePath(file.name, file.name);
             markClean();
+
+            // Track in recent files (no handle in fallback)
+            useEditorStore.getState().addRecentFile({
+              name: file.name,
+              lastOpened: Date.now(),
+            });
             resolve();
           } catch (error) {
             reject(error);
@@ -182,6 +199,14 @@ export function useFileSystem(): UseFileSystemReturn {
         setSharedFileHandle(handle);
         setFilePath(handle.name, handle.name);
         markClean();
+
+        // Track in recent files
+        const handleKey = await storeFileHandle(handle.name, handle);
+        useEditorStore.getState().addRecentFile({
+          name: handle.name,
+          lastOpened: Date.now(),
+          handleKey,
+        });
         return true;
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
@@ -233,8 +258,55 @@ export function useFileSystem(): UseFileSystemReturn {
     return saveFileAs();
   }, [content, hasNativeFS, markClean, saveFileAs]);
 
+  /**
+   * Open a file from the recent files list using its stored handle
+   */
+  const openRecentFile = useCallback(async (entry: RecentFileEntry): Promise<boolean> => {
+    if (!entry.handleKey || !hasNativeFS) {
+      // No stored handle — can't reopen without native FS
+      useEditorStore.getState().removeRecentFile(entry.name);
+      return false;
+    }
+
+    const handle = await getFileHandle(entry.handleKey);
+    if (!handle) {
+      // Handle removed from IndexedDB
+      useEditorStore.getState().removeRecentFile(entry.name);
+      await removeFileHandle(entry.handleKey);
+      return false;
+    }
+
+    const hasPermission = await verifyPermission(handle);
+    if (!hasPermission) {
+      return false;
+    }
+
+    try {
+      const file = await handle.getFile();
+      const text = await file.text();
+
+      fileHandleRef.current = handle;
+      setSharedFileHandle(handle);
+      setContent(text);
+      setFilePath(file.name, file.name);
+      markClean();
+
+      // Update the lastOpened timestamp
+      useEditorStore.getState().addRecentFile({
+        ...entry,
+        lastOpened: Date.now(),
+      });
+      return true;
+    } catch (error) {
+      console.error('[RendMD] Failed to open recent file:', error);
+      useEditorStore.getState().removeRecentFile(entry.name);
+      return false;
+    }
+  }, [hasNativeFS, setContent, setFilePath, markClean, fileHandleRef]);
+
   return {
     openFile,
+    openRecentFile,
     saveFile,
     saveFileAs,
     hasNativeFS,

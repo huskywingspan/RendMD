@@ -53,10 +53,14 @@ export interface EditorProps {
   onEditorReady?: (editor: TipTapEditor) => void;
   /** Callback when an image file is dropped or pasted */
   onImageFile?: (file: File) => void;
+  /** Callback ref for the scroll container (for split-view scroll sync) */
+  scrollContainerRef?: (el: HTMLElement | null) => void;
+  /** Scroll event handler for scroll sync */
+  onScrollSync?: () => void;
 }
 
-export function Editor({ onEditorReady, onImageFile }: EditorProps): JSX.Element {
-  const { content, setContent } = useEditorStore();
+export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrollSync }: EditorProps): JSX.Element {
+  const { content, setContent, fileName } = useEditorStore();
   const { toolbarCollapsed, toggleToolbar } = useEditorStore();
   const isDark = useIsDark();
   
@@ -300,10 +304,16 @@ export function Editor({ onEditorReady, onImageFile }: EditorProps): JSX.Element
             </div>
           </div>
         )}
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- region wraps ProseMirror which handles its own keyboard input; onKeyDown here is only for click-to-focus parity */}
         <div 
           className="flex-1 overflow-y-auto p-4 md:p-8" 
+          ref={scrollContainerRef as React.RefCallback<HTMLDivElement>}
+          role="region"
+          aria-label={fileName ? `Editing ${fileName}` : 'Document editor'}
+          tabIndex={-1}
           onClick={handleEditorClick}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleEditorClick(e as unknown as React.MouseEvent); }}
+          onScroll={onScrollSync}
           onDrop={handleDrop}
           onPaste={handlePaste}
           onDragOver={(e) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); }}

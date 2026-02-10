@@ -26,6 +26,8 @@ export const SHORTCUTS: ShortcutEntry[] = [
   { action: 'Copy', keys: 'Ctrl+C', category: 'editing' },
   { action: 'Paste', keys: 'Ctrl+V', category: 'editing' },
   { action: 'Insert Image', keys: 'Ctrl+Shift+I', category: 'editing' },
+  { action: 'Find', keys: 'Ctrl+F', category: 'editing' },
+  { action: 'Replace', keys: 'Ctrl+H', category: 'editing' },
 
   // File
   { action: 'New', keys: 'Ctrl+N', category: 'file' },
@@ -39,7 +41,7 @@ export const SHORTCUTS: ShortcutEntry[] = [
   { action: 'Show toolbar', keys: 'Ctrl+Space', category: 'view' },
 
   // Navigation
-  { action: 'Show shortcuts', keys: 'Ctrl+H', category: 'navigation' },
+  { action: 'Show shortcuts', keys: 'Ctrl+Shift+/', category: 'navigation' },
 ];
 
 export const CATEGORY_LABELS: Record<ShortcutEntry['category'], string> = {

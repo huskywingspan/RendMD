@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { EditorState, Frontmatter, ThemeName, SidebarState, ViewMode, TOCItem, UIDensity } from '@/types';
+import type { EditorState, Frontmatter, ThemeName, SidebarState, ViewMode, TOCItem, UIDensity, RecentFileEntry } from '@/types';
 import { setSharedFileHandle } from '@/utils/fileHandle';
+import { MAX_RECENT } from '@/utils/recentFiles';
 
 interface EditorStore extends EditorState {
   // Content actions
@@ -57,6 +58,12 @@ interface EditorStore extends EditorState {
   uiDensity: UIDensity;
   setUIDensity: (density: UIDensity) => void;
 
+  // Recent files
+  recentFiles: RecentFileEntry[];
+  addRecentFile: (entry: RecentFileEntry) => void;
+  removeRecentFile: (name: string) => void;
+  clearRecentFiles: () => void;
+
   // Legacy compatibility
   showSource: boolean;
   toggleSource: () => void;
@@ -75,6 +82,8 @@ interface PersistedState {
   frontmatter: Frontmatter | null;
   fileName: string | null;
   isDirty: boolean;
+  // Recent files
+  recentFiles: RecentFileEntry[];
 }
 
 export const useEditorStore = create<EditorStore>()(
@@ -99,6 +108,7 @@ export const useEditorStore = create<EditorStore>()(
       autoSaveEnabled: true,
       toolbarCollapsed: false,
       uiDensity: 'comfortable' as UIDensity,
+      recentFiles: [] as RecentFileEntry[],
       
       // Legacy compatibility — plain value, not a getter
       // (Getters using get() crash during Zustand hydration merge)
@@ -168,6 +178,16 @@ export const useEditorStore = create<EditorStore>()(
       // UI Density
       setUIDensity: (uiDensity) => set({ uiDensity }),
 
+      // Recent files
+      addRecentFile: (entry) => set((state) => {
+        const filtered = state.recentFiles.filter((f) => f.name !== entry.name);
+        return { recentFiles: [entry, ...filtered].slice(0, MAX_RECENT) };
+      }),
+      removeRecentFile: (name) => set((state) => ({
+        recentFiles: state.recentFiles.filter((f) => f.name !== name),
+      })),
+      clearRecentFiles: () => set({ recentFiles: [] }),
+
       // View mode
       setViewMode: (viewMode) => set({ viewMode }),
       cycleViewMode: () => set((state) => {
@@ -193,6 +213,7 @@ export const useEditorStore = create<EditorStore>()(
         frontmatter: state.frontmatter,
         fileName: state.fileName,
         isDirty: state.isDirty,
+        recentFiles: state.recentFiles,
       }),
       onRehydrateStorage: () => {
         return (state, error) => {
@@ -221,6 +242,7 @@ export const useEditorStore = create<EditorStore>()(
           frontmatter: persisted?.frontmatter ?? currentState.frontmatter,
           fileName: persisted?.fileName ?? currentState.fileName,
           isDirty: persisted?.isDirty ?? currentState.isDirty,
+          recentFiles: persisted?.recentFiles ?? currentState.recentFiles,
         };
       },
     }

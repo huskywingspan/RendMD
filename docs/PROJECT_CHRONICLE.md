@@ -1916,3 +1916,144 @@ Fixes rolled into v1.0.5 build:
 - `src/components/Editor/EditorToolbar.tsx` — Buttons use `--density-button-padding`, container uses `--density-gap-sm`; fixed `--theme-accent-primary` (v1.0.4 bug)
 - `src/components/Header/Header.tsx` — Height & padding scale with density
 - `src/components/Frontmatter/FrontmatterPanel.tsx` — Default collapsed (v1.0.4 fix)
+
+---
+
+## 2026-02-09 — v1.0.6 Housekeeping: Find & Replace, Recent Files, Scroll Sync, A11y
+
+### Context
+
+Four quality-of-life improvements before the v1.1 AI milestone. These round out the core editor experience with features users expect from a mature editor.
+
+**Researcher Handoff:** `.github/agents/HANDOFF_BUILDER_v1.0.6.md`  
+**Reviewer Handoff:** `.github/handoffs/REVIEWER_V106_HANDOFF.md`
+
+### Workstream 1: Find & Replace
+
+**Problem:** No in-editor search. Browser Ctrl+F doesn't highlight within ProseMirror's rendered DOM nodes effectively.
+
+**Solution:** Custom ProseMirror search plugin built from scratch using `Plugin` + `Decoration` API (~305 LOC). No community extension — the common `tiptap-extension-search-and-replace` isn't compatible with TipTap 3.x.
+
+**Key implementation details:**
+- `SearchPluginState` tracks searchTerm, replaceTerm, caseSensitive, currentMatchIndex, totalMatches, decorationSet
+- `findMatches()` scans text nodes with `doc.descendants()`, returns `{from, to}[]` positions
+- `buildDecorations()` creates `Decoration.inline()` for each match — `.search-highlight` (yellow) and `.search-highlight-active` (orange)
+- State changes dispatched via `tr.setMeta(searchPluginKey, meta)` — clean ProseMirror pattern
+- `replaceAllMatches` replaces in reverse order to preserve document positions
+- Document changes trigger automatic recomputation of decorations
+- `SearchBar.tsx` — VS Code-style floating bar (absolute top-right of editor area), lazy-loaded, pre-populates with selection, Enter/Shift+Enter cycling, Escape close
+
+**Keyboard shortcut conflict resolved:** Ctrl+H was shortcuts modal → now Find & Replace (universal standard). Shortcuts modal moved to Ctrl+Shift+/.
+
+### Workstream 2: Recent Files
+
+**Problem:** No way to quickly reopen previously edited files. Users must use the OS file dialog every time.
+
+**Solution:** Dual-storage approach — Zustand store for metadata (persisted to localStorage), `idb-keyval` for `FileSystemFileHandle` objects (IndexedDB, since handles aren't JSON-serializable).
+
+**Architecture:**
+- `RecentFileEntry { name, lastOpened, handleKey? }` — plain JSON in Zustand
+- `storeFileHandle(name, handle)` → IndexedDB via idb-keyval (~1 KB dep)
+- `verifyPermission(handle)` → queryPermission/requestPermission flow
+- `openRecentFile(entry)` → retrieve handle from IndexedDB, verify permission, read file
+- Graceful degradation: if handle expired or permission denied, entry removed
+- Firefox/Safari fallback: entries show names only (no handle storage), `hasNativeFS` gate
+
+**UI:** `RecentFiles.tsx` in EmptyState — file list with relative timestamps ("2 hours ago", "yesterday"), remove (×) per entry, "Clear" button. Max 8 entries, deduplication by name.
+
+### Workstream 3: Sync Scroll (Split View)
+
+**Problem:** In split mode, rendered and source panels scroll independently.
+
+**Solution:** Proportional ratio-based sync (`useScrollSync` hook, ~59 LOC).
+
+- `ratio = scrollTop / (scrollHeight - clientHeight)` of source → applied to target
+- `isSyncing` ref guard prevents infinite A→B→A feedback loop
+- Double `requestAnimationFrame` to release guard after browser paint
+- Callback refs (`setRefA`, `setRefB`) + scroll handlers (`onScrollA`, `onScrollB`)
+- Only wired when `effectiveViewMode === 'split'`
+
+**Limitation (acceptable):** Proportional sync is approximate — large images or code blocks in rendered view can cause slight misalignment. Same tradeoff VS Code's minimap uses.
+
+### Workstream 4: Screen Reader Accessibility
+
+**Fixes applied across 6 files:**
+
+| Fix | File(s) |
+|-----|---------|
+| Skip-to-content link (`#main-editor`) | `App.tsx` |
+| `aria-live="polite"` status announcements (save, open, new file) | `App.tsx` |
+| Focus trap on SettingsModal (Tab/Shift+Tab cycling) | `SettingsModal.tsx` |
+| `role="presentation"` on modal backdrops | `SettingsModal.tsx` |
+| `aria-modal="true"` on dialog panels | `ImagePopover.tsx`, `LinkPopover.tsx` |
+| `role="region"` + `aria-label` on editor content area | `Editor.tsx` |
+| ProseMirror focus ring restored (`:focus-visible` guard) | `editor-styles.css` |
+| 4 `eslint-disable jsx-a11y/*` comments removed | `Editor.tsx`, `SettingsModal.tsx`, `LinkPopover.tsx`, `ImagePopover.tsx` |
+
+**Note:** 3 justified `eslint-disable` comments added back for WAI-ARIA interactive roles (`role="region"` on editor wrapper, `role="dialog"` on popovers) where the `jsx-a11y` plugin incorrectly flags interactive event handlers.
+
+### ADR-036: ProseMirror Search Plugin (Build from Scratch)
+
+**Date:** 2026-02-09  
+**Status:** Accepted
+
+**Context:** Need in-editor find & replace. No official TipTap search extension exists. Community `tiptap-extension-search-and-replace` may not be compatible with TipTap 3.x.
+
+**Decision:** Build from scratch using ProseMirror's `Plugin`, `PluginKey`, and `Decoration` API, wrapped in a TipTap `Extension.create()`.
+
+**Rationale:** ~305 LOC, zero dependencies, full control over decoration classes, state management, and command API. Follows the existing pattern of custom extensions in the project (CodeBlockShiki, keyboard-shortcuts).
+
+**Consequences:**
+- ✅ No third-party dependency risk
+- ✅ Full TypeScript type augmentation for commands
+- ✅ Decoration-based highlighting works with all themes
+- ⚠️ Text-only search (no regex) — acceptable for v1.0.6, can extend later
+
+### ADR-037: IndexedDB for FileSystemFileHandle Storage
+
+**Date:** 2026-02-09  
+**Status:** Accepted
+
+**Context:** Recent files feature needs to store `FileSystemFileHandle` objects for one-click reopening. These objects are not JSON-serializable and can't go in localStorage.
+
+**Decision:** Use `idb-keyval` (~1 KB) for handle storage in IndexedDB. Zustand store holds only `RecentFileEntry[]` (plain JSON with name, timestamp, handleKey).
+
+**Rationale:** Clean separation — serializable metadata in localStorage (automatic via Zustand persist), binary/opaque handles in IndexedDB. `idb-keyval` is tiny and zero-dependency. Permission verification via `queryPermission`/`requestPermission` handles expired grants.
+
+**Consequences:**
+- ✅ Works with File System Access API (Chrome/Edge)
+- ✅ Graceful degradation on Firefox/Safari (names only, no handles)
+- ✅ Handle cleanup on permission denial or missing entries
+- ⚠️ Handles can expire between sessions — verified before use
+
+### Implementation Summary
+
+**Build:** 0 TS errors | **Lint:** 0 new errors (3 pre-existing in BubbleMenu.tsx) | **Tests:** 128 passed (27 new)
+
+**New files:**
+- `src/components/Editor/extensions/search.ts` — ProseMirror search plugin (305 LOC)
+- `src/components/Editor/SearchBar.tsx` — VS Code-style search/replace bar (256 LOC)
+- `src/utils/recentFiles.ts` — IndexedDB helpers + formatRelativeTime (89 LOC)
+- `src/components/UI/RecentFiles.tsx` — Recent files list component (82 LOC)
+- `src/hooks/useScrollSync.ts` — Proportional scroll sync hook (59 LOC)
+- `src/hooks/__tests__/useScrollSync.test.ts` — 4 tests
+- `src/utils/__tests__/recentFiles.test.ts` — 17 tests (mocked idb-keyval)
+
+**Modified files:**
+- `src/App.tsx` — Ctrl+F/Ctrl+H, search bar, skip-to-content, aria-live, scroll sync wiring
+- `src/components/Editor/Editor.tsx` — scrollContainerRef, onScrollSync, role="region", aria-label
+- `src/components/Editor/extensions/index.ts` — Wired SearchExtension
+- `src/components/Editor/editor-styles.css` — Search highlights, focus ring
+- `src/components/Editor/ImagePopover.tsx` — aria-modal="true"
+- `src/components/Editor/LinkPopover.tsx` — aria-modal="true"
+- `src/components/Modals/SettingsModal.tsx` — Focus trap, role="presentation" backdrop
+- `src/components/SourceView/SourceEditor.tsx` — onScrollSync, scrollContainerRef
+- `src/components/UI/EmptyState.tsx` — RecentFiles integration
+- `src/hooks/index.ts` — useScrollSync export
+- `src/stores/editorStore.ts` — recentFiles state/actions/persistence
+- `src/stores/__tests__/editorStore.test.ts` — 6 new recent files tests
+- `src/types/index.ts` — RecentFileEntry interface
+- `src/utils/shortcuts.ts` — Find/Replace shortcuts, Ctrl+H → Ctrl+Shift+/ reassignment
+- `package.json` — idb-keyval dependency
+
+**Bundle:** 402 KB main chunk (120 KB gzip) — +32 KB from v1.0.0

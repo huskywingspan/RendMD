@@ -65,3 +65,10 @@ export interface FileInfo {
   path: string;
   handle?: FileSystemFileHandle;
 }
+
+// Recent file entry for persistent recent-files list
+export interface RecentFileEntry {
+  name: string;
+  lastOpened: number; // Unix timestamp in ms
+  handleKey?: string; // Key in IndexedDB for file handle
+}

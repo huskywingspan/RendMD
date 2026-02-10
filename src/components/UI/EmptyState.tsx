@@ -2,6 +2,7 @@ import { FileText, FolderOpen, Keyboard } from 'lucide-react';
 import { useFileSystem } from '@/hooks';
 import { useEditorStore } from '@/stores/editorStore';
 import { TEMPLATES, getTemplateContent } from '@/utils/templates';
+import { RecentFiles } from './RecentFiles';
 
 export function EmptyState(): JSX.Element {
   const { openFile } = useFileSystem();
@@ -48,6 +49,9 @@ export function EmptyState(): JSX.Element {
             </button>
           ))}
         </div>
+
+        {/* Recent files */}
+        <RecentFiles maxVisible={5} />
 
         {/* Actions row */}
         <div className="flex items-center justify-center gap-3">

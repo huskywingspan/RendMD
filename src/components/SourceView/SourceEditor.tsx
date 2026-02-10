@@ -7,6 +7,8 @@ interface SourceEditorProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  onScrollSync?: () => void;
+  scrollContainerRef?: (el: HTMLElement | null) => void;
 }
 
 // Shared text styling for perfect alignment between textarea and Shiki output
@@ -26,7 +28,7 @@ const TEXT_STYLES = {
  * CRITICAL: Both textarea and Shiki output must have identical text styling
  * (font, size, line-height) for proper alignment.
  */
-export function SourceEditor({ value, onChange, className }: SourceEditorProps): JSX.Element {
+export function SourceEditor({ value, onChange, className, onScrollSync, scrollContainerRef }: SourceEditorProps): JSX.Element {
   const isDark = useIsDark();
   const [highlightedHtml, setHighlightedHtml] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -40,7 +42,14 @@ export function SourceEditor({ value, onChange, className }: SourceEditorProps):
       highlightRef.current.scrollTop = textareaRef.current.scrollTop;
       highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
-  }, []);
+    onScrollSync?.();
+  }, [onScrollSync]);
+
+  // Expose textarea as scroll container to parent
+  const textareaCallbackRef = useCallback((el: HTMLTextAreaElement | null) => {
+    (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+    scrollContainerRef?.(el);
+  }, [scrollContainerRef]);
 
   // Highlight code with Shiki
   useEffect(() => {
@@ -99,7 +108,7 @@ export function SourceEditor({ value, onChange, className }: SourceEditorProps):
       
       {/* Transparent textarea for editing */}
       <textarea
-        ref={textareaRef}
+        ref={textareaCallbackRef}
         value={value}
         onChange={handleChange}
         onScroll={handleScroll}
