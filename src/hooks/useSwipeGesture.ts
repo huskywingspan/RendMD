@@ -3,17 +3,19 @@ import { useRef, useEffect } from 'react';
 interface SwipeOptions {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
-  /** Minimum horizontal distance in px to trigger (default 50) */
+  onSwipeUp?: () => void;
+  onSwipeDown?: () => void;
+  /** Minimum distance in px to trigger (default 50) */
   threshold?: number;
-  /** Maximum vertical distance to still count as horizontal swipe (default 100) */
-  maxVertical?: number;
+  /** Maximum perpendicular distance to still count as directional swipe (default 100) */
+  maxPerpendicular?: number;
   /** Set false to disable (default true) */
   enabled?: boolean;
 }
 
 /**
- * Detects horizontal swipe gestures on a referenced element.
- * Useful for touch-based view switching on mobile.
+ * Detects horizontal and vertical swipe gestures on a referenced element.
+ * Useful for touch-based view switching and tray control on mobile.
  */
 export function useSwipeGesture(
   elementRef: React.RefObject<HTMLElement | null>,
@@ -26,7 +28,7 @@ export function useSwipeGesture(
     if (!el || options.enabled === false) return;
 
     const threshold = options.threshold ?? 50;
-    const maxVertical = options.maxVertical ?? 100;
+    const maxPerp = options.maxPerpendicular ?? 100;
 
     const handleTouchStart = (e: TouchEvent): void => {
       const touch = e.touches[0];
@@ -37,16 +39,24 @@ export function useSwipeGesture(
       if (!touchStart.current) return;
       const touch = e.changedTouches[0];
       const dx = touch.clientX - touchStart.current.x;
-      const dy = Math.abs(touch.clientY - touchStart.current.y);
+      const dy = touch.clientY - touchStart.current.y;
       touchStart.current = null;
 
-      if (dy > maxVertical) return; // Too vertical — it's a scroll
-      if (Math.abs(dx) < threshold) return; // Too short
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
 
-      if (dx < 0) {
-        options.onSwipeLeft?.();
+      if (absDx > absDy) {
+        // Primarily horizontal
+        if (absDy > maxPerp) return; // Too diagonal
+        if (absDx < threshold) return; // Too short
+        if (dx < 0) options.onSwipeLeft?.();
+        else options.onSwipeRight?.();
       } else {
-        options.onSwipeRight?.();
+        // Primarily vertical
+        if (absDx > maxPerp) return; // Too diagonal
+        if (absDy < threshold) return; // Too short
+        if (dy < 0) options.onSwipeUp?.();
+        else options.onSwipeDown?.();
       }
     };
 

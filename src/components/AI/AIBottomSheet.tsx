@@ -4,6 +4,7 @@ import { Sparkles, Send, Square, Trash2, Copy, Check, CornerDownLeft, RotateCcw 
 import { cn } from '@/utils/cn';
 import { useAIStore, executeQuickAction } from '@/stores/aiStore';
 import { BottomSheet } from '@/components/UI/BottomSheet';
+import type { BottomSheetHandle } from '@/components/UI/BottomSheet';
 import type { BottomSheetDetent } from '@/hooks/useBottomSheet';
 import type { QuickAction } from '@/services/ai/types';
 
@@ -26,9 +27,12 @@ interface AIBottomSheetProps {
   editor: TipTapEditor | null;
   hasSelection: boolean;
   onOpenSettings: () => void;
+  /** Ref callback so parent can call snapTo on the inner BottomSheet */
+  snapToRef?: React.MutableRefObject<((detent: BottomSheetDetent) => void) | null>;
 }
 
-export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSettings }: AIBottomSheetProps): JSX.Element {
+export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSettings, snapToRef }: AIBottomSheetProps): JSX.Element {
+  const sheetRef = useRef<BottomSheetHandle>(null);
   const {
     messages, isStreaming, streamingContent, sendMessage, cancelStream,
     clearConversation, hasApiKey, activeProvider, pendingResult,
@@ -42,6 +46,14 @@ export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSet
 
   const detents: BottomSheetDetent[] = ['closed', 'peek', 'half', 'full'];
   const defaultDetent: BottomSheetDetent = 'closed';
+
+  // Forward snapTo to parent via ref callback
+  useEffect(() => {
+    if (snapToRef) {
+      snapToRef.current = (detent: BottomSheetDetent) => sheetRef.current?.snapTo(detent);
+    }
+    return () => { if (snapToRef) snapToRef.current = null; };
+  }, [snapToRef]);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -139,6 +151,7 @@ export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSet
 
   return (
     <BottomSheet
+      ref={sheetRef}
       isOpen={isOpen}
       onClose={onClose}
       detents={detents}

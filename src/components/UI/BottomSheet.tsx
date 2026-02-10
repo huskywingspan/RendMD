@@ -1,7 +1,11 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { cn } from '@/utils/cn';
 import { useBottomSheet } from '@/hooks/useBottomSheet';
 import type { BottomSheetDetent } from '@/hooks/useBottomSheet';
+
+export interface BottomSheetHandle {
+  snapTo: (detent: BottomSheetDetent) => void;
+}
 
 export interface BottomSheetProps {
   isOpen: boolean;
@@ -17,7 +21,7 @@ export interface BottomSheetProps {
   closedLabel?: string;
 }
 
-export function BottomSheet({
+export const BottomSheet = forwardRef<BottomSheetHandle, BottomSheetProps>(function BottomSheet({
   isOpen,
   onClose,
   detents,
@@ -28,7 +32,7 @@ export function BottomSheet({
   children,
   className,
   closedLabel,
-}: BottomSheetProps): JSX.Element | null {
+}: BottomSheetProps, ref): JSX.Element | null {
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -42,6 +46,12 @@ export function BottomSheet({
     scrollRef,
   });
 
+  // Expose snapTo to parent via imperative handle
+  useImperativeHandle(ref, () => ({ snapTo }), [snapTo]);
+
+  const isTouchDevice = typeof window !== 'undefined' &&
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
   // Track mobile keyboard via visualViewport API
   useEffect(() => {
     const vv = window.visualViewport;
@@ -50,6 +60,8 @@ export function BottomSheet({
       const offset = window.innerHeight - vv.height - vv.offsetTop;
       setKeyboardOffset(Math.max(0, offset));
     };
+    // Run immediately on mount to catch browser toolbar offset
+    handler();
     vv.addEventListener('resize', handler);
     vv.addEventListener('scroll', handler);
     return () => {
@@ -67,13 +79,6 @@ export function BottomSheet({
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
-
-  // Expose snapTo to children via data attribute (for programmatic snap)
-  useEffect(() => {
-    if (containerRef.current) {
-      (containerRef.current as HTMLDivElement & { snapTo?: (d: BottomSheetDetent) => void }).snapTo = snapTo;
-    }
-  }, [snapTo]);
 
   // Show backdrop only for half/full
   const backdropVisible = isOpen && showBackdrop && (currentDetent === 'half' || currentDetent === 'full');
@@ -106,7 +111,9 @@ export function BottomSheet({
         )}
         style={{
           transform: `translateY(${translateY * 100}%)`,
-          bottom: keyboardOffset > 0 ? `${keyboardOffset}px` : undefined,
+          bottom: keyboardOffset > 0
+            ? `${keyboardOffset}px`
+            : (currentDetent === 'closed' && isTouchDevice) ? '56px' : undefined,
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
           touchAction: 'none',
           willChange: 'transform',
@@ -146,4 +153,4 @@ export function BottomSheet({
       </div>
     </>
   );
-}
+});

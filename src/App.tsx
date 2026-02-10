@@ -7,6 +7,7 @@ import { FrontmatterPanel } from '@/components/Frontmatter';
 import { ToastContainer } from '@/components/UI/Toast';
 import { EmptyState } from '@/components/UI/EmptyState';
 import { useFileSystem, useAutoSave, useTOC, scrollToHeading, useSwipeGesture, useScrollSync } from '@/hooks';
+import type { BottomSheetDetent } from '@/hooks/useBottomSheet';
 import { useEditorStore } from '@/stores/editorStore';
 import { useAIStore } from '@/stores/aiStore';
 import { serializeFrontmatter, parseFrontmatter } from '@/utils/frontmatterParser';
@@ -70,6 +71,7 @@ function App(): JSX.Element {
 
   // Swipe gesture for mobile view switching
   const editorAreaRef = useRef<HTMLDivElement>(null);
+  const aiSheetSnapRef = useRef<((detent: BottomSheetDetent) => void) | null>(null);
   const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   // Compute effective view mode — no split on mobile (< 768px)
@@ -92,6 +94,12 @@ function App(): JSX.Element {
     },
     onSwipeRight: () => {
       if (effectiveViewMode === 'source') setViewMode('render');
+    },
+    onSwipeUp: () => {
+      aiSheetSnapRef.current?.('peek');
+    },
+    onSwipeDown: () => {
+      aiSheetSnapRef.current?.('closed');
     },
     enabled: isTouchDevice,
   });
@@ -386,6 +394,7 @@ function App(): JSX.Element {
             editor={editorInstance}
             hasSelection={mobileHasSelection}
             onOpenSettings={() => { setAIBottomSheetOpen(false); setSettingsOpen(true); }}
+            snapToRef={aiSheetSnapRef}
           />
         </Suspense>
       )}
