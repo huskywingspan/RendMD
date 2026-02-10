@@ -12,3 +12,6 @@ export type { UseImageAssetsReturn } from './useImageAssets';
 export { useSwipeGesture } from './useSwipeGesture';
 
 export { useScrollSync } from './useScrollSync';
+
+export { useBottomSheet } from './useBottomSheet';
+export type { BottomSheetDetent, UseBottomSheetReturn } from './useBottomSheet';

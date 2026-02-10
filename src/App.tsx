@@ -8,6 +8,7 @@ import { ToastContainer } from '@/components/UI/Toast';
 import { EmptyState } from '@/components/UI/EmptyState';
 import { useFileSystem, useAutoSave, useTOC, scrollToHeading, useSwipeGesture, useScrollSync } from '@/hooks';
 import { useEditorStore } from '@/stores/editorStore';
+import { useAIStore } from '@/stores/aiStore';
 import { serializeFrontmatter, parseFrontmatter } from '@/utils/frontmatterParser';
 import { fileToBase64 } from '@/utils/imageHelpers';
 import type { TOCItem } from '@/types';
@@ -18,6 +19,8 @@ const ShortcutsModal = lazy(() => import('@/components/Modals/ShortcutsModal'));
 const ImageInsertModal = lazy(() => import('@/components/Modals/ImageInsertModal'));
 const SettingsModal = lazy(() => import('@/components/Modals/SettingsModal'));
 const SearchBar = lazy(() => import('@/components/Editor/SearchBar'));
+const AIPanel = lazy(() => import('@/components/AI/AIPanel').then(m => ({ default: m.AIPanel })));
+const AIBottomSheet = lazy(() => import('@/components/AI/AIBottomSheet').then(m => ({ default: m.AIBottomSheet })));
 
 function App(): JSX.Element {
   const { 
@@ -49,6 +52,13 @@ function App(): JSX.Element {
   // Search bar state
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchShowReplace, setSearchShowReplace] = useState(false);
+
+  // AI panel state
+  const { isPanelOpen: aiPanelOpen } = useAIStore();
+
+  // AI bottom sheet state (mobile)
+  const [aiBottomSheetOpen, setAIBottomSheetOpen] = useState(false);
+  const [mobileHasSelection, setMobileHasSelection] = useState(false);
 
   // Screen reader status announcements
   const [statusAnnouncement, setStatusAnnouncement] = useState('');
@@ -273,6 +283,10 @@ function App(): JSX.Element {
       e.preventDefault();
       setSearchShowReplace(false);
       setIsSearchOpen(true);
+    } else if (isMod && e.shiftKey && e.key === 'A') {
+      // Ctrl+Shift+A → toggle AI panel
+      e.preventDefault();
+      useAIStore.getState().togglePanel();
     }
   }, [openFile, saveFile, saveFileAs, openImagePicker, cycleViewMode, shortcutsModalOpen, setShortcutsModalOpen, newFile]);
 
@@ -323,6 +337,11 @@ function App(): JSX.Element {
                       onImageFile={handleImageFile}
                       scrollContainerRef={effectiveViewMode === 'split' ? setRefA : undefined}
                       onScrollSync={effectiveViewMode === 'split' ? onScrollA : undefined}
+                      onAIClick={isTouchDevice ? () => {
+                        const sel = editorInstance?.state.selection;
+                        setMobileHasSelection(sel ? sel.from !== sel.to : false);
+                        setAIBottomSheetOpen(true);
+                      } : undefined}
                     />
                   </div>
                 )}
@@ -345,7 +364,31 @@ function App(): JSX.Element {
             )}
           </div>
         </main>
+
+        {/* AI Panel — desktop right sidebar */}
+        {aiPanelOpen && (
+          <Suspense fallback={null}>
+            <AIPanel
+              className="w-80 border-l border-[var(--theme-border-primary)] hidden md:flex flex-col"
+              editor={editorInstance}
+              onOpenSettings={() => setSettingsOpen(true)}
+            />
+          </Suspense>
+        )}
       </div>
+
+      {/* AI Bottom Sheet — mobile */}
+      {aiBottomSheetOpen && (
+        <Suspense fallback={null}>
+          <AIBottomSheet
+            isOpen={aiBottomSheetOpen}
+            onClose={() => setAIBottomSheetOpen(false)}
+            editor={editorInstance}
+            hasSelection={mobileHasSelection}
+            onOpenSettings={() => { setAIBottomSheetOpen(false); setSettingsOpen(true); }}
+          />
+        </Suspense>
+      )}
 
       {/* Modals */}
       {shortcutsModalOpen && (

@@ -1,4 +1,4 @@
-import { Menu, Settings, FolderOpen, Save, Eye, Columns2, Code, Keyboard, FilePlus } from 'lucide-react';
+import { Menu, Settings, FolderOpen, Save, Eye, Columns2, Code, Keyboard, FilePlus, Sparkles } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
 import { useEditorStore } from '@/stores/editorStore';
 import { useFileSystem } from '@/hooks';
@@ -8,6 +8,7 @@ import { ThemeDropdown } from './ThemeDropdown';
 import { FileIndicator } from './FileIndicator';
 import { ExportDropdown } from './ExportDropdown';
 import { MobileMenu } from './MobileMenu';
+import { useAIStore } from '@/stores/aiStore';
 import type { ViewMode } from '@/types';
 
 interface HeaderProps {
@@ -97,6 +98,8 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
           <ThemeDropdown />
         </div>
         
+        <AIToggleButton />
+
         <Tooltip content="Keyboard shortcuts (Ctrl+H)">
           <button
             onClick={() => setShortcutsModalOpen(!shortcutsModalOpen)}
@@ -130,6 +133,28 @@ function MobileDirtyDot(): JSX.Element | null {
   if (!isDirty) return null;
   return (
     <span className="w-2 h-2 rounded-full bg-[var(--theme-accent-primary)]" title="Unsaved changes" />
+  );
+}
+
+/** AI panel toggle button — desktop only */
+function AIToggleButton(): JSX.Element {
+  const { isPanelOpen, togglePanel } = useAIStore();
+  return (
+    <Tooltip content="AI Assistant (Ctrl+Shift+A)">
+      <button
+        onClick={togglePanel}
+        className={cn(
+          'hidden sm:inline-flex p-1.5 rounded transition-colors',
+          isPanelOpen
+            ? 'bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]'
+            : 'hover:bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-secondary)]',
+        )}
+        aria-label="AI Assistant (Ctrl+Shift+A)"
+        aria-pressed={isPanelOpen}
+      >
+        <Sparkles size={18} />
+      </button>
+    </Tooltip>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import type { Editor as TipTapEditor } from '@tiptap/react';
 import { useEditorStore, useIsDark } from '@/stores/editorStore';
+import { useAIStore, executeQuickAction } from '@/stores/aiStore';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { ChevronUp } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -10,7 +11,10 @@ import { LinkPopover } from './LinkPopover';
 import { ImagePopover } from './ImagePopover';
 import { EditorToolbar } from './EditorToolbar';
 import { createEditorExtensions } from './extensions';
+import type { EditorExtensionOptions } from './extensions';
 import { isImageFile } from '@/utils/imageHelpers';
+import { AIQuickActions } from '@/components/AI/AIQuickActions';
+import { AIResultPreview } from '@/components/AI/AIResultPreview';
 import './editor-styles.css';
 
 const INITIAL_CONTENT = `# Welcome to RendMD
@@ -57,9 +61,11 @@ export interface EditorProps {
   scrollContainerRef?: (el: HTMLElement | null) => void;
   /** Scroll event handler for scroll sync */
   onScrollSync?: () => void;
+  /** Callback to open AI bottom sheet (mobile) */
+  onAIClick?: () => void;
 }
 
-export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrollSync }: EditorProps): JSX.Element {
+export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrollSync, onAIClick }: EditorProps): JSX.Element {
   const { content, setContent, fileName } = useEditorStore();
   const { toolbarCollapsed, toggleToolbar } = useEditorStore();
   const isDark = useIsDark();
@@ -77,12 +83,53 @@ export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrol
   
   // Bubble menu force-visible state (for Ctrl+Space)
   const [bubbleMenuForced, setBubbleMenuForced] = useState(false);
+
+  // AI quick actions state
+  const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const [aiMenuPos, setAiMenuPos] = useState({ top: 0, left: 0 });
+  const [aiCustomPromptOpen, setAiCustomPromptOpen] = useState(false);
+  const [aiCustomPromptText, setAiCustomPromptText] = useState('');
+  const { pendingResult, setPendingResult, acceptResult, rejectResult, hasApiKey, activeProvider, isStreaming } = useAIStore();
   
   // Hidden image input ref
   const imageInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Create extensions with theme awareness
-  const extensions = useMemo(() => createEditorExtensions(isDark), [isDark]);
+  // Ghost text AI suggestion callback
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  const { ghostTextEnabled, apiKeys: aiApiKeys, activeProvider: aiProvider } = useAIStore();
+  const ghostEnabled = ghostTextEnabled && !isTouchDevice && Boolean(aiApiKeys[aiProvider]);
+
+  const getGhostSuggestion = useCallback(async (precedingText: string, signal: AbortSignal): Promise<string> => {
+    const encryptedKey = useAIStore.getState().apiKeys[useAIStore.getState().activeProvider];
+    if (!encryptedKey) return '';
+    const { streamCompletion } = await import('@/services/ai/AIService');
+    const messages = [
+      { role: 'system' as const, content: 'Continue writing from where the text ends. Match the style, tone, and topic. Write 1-2 sentences only. Return only the continuation — do not repeat existing text.' },
+      { role: 'user' as const, content: precedingText },
+    ];
+    let result = '';
+    const stream = streamCompletion(useAIStore.getState().activeProvider, encryptedKey, {
+      messages,
+      model: useAIStore.getState().activeModel,
+      temperature: 0.7,
+      maxTokens: 100,
+      signal,
+    });
+    for await (const chunk of stream) {
+      result += chunk;
+    }
+    return result;
+  }, []);
+
+  // Create extensions with theme awareness + ghost text
+  const extensions = useMemo(() => {
+    const opts: EditorExtensionOptions = {
+      isDark,
+      ghostTextEnabled: ghostEnabled,
+      getGhostSuggestion: ghostEnabled ? getGhostSuggestion : undefined,
+    };
+    return createEditorExtensions(opts);
+  }, [isDark, ghostEnabled, getGhostSuggestion]);
 
   const editor = useEditor({
     extensions,
@@ -189,6 +236,76 @@ export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrol
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [bubbleMenuForced]);
 
+  // Open AI quick actions from BubbleMenu sparkle button
+  const openAIMenu = useCallback(() => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    if (from === to) {
+      // No selection — open AI panel instead
+      useAIStore.getState().openPanel();
+      return;
+    }
+    const coords = editor.view.coordsAtPos(from);
+    setAiMenuPos({ top: coords.top + 30, left: coords.left });
+    setAiMenuOpen(true);
+  }, [editor]);
+
+  // Execute an AI quick action on the current selection
+  const handleQuickAction = useCallback(async (action: string, customInstruction?: string) => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, '\n');
+    if (!selectedText) return;
+
+    const docContent = getMarkdownFromEditor(editor);
+
+    try {
+      const result = await executeQuickAction(action, selectedText, docContent, customInstruction);
+      if (result) {
+        // Store original and replacement
+        setPendingResult({ original: selectedText, replacement: result, action });
+        // Replace selection with AI result (can be reverted)
+        editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, result).run();
+      }
+    } catch {
+      // Error is handled inside executeQuickAction (shows in store)
+    }
+  }, [editor, setPendingResult]);
+
+  // Accept AI result (already applied, just clear pending)
+  const handleAcceptAI = useCallback(() => {
+    acceptResult();
+  }, [acceptResult]);
+
+  // Revert AI result
+  const handleRejectAI = useCallback(() => {
+    if (!editor || !pendingResult) return;
+    // Undo the AI change
+    editor.commands.undo();
+    rejectResult();
+  }, [editor, pendingResult, rejectResult]);
+
+  // Retry the same action
+  const handleRetryAI = useCallback(() => {
+    if (!pendingResult) return;
+    // Undo first, then re-run
+    editor?.commands.undo();
+    rejectResult();
+    handleQuickAction(pendingResult.action);
+  }, [editor, pendingResult, rejectResult, handleQuickAction]);
+
+  // Ctrl+J shortcut for quick actions
+  useEffect(() => {
+    const handleCtrlJ = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
+        e.preventDefault();
+        openAIMenu();
+      }
+    };
+    window.addEventListener('keydown', handleCtrlJ);
+    return () => window.removeEventListener('keydown', handleCtrlJ);
+  }, [openAIMenu]);
+
   // Handle link and image clicks
   const handleEditorClick = useCallback((event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
@@ -260,8 +377,62 @@ export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrol
           editor={editor} 
           onLinkClick={() => setLinkPopoverOpen(true)}
           onImageClick={openImagePicker}
+          onAIClick={hasApiKey(activeProvider) ? openAIMenu : () => {
+            // No API key — open settings (via panel which shows setup hint)
+            useAIStore.getState().openPanel();
+          }}
+          aiKeyConfigured={hasApiKey(activeProvider)}
           forceVisible={bubbleMenuForced}
         />
+      )}
+
+      {/* AI Quick Actions floating menu */}
+      {aiMenuOpen && (
+        <AIQuickActions
+          onAction={(action) => handleQuickAction(action)}
+          onCustomPrompt={() => setAiCustomPromptOpen(true)}
+          onClose={() => setAiMenuOpen(false)}
+          position={aiMenuPos}
+        />
+      )}
+
+      {/* AI custom prompt input */}
+      {aiCustomPromptOpen && (
+        <div
+          style={{ position: 'fixed', top: `${aiMenuPos.top}px`, left: `${aiMenuPos.left}px`, zIndex: 50 }}
+          className="flex items-center gap-2 p-2 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg shadow-xl"
+        >
+          <input
+            type="text"
+            value={aiCustomPromptText}
+            onChange={(e) => setAiCustomPromptText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && aiCustomPromptText.trim()) {
+                handleQuickAction('custom', aiCustomPromptText.trim());
+                setAiCustomPromptOpen(false);
+                setAiCustomPromptText('');
+              } else if (e.key === 'Escape') {
+                setAiCustomPromptOpen(false);
+                setAiCustomPromptText('');
+              }
+            }}
+            ref={(el) => el?.focus()}
+            placeholder="Custom instruction..."
+            className="w-64 px-2 py-1 text-sm rounded border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] text-[var(--theme-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-accent-primary)]"
+          />
+        </div>
+      )}
+
+      {/* AI result accept/reject bar */}
+      {pendingResult && !isStreaming && (
+        <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
+          <AIResultPreview
+            onAccept={handleAcceptAI}
+            onReject={handleRejectAI}
+            onRetry={handleRetryAI}
+            action={pendingResult.action}
+          />
+        </div>
       )}
       
       {/* Link popover */}
@@ -290,7 +461,7 @@ export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrol
             <div className="flex items-center">
               {!toolbarCollapsed && (
                 <div className="flex-1 p-2">
-                  <EditorToolbar editor={editor} onLinkClick={() => setLinkPopoverOpen(true)} onImageClick={openImagePicker} />
+                  <EditorToolbar editor={editor} onLinkClick={() => setLinkPopoverOpen(true)} onImageClick={openImagePicker} onAIClick={onAIClick} />
                 </div>
               )}
               <button

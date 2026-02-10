@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X, Minus, Plus } from 'lucide-react';
 import { useEditorStore } from '@/stores/editorStore';
+import { AISettingsSection } from '@/components/AI/AISettingsSection';
 import type { UIDensity } from '@/types';
 
 interface SettingsModalProps {
@@ -66,7 +67,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
-        className="w-full max-w-md mx-4 rounded-xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] shadow-2xl"
+        className="w-full max-w-md mx-4 rounded-xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] shadow-2xl max-h-[85vh] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--theme-border-primary)]">
@@ -81,7 +82,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
         </div>
 
         {/* Body */}
-        <div className="px-6 py-4 space-y-5">
+        <div className="px-6 py-4 space-y-5 overflow-y-auto flex-1">
           {/* EDITOR section */}
           <SectionHeader label="Editor" />
 
@@ -149,6 +150,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
               ))}
             </div>
           </SettingRow>
+
+          {/* AI section */}
+          <SectionHeader label="AI Assistant" />
+          <AISettingsSection />
         </div>
 
         {/* Footer */}

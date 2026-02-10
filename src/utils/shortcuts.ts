@@ -42,6 +42,8 @@ export const SHORTCUTS: ShortcutEntry[] = [
 
   // Navigation
   { action: 'Show shortcuts', keys: 'Ctrl+Shift+/', category: 'navigation' },
+  { action: 'AI Assistant', keys: 'Ctrl+Shift+A', category: 'navigation' },
+  { action: 'AI Quick Action', keys: 'Ctrl+J', category: 'navigation' },
 ];
 
 export const CATEGORY_LABELS: Record<ShortcutEntry['category'], string> = {

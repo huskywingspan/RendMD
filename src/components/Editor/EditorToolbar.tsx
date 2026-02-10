@@ -26,6 +26,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Tooltip } from '@/components/UI/Tooltip';
@@ -35,6 +36,7 @@ export interface EditorToolbarProps {
   editor: Editor | null;
   onLinkClick: () => void;
   onImageClick?: () => void;
+  onAIClick?: () => void;
 }
 
 /** Reusable toolbar icon button */
@@ -93,7 +95,7 @@ function getTableColumnCount(editor: Editor): number {
   return 0;
 }
 
-export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolbarProps): JSX.Element | null {
+export function EditorToolbar({ editor, onLinkClick, onImageClick, onAIClick }: EditorToolbarProps): JSX.Element | null {
   if (!editor) return null;
 
   // ── Formatting button active state helper ──────────────────────
@@ -269,6 +271,26 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
 
       {/* Table insert */}
       <TableInsertButton editor={editor} />
+
+      {/* AI button (visible mainly on mobile, where bottom sheet is used) */}
+      {onAIClick && (
+        <>
+          <div className="w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
+          <Tooltip content="AI Assistant" position="bottom">
+            <button
+              onClick={onAIClick}
+              className={cn(
+                'p-[var(--density-button-padding)] rounded transition-colors',
+                'text-[var(--theme-accent-primary)] hover:bg-[var(--theme-accent-primary)]/20',
+              )}
+              aria-label="AI Assistant"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <Sparkles size={16} />
+            </button>
+          </Tooltip>
+        </>
+      )}
 
       {/* Hint — hidden on touch devices */}
       <span className="hidden md:inline-flex ml-auto text-xs text-[var(--theme-text-muted)] select-none">

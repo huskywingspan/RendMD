@@ -15,12 +15,15 @@ import {
   Quote,
   CheckSquare,
   Image,
+  Sparkles,
 } from 'lucide-react';
 
 interface BubbleMenuProps {
   editor: Editor | null;
   onLinkClick: () => void;
   onImageClick?: () => void;
+  onAIClick?: () => void;
+  aiKeyConfigured?: boolean;
   forceVisible?: boolean;
 }
 
@@ -28,7 +31,7 @@ interface BubbleMenuProps {
  * Custom bubble menu that appears on text selection or via Ctrl+Space.
  * Positioned above the selection/cursor using DOM measurements.
  */
-export function BubbleMenu({ editor, onLinkClick, onImageClick, forceVisible = false }: BubbleMenuProps) {
+export function BubbleMenu({ editor, onLinkClick, onImageClick, onAIClick, aiKeyConfigured = false, forceVisible = false }: BubbleMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -270,6 +273,22 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, forceVisible = f
           </button>
         </Tooltip>
       )}
+
+      {/* AI Quick Actions */}
+      <>
+        <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+        <Tooltip content={aiKeyConfigured ? "AI Actions (Ctrl+J)" : "Set up an API key in Settings to use AI"} position="top">
+          <button
+            onClick={onAIClick}
+            className={buttonClass(false)}
+            aria-label={aiKeyConfigured ? "AI Actions" : "AI (no key configured)"}
+            onMouseDown={(e) => e.preventDefault()}
+            style={!aiKeyConfigured ? { opacity: 0.5 } : undefined}
+          >
+            <Sparkles size={16} />
+          </button>
+        </Tooltip>
+      </>
     </div>
   );
 }
