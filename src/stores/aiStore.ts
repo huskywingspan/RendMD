@@ -4,8 +4,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import type { AIChatMessage, AIProviderID, PendingResult, AIContext } from '@/services/ai/types';
-import { streamCompletion, PROVIDER_META, getDefaultModel } from '@/services/ai/AIService';
+import { streamCompletion, createProvider, PROVIDER_META, getDefaultModel } from '@/services/ai/AIService';
 import { buildMessages, SYSTEM_PROMPTS } from '@/services/ai/prompts';
+import { TOOL_DEFINITIONS, createToolExecutor } from '@/services/ai/tools';
+import { runAgentLoop } from '@/services/ai/agentLoop';
+import type { Editor } from '@tiptap/core';
 
 interface AIStore {
   // Panel state
@@ -18,7 +21,9 @@ interface AIStore {
   messages: AIChatMessage[];
   isStreaming: boolean;
   streamingContent: string;
-  sendMessage: (prompt: string, context?: AIContext) => Promise<void>;
+  agentStatus: string | null;
+  agentIterations: number;
+  sendMessage: (prompt: string, context?: AIContext, editor?: Editor | null) => Promise<void>;
   cancelStream: () => void;
   clearConversation: () => void;
 
@@ -77,9 +82,11 @@ export const useAIStore = create<AIStore>()(
       messages: [],
       isStreaming: false,
       streamingContent: '',
+      agentStatus: null,
+      agentIterations: 0,
       _abortController: null,
 
-      sendMessage: async (prompt: string, context?: AIContext) => {
+      sendMessage: async (prompt: string, context?: AIContext, editor?: Editor | null) => {
         const state = get();
         const encryptedKey = state.apiKeys[state.activeProvider];
         if (!encryptedKey) {
@@ -127,17 +134,46 @@ export const useAIStore = create<AIStore>()(
         let fullContent = '';
 
         try {
-          const stream = streamCompletion(state.activeProvider, encryptedKey, {
-            messages: completionMessages,
-            model: state.activeModel,
-            temperature: 0.7,
-            maxTokens: 2048,
-            signal: abortController.signal,
-          });
+          // Check if provider supports tool calling and we have an editor instance
+          const provider = await createProvider(state.activeProvider, encryptedKey);
 
-          for await (const chunk of stream) {
-            fullContent += chunk;
-            set({ streamingContent: fullContent });
+          if (provider.generateWithTools && editor) {
+            // --- Agent mode ---
+            set({ agentStatus: 'Thinking...', agentIterations: 0 });
+
+            const editorStore = { fileName: get().currentDocumentId, content: context?.documentContent ?? '' };
+            const toolExecutor = createToolExecutor(editor, editorStore);
+
+            fullContent = await runAgentLoop(
+              provider,
+              {
+                messages: completionMessages,
+                tools: TOOL_DEFINITIONS,
+                model: state.activeModel,
+                temperature: 0.5,
+                maxTokens: 2048,
+                signal: abortController.signal,
+              },
+              toolExecutor,
+              (status) => set({ agentStatus: status }),
+              (iteration) => set({ agentIterations: iteration }),
+            );
+
+            set({ agentStatus: null, agentIterations: 0 });
+          } else {
+            // --- Streaming fallback (no tools or no editor) ---
+            const stream = streamCompletion(state.activeProvider, encryptedKey, {
+              messages: completionMessages,
+              model: state.activeModel,
+              temperature: 0.7,
+              maxTokens: 2048,
+              signal: abortController.signal,
+            });
+
+            for await (const chunk of stream) {
+              fullContent += chunk;
+              set({ streamingContent: fullContent });
+            }
           }
 
           // Add assistant message
@@ -163,6 +199,8 @@ export const useAIStore = create<AIStore>()(
             get().saveChatHistory(docId);
           }
         } catch (err) {
+          set({ agentStatus: null, agentIterations: 0 });
+
           if ((err as Error).name === 'AbortError') {
             // Stream was cancelled — save partial content if any
             if (fullContent) {
@@ -204,7 +242,7 @@ export const useAIStore = create<AIStore>()(
       cancelStream: () => {
         const state = get();
         state._abortController?.abort();
-        set({ isStreaming: false, streamingContent: '', _abortController: null });
+        set({ isStreaming: false, streamingContent: '', _abortController: null, agentStatus: null, agentIterations: 0 });
       },
 
       clearConversation: () => {

@@ -1,6 +1,6 @@
 // Anthropic provider adapter — uses @anthropic-ai/sdk for CORS support
 
-import type { AIProvider, AIModel, CompletionParams } from '../types';
+import type { AIProvider, AIModel, CompletionParams, ToolCompletionParams, ToolResult, ToolCompletionResponse } from '../types';
 
 const MODELS: AIModel[] = [
   { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', maxTokens: 4096, supportsStreaming: true },
@@ -103,6 +103,64 @@ export function createAnthropicProvider(apiKey: string): AIProvider {
       } catch {
         return false;
       }
+    },
+
+    async generateWithTools(
+      params: ToolCompletionParams,
+      _previousToolResults?: ToolResult[],
+      rawHistory?: unknown[],
+    ): Promise<ToolCompletionResponse> {
+      const Anthropic = (await getSDK()).default;
+      const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+      const { system, messages: baseMessages } = convertMessages(params.messages);
+
+      // Append raw history (previous assistant + tool_result messages) from agent loop
+      const messages = [...baseMessages, ...(rawHistory ?? [])] as Parameters<
+        InstanceType<typeof Anthropic>['messages']['create']
+      >[0]['messages'];
+
+      // Convert tool definitions to Anthropic format
+      const tools = params.tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        input_schema: { ...t.parameters, type: 'object' as const },
+      }));
+
+      const response = await client.messages.create({
+        model: params.model,
+        max_tokens: params.maxTokens ?? 2048,
+        system,
+        messages,
+        tools,
+      });
+
+      // Check for tool_use blocks
+      const toolUseBlocks = response.content.filter(
+        (b) => b.type === 'tool_use',
+      );
+
+      if (toolUseBlocks.length > 0) {
+        return {
+          toolCalls: toolUseBlocks.map((b) => {
+            const block = b as { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
+            return {
+              id: block.id,
+              name: block.name,
+              arguments: block.input,
+            };
+          }),
+          _rawAssistantMessage: { role: 'assistant', content: response.content },
+        };
+      }
+
+      const textBlock = response.content.find(
+        (b: { type: string }) => b.type === 'text',
+      ) as { type: 'text'; text: string } | undefined;
+
+      return {
+        text: textBlock?.text ?? '',
+        _rawAssistantMessage: { role: 'assistant', content: response.content },
+      };
     },
   };
 }

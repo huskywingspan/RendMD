@@ -20,6 +20,8 @@ export function AIPanel({ className, editor, onOpenSettings }: AIPanelProps): JS
     messages,
     isStreaming,
     streamingContent,
+    agentStatus,
+    agentIterations,
     sendMessage,
     cancelStream,
     clearConversation,
@@ -64,9 +66,9 @@ export function AIPanel({ className, editor, onOpenSettings }: AIPanelProps): JS
   const handleSend = useCallback(
     (prompt: string) => {
       const context = getContext();
-      sendMessage(prompt, context);
+      sendMessage(prompt, context, editor);
     },
-    [sendMessage, getContext],
+    [sendMessage, getContext, editor],
   );
 
   // Apply AI content to document
@@ -173,15 +175,30 @@ export function AIPanel({ className, editor, onOpenSettings }: AIPanelProps): JS
               </div>
             )}
 
-            {/* Streaming loading — before first chunk arrives */}
+            {/* Streaming loading — before first chunk arrives (or agent status) */}
             {isStreaming && !streamingContent && (
               <div className="flex items-center gap-2 px-1">
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--theme-text-muted)] animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--theme-text-muted)] animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--theme-text-muted)] animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-                <span className="text-[10px] text-[var(--theme-text-muted)]">Thinking...</span>
+                {agentStatus ? (
+                  <>
+                    <span className="text-[10px] text-[var(--theme-accent-primary)] font-medium">
+                      {agentStatus}
+                    </span>
+                    {agentIterations > 0 && (
+                      <span className="text-[10px] text-[var(--theme-text-muted)]">
+                        (step {agentIterations}/8)
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--theme-text-muted)] animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--theme-text-muted)] animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--theme-text-muted)] animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span className="text-[10px] text-[var(--theme-text-muted)]">Thinking...</span>
+                  </>
+                )}
               </div>
             )}
           </>

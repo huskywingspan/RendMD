@@ -1,6 +1,6 @@
 // OpenAI provider adapter — direct fetch, no SDK needed
 
-import type { AIProvider, AIModel, CompletionParams } from '../types';
+import type { AIProvider, AIModel, CompletionParams, ToolCompletionParams, ToolResult, ToolCompletionResponse } from '../types';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1';
 
@@ -98,6 +98,58 @@ export function createOpenAIProvider(apiKey: string): AIProvider {
       } catch {
         return false;
       }
+    },
+
+    async generateWithTools(
+      params: ToolCompletionParams,
+      _previousToolResults?: ToolResult[],
+      rawHistory?: unknown[],
+    ): Promise<ToolCompletionResponse> {
+      // Build messages: base params + raw history from prior iterations
+      const messages = [...params.messages, ...(rawHistory ?? [])] as Record<string, unknown>[];
+
+      const tools = params.tools.map((t) => ({
+        type: 'function' as const,
+        function: { name: t.name, description: t.description, parameters: t.parameters },
+      }));
+
+      const response = await fetch(`${OPENAI_API_URL}/chat/completions`, {
+        method: 'POST',
+        headers: makeHeaders(apiKey),
+        body: JSON.stringify({
+          model: params.model,
+          messages,
+          tools,
+          temperature: params.temperature ?? 0.7,
+          max_tokens: params.maxTokens ?? 2048,
+        }),
+        signal: params.signal,
+      });
+
+      if (!response.ok) {
+        const err = await response.text().catch(() => 'Unknown error');
+        throw new Error(`OpenAI error ${response.status}: ${err}`);
+      }
+
+      const data = await response.json();
+      const choice = data.choices?.[0];
+      const msg = choice?.message;
+
+      if (msg?.tool_calls?.length) {
+        return {
+          toolCalls: msg.tool_calls.map((tc: { id: string; function: { name: string; arguments: string } }) => ({
+            id: tc.id,
+            name: tc.function.name,
+            arguments: JSON.parse(tc.function.arguments),
+          })),
+          _rawAssistantMessage: msg,
+        };
+      }
+
+      return {
+        text: msg?.content ?? '',
+        _rawAssistantMessage: msg,
+      };
     },
   };
 }

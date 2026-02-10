@@ -88,7 +88,7 @@ export function AIBottomSheet({ isOpen, onClose, editor, hasSelection, onOpenSet
     await sendMessage(text, {
       selectedText: getSelectedText() || undefined,
       documentContent: getDocContent(),
-    });
+    }, editor);
   }, [prompt, isStreaming, sendMessage, getSelectedText, getDocContent]);
 
   // Copy message

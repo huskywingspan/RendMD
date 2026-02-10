@@ -28,6 +28,6 @@ describe('getDefaultModel', () => {
   });
 
   it('returns the second model for Google', () => {
-    expect(getDefaultModel('google')).toBe('gemini-2.0-flash-lite');
+    expect(getDefaultModel('google')).toBe('gemini-2.5-pro');
   });
 });
