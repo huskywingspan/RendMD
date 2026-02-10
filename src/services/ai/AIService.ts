@@ -28,8 +28,8 @@ export const PROVIDER_META: { id: AIProviderID; name: string; models: AIModel[] 
     id: 'google',
     name: 'Google Gemini',
     models: [
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', maxTokens: 4096, supportsStreaming: true },
-      { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', maxTokens: 4096, supportsStreaming: true },
+      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', maxTokens: 8192, supportsStreaming: true },
+      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', maxTokens: 8192, supportsStreaming: true },
     ],
   },
 ];
