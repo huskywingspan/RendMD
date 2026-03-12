@@ -55,11 +55,15 @@
     margin: 1.5cm;
   }
 
-  /* ── Preserve theme colors with light-basic fallbacks ── */
+  /*
+   * ── Force solid light-basic colors for print ──
+   * Glass themes use rgba() transparency that washes out in PDF.
+   * We override with solid values from the light-basic palette.
+   */
   body,
   html {
-    background: var(--theme-bg-primary, #ffffff) !important;
-    color: var(--theme-text-primary, #1e293b) !important;
+    background: #ffffff !important;
+    color: #1e293b !important;
   }
 
   /* ── Editor content: fill page cleanly ── */
@@ -71,8 +75,8 @@
     box-shadow: none !important;
     min-height: auto !important;
     max-width: 100% !important;
-    background: var(--theme-bg-primary, #ffffff) !important;
-    color: var(--theme-text-primary, #1e293b) !important;
+    background: #ffffff !important;
+    color: #1e293b !important;
   }
 
   /* ── Typography ── */
@@ -82,36 +86,36 @@
   .ProseMirror h4,
   .ProseMirror h5,
   .ProseMirror h6 {
-    color: var(--theme-text-primary, #1e293b) !important;
+    color: #1e293b !important;
     page-break-after: avoid;
   }
 
   .ProseMirror p,
   .ProseMirror li {
-    color: var(--theme-text-primary, #1e293b) !important;
+    color: #1e293b !important;
   }
 
   .ProseMirror a {
-    color: var(--theme-accent-primary, #2563eb) !important;
+    color: #2563eb !important;
     text-decoration: underline !important;
   }
 
   /* ── Blockquotes ── */
   .ProseMirror blockquote {
-    border-left-color: var(--theme-blockquote-border, #3b82f6) !important;
-    background: var(--theme-blockquote-bg, rgba(59, 130, 246, 0.05)) !important;
-    color: var(--theme-blockquote-text, #475569) !important;
+    border-left-color: #3b82f6 !important;
+    background: #eff6ff !important;
+    color: #475569 !important;
   }
 
   /* ── Code ── */
   .ProseMirror code {
-    background: var(--theme-code-bg, #f8fafc) !important;
-    color: var(--theme-code-text, #1e293b) !important;
+    background: #f8fafc !important;
+    color: #1e293b !important;
   }
 
   .ProseMirror pre {
-    background: var(--theme-code-bg, #f8fafc) !important;
-    border: 1px solid var(--theme-code-border, #e2e8f0) !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
     page-break-inside: avoid;
   }
 
@@ -128,22 +132,22 @@
 
   .ProseMirror th,
   .ProseMirror td {
-    border-color: var(--theme-table-border, #e2e8f0) !important;
-    color: var(--theme-text-primary, #1e293b) !important;
+    border-color: #e2e8f0 !important;
+    color: #1e293b !important;
   }
 
   .ProseMirror th {
-    background: var(--theme-table-header-bg, #f8fafc) !important;
+    background: #f8fafc !important;
   }
 
   /* ── Horizontal rules ── */
   .ProseMirror hr {
-    border-color: var(--theme-border-primary, #e2e8f0) !important;
+    border-color: #e2e8f0 !important;
   }
 
   /* ── Task list checkboxes ── */
   .ProseMirror input[type="checkbox"] {
-    accent-color: var(--theme-checkbox-checked-bg, #3b82f6) !important;
+    accent-color: #3b82f6 !important;
   }
 
   /* ── Prevent blank pages ── */
