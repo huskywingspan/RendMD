@@ -50,7 +50,10 @@ export function ExportDropdown({ editor }: ExportDropdownProps): JSX.Element {
   }, [editor, fileName, addToast]);
 
   const handleExportPDF = useCallback(() => {
-    if (!editor) return;
+    if (!editor) {
+      addToast('Editor not ready — try again', 'error');
+      return;
+    }
     addToast('Opening print dialog…', 'info');
     exportAsPDF(editor);
     setIsOpen(false);
@@ -96,7 +99,8 @@ export function ExportDropdown({ editor }: ExportDropdownProps): JSX.Element {
           </button>
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] transition-colors"
+            disabled={!editor}
+            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] transition-colors disabled:opacity-40"
             role="menuitem"
           >
             <Printer size={14} />

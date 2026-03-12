@@ -87,7 +87,10 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps): JSX.Ele
   }, [editor, fileName, addToast, close]);
 
   const handlePrint = useCallback(() => {
-    if (!editor) return;
+    if (!editor) {
+      addToast('Editor not ready — try again', 'error');
+      return;
+    }
     addToast('Opening print dialog…', 'info');
     exportAsPDF(editor);
     close();
