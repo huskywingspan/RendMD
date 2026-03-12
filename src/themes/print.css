@@ -56,27 +56,54 @@
   }
 
   /*
-   * ── Force solid light-basic colors for print ──
-   * Glass themes use rgba() transparency that washes out in PDF.
-   * We override with solid values from the light-basic palette.
+   * ── Reset flex layout to simple block flow for print ──
+   * The app uses nested flex containers with overflow:hidden which
+   * collapses longer documents in print. Convert the entire container
+   * chain to block layout so content flows naturally across pages.
    */
   body,
   html {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
     background: #ffffff !important;
     color: #1e293b !important;
+  }
+
+  /* App root and all intermediate flex containers */
+  body > div,
+  body > div > div,
+  main,
+  main > div {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    flex: none !important;
+    position: static !important;
   }
 
   /* ── Editor content: fill page cleanly ── */
   .ProseMirror {
     display: block !important;
+    height: auto !important;
+    overflow: visible !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
     min-height: auto !important;
+    max-height: none !important;
     max-width: 100% !important;
     background: #ffffff !important;
     color: #1e293b !important;
+  }
+
+  /* Editor scroll container — unwrap it */
+  .ProseMirror-scroll,
+  .tiptap {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
   /* ── Typography ── */
@@ -148,10 +175,5 @@
   /* ── Task list checkboxes ── */
   .ProseMirror input[type="checkbox"] {
     accent-color: #3b82f6 !important;
-  }
-
-  /* ── Prevent blank pages ── */
-  * {
-    overflow: visible !important;
   }
 }
