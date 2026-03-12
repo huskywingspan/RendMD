@@ -50,10 +50,11 @@ export function ExportDropdown({ editor }: ExportDropdownProps): JSX.Element {
   }, [editor, fileName, addToast]);
 
   const handleExportPDF = useCallback(() => {
+    if (!editor) return;
     addToast('Opening print dialog…', 'info');
-    exportAsPDF();
+    exportAsPDF(editor);
     setIsOpen(false);
-  }, [addToast]);
+  }, [editor, addToast]);
 
   const handleCopyRichText = useCallback(async () => {
     if (!editor) return;

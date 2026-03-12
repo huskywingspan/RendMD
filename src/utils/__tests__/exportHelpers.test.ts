@@ -72,14 +72,26 @@ describe('exportHelpers', () => {
   });
 
   describe('exportAsPDF', () => {
-    it('calls window.print()', async () => {
+    it('creates print container and calls window.print()', async () => {
       const { exportAsPDF } = await import('../exportHelpers');
       const printSpy = vi.fn();
       vi.stubGlobal('print', printSpy);
 
-      exportAsPDF();
+      const mockEditor = {
+        getHTML: () => '<p>Test content</p>',
+      } as unknown as import('@tiptap/react').Editor;
+
+      exportAsPDF(mockEditor);
 
       expect(printSpy).toHaveBeenCalledOnce();
+      // Print container should exist during print
+      const container = document.getElementById('print-container');
+      expect(container).toBeTruthy();
+      expect(container?.innerHTML).toContain('Test content');
+
+      // Simulate afterprint cleanup
+      window.dispatchEvent(new Event('afterprint'));
+      expect(document.getElementById('print-container')).toBeNull();
 
       vi.unstubAllGlobals();
     });

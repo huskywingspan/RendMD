@@ -1,170 +1,18 @@
-/* Print stylesheet for PDF export (window.print()) */
+/*
+ * Print stylesheet for PDF export.
+ *
+ * The actual print content is handled by exportAsPDF() in exportHelpers.ts,
+ * which creates a temporary #print-container with styled content and hides #root.
+ * This file provides fallback rules in case window.print() is triggered directly
+ * (e.g. Ctrl+P).
+ */
 @media print {
-  /*
-   * Strategy: hide known chrome elements by tag/id/role,
-   * then unwrap the flex container chain so content flows across pages.
-   */
-
-  /* ── Hide UI chrome by semantic selector ── */
-  header,
-  aside,
-  [role="toolbar"],
-  [role="dialog"],
-  [role="tooltip"],
-  [role="menu"],
-  .toast-container,
-  .frontmatter-panel,
-  .table-toolbar,
-  .editor-toolbar,
-  .source-editor {
+  /* Hide the app — exportAsPDF injects a #print-container instead */
+  #root {
     display: none !important;
   }
 
-  /* Editor toolbar sticky bar (contains z-10 toolbar + collapse button) */
-  .sticky {
-    display: none !important;
-  }
-
-  /* Screen reader skip link */
-  .sr-only {
-    display: none !important;
-  }
-
-  /* ── Page setup ── */
   @page {
     margin: 1.5cm;
-  }
-
-  /*
-   * ── Unwrap the flex container chain ──
-   *
-   * DOM chain: html > body > div (app) > div (flex row) > main > div (editor area)
-   *   > div (mode wrapper) > div (Editor component) > div (scroll container) > .ProseMirror
-   *
-   * All use flex + overflow:hidden which clips long docs in print.
-   * Convert everything to block flow.
-   */
-  html,
-  body,
-  #root,
-  body > div {
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-    color: #1e293b !important;
-  }
-
-  /* All divs between app root and ProseMirror */
-  #main-editor,
-  #main-editor > div,
-  #main-editor > div > div,
-  #main-editor div > div {
-    display: block !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    flex: none !important;
-    position: static !important;
-  }
-
-  /* The flex-row wrapper that contains sidebar + main */
-  body > div > div {
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  /* ── Editor content ── */
-  .ProseMirror {
-    display: block !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    min-height: auto !important;
-    max-width: 100% !important;
-    background: #ffffff !important;
-    color: #1e293b !important;
-  }
-
-  .tiptap {
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  /* ── Typography — light-basic palette ── */
-  .ProseMirror h1,
-  .ProseMirror h2,
-  .ProseMirror h3,
-  .ProseMirror h4,
-  .ProseMirror h5,
-  .ProseMirror h6 {
-    color: #1e293b !important;
-    page-break-after: avoid;
-  }
-
-  .ProseMirror p,
-  .ProseMirror li {
-    color: #1e293b !important;
-  }
-
-  .ProseMirror a {
-    color: #2563eb !important;
-    text-decoration: underline !important;
-  }
-
-  /* ── Blockquotes ── */
-  .ProseMirror blockquote {
-    border-left-color: #3b82f6 !important;
-    background: #eff6ff !important;
-    color: #475569 !important;
-  }
-
-  /* ── Code ── */
-  .ProseMirror code {
-    background: #f8fafc !important;
-    color: #1e293b !important;
-  }
-
-  .ProseMirror pre {
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-    page-break-inside: avoid;
-  }
-
-  /* ── Images ── */
-  .ProseMirror img {
-    max-width: 100% !important;
-    page-break-inside: avoid;
-  }
-
-  /* ── Tables ── */
-  .ProseMirror table {
-    page-break-inside: avoid;
-  }
-
-  .ProseMirror th,
-  .ProseMirror td {
-    border-color: #e2e8f0 !important;
-    color: #1e293b !important;
-  }
-
-  .ProseMirror th {
-    background: #f8fafc !important;
-  }
-
-  /* ── Horizontal rules ── */
-  .ProseMirror hr {
-    border-color: #e2e8f0 !important;
-  }
-
-  /* ── Task list checkboxes ── */
-  .ProseMirror input[type="checkbox"] {
-    accent-color: #3b82f6 !important;
   }
 }

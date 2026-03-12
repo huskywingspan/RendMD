@@ -87,10 +87,11 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps): JSX.Ele
   }, [editor, fileName, addToast, close]);
 
   const handlePrint = useCallback(() => {
+    if (!editor) return;
     addToast('Opening print dialog…', 'info');
-    exportAsPDF();
+    exportAsPDF(editor);
     close();
-  }, [addToast, close]);
+  }, [editor, addToast, close]);
 
   const handleCopyRich = useCallback(async () => {
     if (!editor) return;

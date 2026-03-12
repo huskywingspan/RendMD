@@ -55,9 +55,71 @@ export function exportAsHTML(editor: Editor, fileName: string): void {
 
 /**
  * Trigger the browser print dialog for PDF export.
- * The print.css stylesheet handles hiding the UI.
+ * Creates a temporary print container with the editor's HTML content,
+ * hides the app root, and prints just the content. Cleans up on afterprint.
  */
-export function exportAsPDF(): void {
+export function exportAsPDF(editor: Editor): void {
+  const html = editor.getHTML();
+
+  // Create a self-styled print container outside the app's flex layout
+  const container = document.createElement('div');
+  container.id = 'print-container';
+  container.innerHTML = html;
+
+  // Inject print styles directly on the container
+  const style = document.createElement('style');
+  style.textContent = `
+    #print-container {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      color: #1e293b;
+      background: #ffffff;
+    }
+    #print-container h1, #print-container h2, #print-container h3,
+    #print-container h4, #print-container h5, #print-container h6 {
+      margin-top: 1.5em; margin-bottom: 0.5em; line-height: 1.3; color: #1e293b;
+    }
+    #print-container h1 { font-size: 2em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; }
+    #print-container h2 { font-size: 1.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; }
+    #print-container h3 { font-size: 1.25em; }
+    #print-container p { margin: 0.8em 0; }
+    #print-container a { color: #2563eb; text-decoration: underline; }
+    #print-container code { background: #f8fafc; padding: 0.2em 0.4em; border-radius: 0.25em; font-size: 0.9em; }
+    #print-container pre { background: #f8fafc; padding: 1em; border-radius: 0.5em; overflow-x: auto; border: 1px solid #e2e8f0; }
+    #print-container pre code { background: none; padding: 0; }
+    #print-container blockquote { border-left: 4px solid #3b82f6; margin: 1em 0; padding: 0.5em 1em; color: #475569; background: #eff6ff; }
+    #print-container img { max-width: 100%; height: auto; }
+    #print-container table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    #print-container th, #print-container td { border: 1px solid #e2e8f0; padding: 0.5em 0.75em; text-align: left; }
+    #print-container th { background: #f8fafc; font-weight: 600; }
+    #print-container hr { border: none; border-top: 1px solid #e2e8f0; margin: 2em 0; }
+    #print-container ul, #print-container ol { padding-left: 1.5em; }
+    #print-container li { margin: 0.25em 0; }
+    #print-container ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+    #print-container ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5em; }
+    @media print {
+      #root { display: none !important; }
+      #print-container { padding: 0; }
+    }
+    @media screen {
+      #print-container { display: none; }
+    }
+    @page { margin: 1.5cm; }
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(container);
+
+  const cleanup = () => {
+    container.remove();
+    style.remove();
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+
   window.print();
 }
 
