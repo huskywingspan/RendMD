@@ -48,3 +48,9 @@ vite.config.js
 # Misc
 .eslintcache
 *.pem
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
