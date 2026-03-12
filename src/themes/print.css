@@ -1,103 +1,152 @@
 /* Print stylesheet for PDF export (window.print()) */
 @media print {
-  /* Hide all UI chrome */
+  /* ── Hide ALL UI chrome ── */
   header,
   aside,
   [role="toolbar"],
+  [role="dialog"],
+  [role="tooltip"],
+  [role="menu"],
   .toast-container,
   .frontmatter-panel,
   .table-toolbar,
-  .editor-toolbar,
-  .fixed.bottom-0 {
+  .editor-toolbar {
     display: none !important;
   }
 
-  /* Hide buttons outside the editor content */
-  body > div > header button,
-  body > div > div > aside button {
+  /* AI panel (desktop sidebar) and bottom sheet */
+  .w-80.border-l,
+  [class*="BottomSheet"],
+  [class*="bottom-sheet"] {
     display: none !important;
   }
 
-  /* Reset the page to clean document */
+  /* Search bar, modals, floating overlays */
+  [class*="SearchBar"],
+  [class*="Modal"] {
+    display: none !important;
+  }
+
+  /* Fixed/absolute overlays (backdrops, toasts, popovers, dropdowns) */
+  body > div > header,
+  body > div > aside,
+  div[style*="position: fixed"],
+  .fixed.bottom-0,
+  .fixed.inset-0 {
+    display: none !important;
+  }
+
+  /* Z-indexed overlay layers */
+  [class*="z-50"]:not(.ProseMirror *),
+  [class*="z-40"]:not(.ProseMirror *),
+  [class*="z-30"]:not(.ProseMirror *),
+  [class*="z-20"]:not(.ProseMirror *) {
+    display: none !important;
+  }
+
+  /* Source view pane (only show rendered content) */
+  .source-editor,
+  [data-source-view] {
+    display: none !important;
+  }
+
+  /* ── Page setup ── */
+  @page {
+    margin: 1.5cm;
+  }
+
+  /* ── Preserve theme colors with light-basic fallbacks ── */
   body,
   html {
-    background: white !important;
-    color: black !important;
+    background: var(--theme-bg-primary, #ffffff) !important;
+    color: var(--theme-text-primary, #1e293b) !important;
   }
 
-  /* Make the editor content fill the page */
+  /* ── Editor content: fill page cleanly ── */
   .ProseMirror {
+    display: block !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
     min-height: auto !important;
     max-width: 100% !important;
-    background: white !important;
-    color: black !important;
+    background: var(--theme-bg-primary, #ffffff) !important;
+    color: var(--theme-text-primary, #1e293b) !important;
   }
 
-  /* Ensure content is readable */
+  /* ── Typography ── */
   .ProseMirror h1,
   .ProseMirror h2,
   .ProseMirror h3,
   .ProseMirror h4,
   .ProseMirror h5,
   .ProseMirror h6 {
-    color: black !important;
+    color: var(--theme-text-primary, #1e293b) !important;
     page-break-after: avoid;
   }
 
   .ProseMirror p,
   .ProseMirror li {
-    color: #1a1a1a !important;
+    color: var(--theme-text-primary, #1e293b) !important;
   }
 
   .ProseMirror a {
-    color: #1a1a1a !important;
+    color: var(--theme-accent-primary, #2563eb) !important;
     text-decoration: underline !important;
   }
 
+  /* ── Blockquotes ── */
   .ProseMirror blockquote {
-    border-left-color: #999 !important;
-    color: #333 !important;
+    border-left-color: var(--theme-blockquote-border, #3b82f6) !important;
+    background: var(--theme-blockquote-bg, rgba(59, 130, 246, 0.05)) !important;
+    color: var(--theme-blockquote-text, #475569) !important;
   }
 
+  /* ── Code ── */
   .ProseMirror code {
-    background: #f5f5f5 !important;
-    color: #1a1a1a !important;
+    background: var(--theme-code-bg, #f8fafc) !important;
+    color: var(--theme-code-text, #1e293b) !important;
   }
 
   .ProseMirror pre {
-    background: #f5f5f5 !important;
-    border: 1px solid #ddd !important;
+    background: var(--theme-code-bg, #f8fafc) !important;
+    border: 1px solid var(--theme-code-border, #e2e8f0) !important;
     page-break-inside: avoid;
   }
 
+  /* ── Images ── */
   .ProseMirror img {
     max-width: 100% !important;
     page-break-inside: avoid;
   }
 
+  /* ── Tables ── */
   .ProseMirror table {
     page-break-inside: avoid;
   }
 
   .ProseMirror th,
   .ProseMirror td {
-    border-color: #999 !important;
-    color: #1a1a1a !important;
+    border-color: var(--theme-table-border, #e2e8f0) !important;
+    color: var(--theme-text-primary, #1e293b) !important;
   }
 
   .ProseMirror th {
-    background: #f0f0f0 !important;
+    background: var(--theme-table-header-bg, #f8fafc) !important;
   }
 
+  /* ── Horizontal rules ── */
   .ProseMirror hr {
-    border-color: #ccc !important;
+    border-color: var(--theme-border-primary, #e2e8f0) !important;
   }
 
-  /* Prevent blank pages */
+  /* ── Task list checkboxes ── */
+  .ProseMirror input[type="checkbox"] {
+    accent-color: var(--theme-checkbox-checked-bg, #3b82f6) !important;
+  }
+
+  /* ── Prevent blank pages ── */
   * {
     overflow: visible !important;
   }
