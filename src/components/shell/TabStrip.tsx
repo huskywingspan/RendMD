@@ -44,13 +44,11 @@ export function TabStrip() {
           const isActive = doc.id === activeId;
 
           return (
-            <button
+            // The tab and its close control are siblings inside this wrapper
+            // rather than nested. A button inside a button is invalid HTML and
+            // leaves the inner control unreachable by keyboard.
+            <div
               key={doc.id}
-              ref={isActive ? activeRef : undefined}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              title={doc.path}
               draggable
               onDragStart={() => setDragIndex(index)}
               onDragEnd={() => setDragIndex(null)}
@@ -64,7 +62,6 @@ export function TabStrip() {
                 moveTab(dragIndex, index);
                 setDragIndex(null);
               }}
-              onClick={() => setActive(doc.id)}
               onAuxClick={(event) => {
                 // Middle-click closes, as in every other tabbed app.
                 if (event.button === 1) {
@@ -73,42 +70,48 @@ export function TabStrip() {
                 }
               }}
               className={cn(
-                'group relative flex max-w-52 min-w-0 items-center gap-1.5 border-r border-line',
-                'pr-1.5 pl-3 text-sm transition-colors duration-[120ms]',
-                isActive
-                  ? 'bg-canvas text-ink'
-                  : 'text-ink-muted hover:bg-hover hover:text-ink-muted',
+                'group relative flex max-w-52 min-w-0 items-center border-r border-line',
+                'text-sm transition-colors duration-[120ms]',
+                isActive ? 'bg-canvas text-ink' : 'text-ink-muted hover:bg-hover',
                 dragIndex === index && 'opacity-50',
               )}
             >
               {/* Active marker rides the top edge so it reads as a tab, not a button. */}
               {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-accent" aria-hidden />}
 
-              <span className="truncate">{doc.name}</span>
+              <button
+                ref={isActive ? activeRef : undefined}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                title={doc.path}
+                onClick={() => setActive(doc.id)}
+                className="min-w-0 flex-1 truncate py-1.5 pr-1 pl-3 text-left"
+              >
+                {doc.name}
+              </button>
 
-              <span
-                role="button"
-                tabIndex={-1}
+              <button
+                type="button"
                 aria-label={`Close ${doc.name}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void close(doc.id);
-                }}
+                onClick={() => void close(doc.id)}
                 className={cn(
-                  'grid size-4 shrink-0 place-items-center rounded-sm',
+                  'mr-1.5 grid size-4 shrink-0 place-items-center rounded-sm',
                   'text-ink-faint hover:bg-hover hover:text-ink',
                 )}
               >
                 {doc.isDirty ? (
                   <>
+                    {/* The dot doubles as the unsaved indicator until hover,
+                        keeping one target where two would compete. */}
                     <span className="size-1.5 rounded-full bg-accent group-hover:hidden" />
                     <X size={12} className="hidden group-hover:block" />
                   </>
                 ) : (
-                  <X size={12} className="opacity-0 group-hover:opacity-100" />
+                  <X size={12} className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100" />
                 )}
-              </span>
-            </button>
+              </button>
+            </div>
           );
         })}
       </div>

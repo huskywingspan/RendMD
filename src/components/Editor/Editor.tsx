@@ -44,9 +44,13 @@ export function Editor({
   const [imagePopoverPos, setImagePopoverPos] = useState<number | null>(null);
 
   // Held in a ref so the onUpdate closure — created once — always reaches the
-  // current handler without the editor needing to be rebuilt.
+  // current handler without the editor needing to be rebuilt. Assigned from an
+  // effect rather than during render: a render can be thrown away, and writing
+  // to a ref on a discarded render is exactly the tearing React warns about.
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   const extensions = useMemo(() => createEditorExtensions({ isDark }), [isDark]);
 
@@ -110,23 +114,27 @@ export function Editor({
       {editor && (
         <>
           <BubbleMenu editor={editor} onLinkClick={() => setLinkPopoverOpen(true)} />
-          <LinkPopover
-            editor={editor}
-            isOpen={linkPopoverOpen}
-            onClose={() => setLinkPopoverOpen(false)}
-          />
-          <ImagePopover
-            editor={editor}
-            isOpen={imagePopoverPos !== null}
-            nodePos={imagePopoverPos}
-            onClose={() => setImagePopoverPos(null)}
-          />
+          {/* Mounted only while open, so each reads its initial values from
+              the current selection instead of syncing them in an effect. */}
+          {linkPopoverOpen && (
+            <LinkPopover editor={editor} onClose={() => setLinkPopoverOpen(false)} />
+          )}
+          {imagePopoverPos !== null && (
+            <ImagePopover
+              editor={editor}
+              nodePos={imagePopoverPos}
+              onClose={() => setImagePopoverPos(null)}
+            />
+          )}
         </>
       )}
 
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions --
-          ProseMirror owns keyboard handling inside this element; the click
-          listener only routes link and image clicks to their popovers. */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions,
+                                    jsx-a11y/click-events-have-key-events --
+          ProseMirror owns keyboard handling inside this element. The click
+          listener only routes clicks that land on a link or an image to their
+          popovers; the keyboard equivalent is the bubble menu, reachable by
+          selecting the text. */}
       <div
         data-scroll-container
         ref={scrollContainerRef as React.RefCallback<HTMLDivElement>}

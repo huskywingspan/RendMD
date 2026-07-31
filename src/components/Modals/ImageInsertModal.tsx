@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FolderDown, Image as ImageIcon, Link2, TriangleAlert, Upload } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
 import { Modal } from '@/components/UI/Modal';
@@ -37,9 +37,8 @@ interface ImageInsertModalProps {
  */
 export function ImageInsertModal({ editor, onClose, file: initialFile }: ImageInsertModalProps) {
   const [url, setUrl] = useState('');
-  const [alt, setAlt] = useState('');
+  const [altOverride, setAlt] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(initialFile ?? null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,24 +46,19 @@ export function ImageInsertModal({ editor, onClose, file: initialFile }: ImageIn
   const refreshWorkspace = useWorkspaceStore((s) => s.refresh);
   const doc = useActiveDocument();
 
-  // Object URL for the local preview thumbnail.
+  // Derived during render rather than set from an effect, so the thumbnail is
+  // there on first paint. The effect exists only to release it afterwards.
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => {
-    if (!file) {
-      setPreview(null);
-      return;
-    }
+    if (!preview) return;
+    return () => URL.revokeObjectURL(preview);
+  }, [preview]);
 
-    const objectUrl = URL.createObjectURL(file);
-    setPreview(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
-
-  // Seed alt text from the file name — better than nothing, and easy to edit.
-  useEffect(() => {
-    if (file && !alt) {
-      setAlt(file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '));
-    }
-  }, [file, alt]);
+  // Alt text defaults to a tidied file name until the user types something.
+  // Derived rather than seeded via setState, so choosing a different file
+  // updates the suggestion instead of leaving the previous one stranded.
+  const suggestedAlt = file ? file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') : '';
+  const alt = altOverride ?? suggestedAlt;
 
   const insert = useCallback(
     (src: string, altText: string) => {

@@ -4,47 +4,38 @@ import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react
 import { Trash2, Check, X, Image as ImageIcon } from 'lucide-react';
 
 interface ImagePopoverProps {
-  editor: Editor | null;
-  isOpen: boolean;
+  editor: Editor;
   onClose: () => void;
-  nodePos: number | null;
+  nodePos: number;
 }
 
 /**
  * Popover for editing images.
- * Supports editing URL, alt text, and removing the image.
+ *
+ * Mounted only while open (the parent renders it conditionally), so src and
+ * alt seed from lazy initialisers rather than being written in by an effect
+ * that would render once showing the previously-selected image.
  */
-export function ImagePopover({ editor, isOpen, onClose, nodePos }: ImagePopoverProps) {
-  const [src, setSrc] = useState('');
-  const [alt, setAlt] = useState('');
+export function ImagePopover({ editor, onClose, nodePos }: ImagePopoverProps) {
+  const attrs = editor.state.doc.nodeAt(nodePos)?.attrs;
+  const [src, setSrc] = useState<string>(() => attrs?.src ?? '');
+  const [alt, setAlt] = useState<string>(() => attrs?.alt ?? '');
   const srcInputRef = useRef<HTMLInputElement>(null);
 
   const { refs, floatingStyles } = useFloating({
-    open: isOpen,
+    open: true,
     placement: 'bottom-start',
     middleware: [offset(8), flip(), shift({ padding: 8 })],
     whileElementsMounted: autoUpdate,
   });
 
-  // Initialize from current image
   useEffect(() => {
-    if (isOpen && nodePos !== null && editor) {
-      const node = editor.state.doc.nodeAt(nodePos);
-      if (node && node.type.name === 'image') {
-        setSrc(node.attrs.src || '');
-        setAlt(node.attrs.alt || '');
-      }
-      
-      // Focus input after a tick
-      setTimeout(() => {
-        srcInputRef.current?.focus();
-      }, 50);
-    }
-  }, [isOpen, nodePos, editor]);
+    srcInputRef.current?.focus();
+  }, []);
 
   // Position near the image
   useEffect(() => {
-    if (isOpen && nodePos !== null && editor) {
+    {
       const coords = editor.view.coordsAtPos(nodePos);
       
       refs.setReference({
@@ -62,10 +53,9 @@ export function ImagePopover({ editor, isOpen, onClose, nodePos }: ImagePopoverP
         },
       });
     }
-  }, [isOpen, nodePos, editor, refs]);
+  }, [nodePos, editor, refs]);
 
   const handleSave = useCallback(() => {
-    if (!editor || nodePos === null) return;
     
     editor.chain()
       .focus()
@@ -77,7 +67,6 @@ export function ImagePopover({ editor, isOpen, onClose, nodePos }: ImagePopoverP
   }, [editor, nodePos, src, alt, onClose]);
 
   const handleRemove = useCallback(() => {
-    if (!editor || nodePos === null) return;
     
     editor.chain()
       .focus()
@@ -98,11 +87,14 @@ export function ImagePopover({ editor, isOpen, onClose, nodePos }: ImagePopoverP
     }
   }, [handleSave, onClose]);
 
-  if (!isOpen || !editor) return null;
-
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- WAI-ARIA dialog is interactive; onKeyDown handles Enter-to-save and Escape-to-close
+    // role="dialog" is interactive, and onKeyDown below handles Enter-to-save
+    // and Escape-to-close.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
+      // `refs` is Floating UI's handle object, not a React ref: setFloating is
+      // a stable callback and reading it in render is the documented usage.
+      // eslint-disable-next-line react-hooks/refs
       ref={refs.setFloating}
       style={floatingStyles}
       className="z-50 p-4 bg-surface border border-line rounded-lg shadow-xl min-w-[320px]"

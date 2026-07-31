@@ -61,6 +61,12 @@ export function Modal({
   }, [onClose]);
 
   return (
+    /* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions,
+                                 jsx-a11y/click-events-have-key-events --
+       <dialog> is an interactive element, and the keyboard path is the
+       platform's own: showModal() traps focus and Escape fires 'cancel',
+       handled above. This listener only implements click-outside-to-dismiss,
+       which has no keyboard equivalent to duplicate. */
     <dialog
       ref={dialogRef}
       aria-labelledby="modal-title"

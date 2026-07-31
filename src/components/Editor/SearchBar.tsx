@@ -11,7 +11,16 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ editor, onClose, showReplace: initialShowReplace = false }: SearchBarProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+  // Seeded from the selection: pressing Ctrl+F with a word selected should
+  // search for that word. Computed lazily so it lands on the first render
+  // rather than being written in from an effect afterwards.
+  const [searchTerm, setSearchTerm] = useState(() => {
+    const { from, to } = editor.state.selection;
+    if (from === to) return '';
+    const text = editor.state.doc.textBetween(from, to, ' ');
+    // A whole paragraph is a selection, not a search term.
+    return text && text.length < 100 ? text : '';
+  });
   const [replaceTerm, setReplaceTerm] = useState('');
   const [showReplace, setShowReplace] = useState(initialShowReplace);
   const [caseSensitive, setCaseSensitive] = useState(false);
@@ -30,18 +39,13 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
     });
   }, []);
 
-  // Pre-populate with selected text
+  // Push the seeded term into the editor's search state once on mount. The
+  // term itself comes from a lazy useState initialiser (see above) so it is
+  // present on first render rather than arriving a frame later.
   useEffect(() => {
-    const { from, to } = editor.state.selection;
-    if (from !== to) {
-      const text = editor.state.doc.textBetween(from, to, ' ');
-      if (text && text.length < 100) {
-        setSearchTerm(text);
-        editor.commands.setSearchTerm(text);
-      }
-    }
-  // Run only on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (searchTerm) editor.commands.setSearchTerm(searchTerm);
+    // Mount only: later edits flow through handleSearchChange.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearchChange = useCallback(

@@ -46,18 +46,12 @@ export function CommandPalette({ editor, outline, onSelectHeading }: CommandPale
   const expandTo = useWorkspaceStore((s) => s.expandTo);
   const openHandle = useDocumentsStore((s) => s.openHandle);
 
+  // Mounted only while open (App renders it conditionally), so state starts
+  // fresh on every invocation with no reset effect needed.
   const [query, setQuery] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [rawActiveIndex, setActiveIndex] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Reset on each open, so the palette never reopens mid-search.
-  useEffect(() => {
-    if (isOpen) {
-      setQuery('');
-      setActiveIndex(0);
-    }
-  }, [isOpen]);
 
   const rows = useMemo<Row[]>(() => {
     if (!isOpen) return [];
@@ -85,10 +79,10 @@ export function CommandPalette({ editor, outline, onSelectHeading }: CommandPale
     return [...fileRows, ...commands];
   }, [isOpen, query, files, outline, editor, expandTo, openHandle, onSelectHeading]);
 
-  // Clamp the cursor when the result set shrinks under it.
-  useEffect(() => {
-    setActiveIndex((index) => (index >= rows.length ? 0 : index));
-  }, [rows.length]);
+  // Clamped at read time rather than corrected in an effect: when the result
+  // set shrinks under the cursor, deriving avoids a render with an index that
+  // points past the end.
+  const activeIndex = rows.length === 0 ? 0 : Math.min(rawActiveIndex, rows.length - 1);
 
   const commit = useCallback(
     (row: Row | undefined) => {
@@ -168,6 +162,9 @@ export function CommandPalette({ editor, outline, onSelectHeading }: CommandPale
           <Search size={15} className="shrink-0 text-ink-faint" aria-hidden />
           <input
             ref={inputRef}
+            /* eslint-disable-next-line jsx-a11y/no-autofocus -- a search
+               dialog that opens with its field unfocused is broken; the
+               palette exists to be typed into the moment it appears. */
             autoFocus
             type="text"
             value={query}
@@ -247,6 +244,10 @@ function PaletteRow({
   const Icon = row.kind === 'file' ? FileText : row.kind === 'heading' ? Hash : SquareDashed;
 
   return (
+    /* eslint-disable-next-line jsx-a11y/click-events-have-key-events --
+       role="option" inside a listbox is driven from the combobox input's
+       arrow-key and Enter handling, which is wired up above. The click
+       handler is the pointer equivalent, not an unkeyboarded control. */
     <li
       id={`palette-row-${index}`}
       data-index={index}

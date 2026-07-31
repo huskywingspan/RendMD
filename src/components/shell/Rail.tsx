@@ -148,6 +148,11 @@ function RailResizer() {
   );
 
   return (
+    /* eslint-disable jsx-a11y/no-noninteractive-element-interactions,
+                      jsx-a11y/no-noninteractive-tabindex --
+       A separator that exposes aria-valuenow and accepts arrow keys is a
+       window splitter, which ARIA defines as a focusable widget. The rule
+       treats every separator as decorative. */
     <div
       role="separator"
       aria-orientation="vertical"

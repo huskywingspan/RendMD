@@ -27,7 +27,7 @@ export function OutlinePanel({ items, activeId, onSelect }: OutlinePanelProps) {
 
   return (
     <nav aria-label="Document outline" className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
-      <ul role="list">
+      <ul>
         {items.map((item) => {
           const indent = Math.min(item.level - baseLevel, 3);
           const isActive = item.id === activeId;

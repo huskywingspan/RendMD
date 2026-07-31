@@ -36,10 +36,9 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
   /* ── Syntax highlighting ───────────────────────────────────────────────── */
 
   useEffect(() => {
-    if (!code) {
-      setHighlighted('');
-      return;
-    }
+    // Nothing to highlight; the render below falls back to plain text rather
+    // than this effect clearing state and forcing a second pass.
+    if (!code) return;
 
     let cancelled = false;
     void highlightCode(code, language, isDark).then((html) => {
@@ -207,7 +206,7 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
           </div>
         ) : (
           <div className="code-block-content relative">
-            {highlighted && (
+            {code && highlighted && (
               <div
                 className="shiki-preview"
                 aria-hidden="true"

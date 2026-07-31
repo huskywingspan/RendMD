@@ -4,43 +4,37 @@ import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react
 import { ExternalLink, Trash2, Check, X } from 'lucide-react';
 
 interface LinkPopoverProps {
-  editor: Editor | null;
-  isOpen: boolean;
+  editor: Editor;
   onClose: () => void;
 }
 
 /**
  * Popover for editing links.
- * Supports editing URL, removing link, and opening in new tab.
+ *
+ * Mounted only while open (the parent renders it conditionally), so the URL
+ * seeds from a lazy initialiser instead of being written in by an effect that
+ * would render once with the previous link's value.
  */
-export function LinkPopover({ editor, isOpen, onClose }: LinkPopoverProps) {
-  const [url, setUrl] = useState('');
+export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
+  const [url, setUrl] = useState<string>(() => editor.getAttributes('link').href ?? '');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { refs, floatingStyles } = useFloating({
-    open: isOpen,
+    open: true,
     placement: 'bottom-start',
     middleware: [offset(8), flip(), shift({ padding: 8 })],
     whileElementsMounted: autoUpdate,
   });
 
-  // Initialize URL from current link or selection
+  // Focus and select on open, so typing replaces the existing URL.
   useEffect(() => {
-    if (isOpen && editor) {
-      const { href } = editor.getAttributes('link');
-      setUrl(href || '');
-      
-      // Focus input after a tick
-      setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }, 50);
-    }
-  }, [isOpen, editor]);
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
 
   // Position the floating element near the selection
   useEffect(() => {
-    if (isOpen && editor) {
+    {
       const { from } = editor.state.selection;
       const coords = editor.view.coordsAtPos(from);
       
@@ -60,7 +54,7 @@ export function LinkPopover({ editor, isOpen, onClose }: LinkPopoverProps) {
         },
       });
     }
-  }, [isOpen, editor, refs]);
+  }, [editor, refs]);
 
   const handleSave = useCallback(() => {
     if (!editor) return;
@@ -95,11 +89,14 @@ export function LinkPopover({ editor, isOpen, onClose }: LinkPopoverProps) {
     }
   }, [handleSave, onClose]);
 
-  if (!isOpen || !editor) return null;
-
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- WAI-ARIA dialog is interactive; onKeyDown handles Enter-to-save and Escape-to-close
+    // role="dialog" is interactive, and onKeyDown below handles Enter-to-save
+    // and Escape-to-close.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
+      // `refs` is Floating UI's handle object, not a React ref: setFloating is
+      // a stable callback and reading it in render is the documented usage.
+      // eslint-disable-next-line react-hooks/refs
       ref={refs.setFloating}
       style={floatingStyles}
       className="z-50 p-4 bg-surface border border-line rounded-lg shadow-xl min-w-[320px]"

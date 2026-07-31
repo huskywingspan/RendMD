@@ -130,7 +130,7 @@ export function FileTree() {
           filtered.length === 0 ? (
             <p className="px-3 py-2 text-sm text-ink-faint">No files match “{filter}”</p>
           ) : (
-            <ul role="list">
+            <ul>
               {filtered.map((file) => (
                 <FileRow key={file.path} node={file} showPath />
               ))}
@@ -161,7 +161,9 @@ function TreeRow({ node, depth }: { node: TreeNode; depth: number }) {
   }
 
   return (
-    <li role="treeitem" aria-expanded={expanded}>
+    // A folder is never the selected document, but treeitem requires the
+    // attribute to be present.
+    <li role="treeitem" aria-expanded={expanded} aria-selected={false}>
       <button
         type="button"
         onClick={() => toggleExpanded(node.path)}
@@ -213,7 +215,9 @@ function FileRow({
   );
 
   return (
-    <li role={showPath ? undefined : 'treeitem'}>
+    // aria-selected is required on treeitem, and is what conveys "this is the
+    // document you're looking at" to a screen reader.
+    <li role={showPath ? undefined : 'treeitem'} aria-selected={showPath ? undefined : isOpen}>
       <button
         type="button"
         onClick={() => void openHandle(node.handle as FileSystemFileHandle, { path: node.path })}

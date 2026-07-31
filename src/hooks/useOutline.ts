@@ -28,6 +28,9 @@ interface UseOutlineResult {
   scrollTo: (item: OutlineItem) => void;
 }
 
+/** Stable identity, so consumers memoising on `items` don't churn. */
+const EMPTY_OUTLINE: OutlineItem[] = [];
+
 export function useOutline(editor: Editor | null): UseOutlineResult {
   const [items, setItems] = useState<OutlineItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -36,10 +39,7 @@ export function useOutline(editor: Editor | null): UseOutlineResult {
   /* ── Extraction ────────────────────────────────────────────────────────── */
 
   useEffect(() => {
-    if (!editor) {
-      setItems([]);
-      return;
-    }
+    if (!editor) return;
 
     const extract = (): void => {
       const found: OutlineItem[] = [];
@@ -58,13 +58,20 @@ export function useOutline(editor: Editor | null): UseOutlineResult {
       setItems((previous) => (sameOutline(previous, found) ? previous : found));
     };
 
-    // Coalesce bursts of typing into one extraction per frame.
+    // Coalesce bursts of typing into one extraction per frame. Safe for
+    // updates: if the user is typing, the page is visible and frames are
+    // being produced.
     const schedule = (): void => {
       if (frameRef.current !== undefined) cancelAnimationFrame(frameRef.current);
       frameRef.current = requestAnimationFrame(extract);
     };
 
-    extract();
+    // The *first* extraction deliberately does not use rAF. A page that isn't
+    // compositing — a background tab, a restored session — never runs frame
+    // callbacks, and the outline would stay empty until the tab was focused.
+    // A microtask always runs promptly, and keeps the effect body itself free
+    // of a synchronous setState.
+    queueMicrotask(extract);
     editor.on('update', schedule);
 
     return () => {
@@ -76,10 +83,7 @@ export function useOutline(editor: Editor | null): UseOutlineResult {
   /* ── Active heading ────────────────────────────────────────────────────── */
 
   useEffect(() => {
-    if (!editor || editor.isDestroyed || items.length === 0) {
-      setActiveId(null);
-      return;
-    }
+    if (!editor || editor.isDestroyed || items.length === 0) return;
 
     // `editor.view` throws if the ProseMirror view hasn't attached yet, which
     // is the case on the first pass when the editor is handed up during
@@ -131,7 +135,12 @@ export function useOutline(editor: Editor | null): UseOutlineResult {
     [editor],
   );
 
-  return { items, activeId, scrollTo };
+  // Both derived rather than reset from an effect: with no editor there is no
+  // outline, and an id that no longer appears in it is not the active one.
+  const resolvedItems = editor ? items : EMPTY_OUTLINE;
+  const resolvedActiveId = resolvedItems.some((item) => item.id === activeId) ? activeId : null;
+
+  return { items: resolvedItems, activeId: resolvedActiveId, scrollTo };
 }
 
 function headingElementAt(editor: Editor, pos: number): HTMLElement | null {
