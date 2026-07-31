@@ -22,22 +22,22 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
   const { openFile, saveFile } = useFileSystem();
 
   return (
-    <header className="bg-[var(--theme-bg-secondary)] border-b border-[var(--theme-border-primary)] flex items-center justify-between" style={{ height: 'calc(3rem * var(--ui-density-scale, 1))', paddingLeft: 'var(--density-padding-md, 0.5rem)', paddingRight: 'var(--density-padding-md, 0.5rem)' }}>
+    <header className="bg-surface border-b border-line flex items-center justify-between" style={{ height: 'calc(3rem * var(--ui-density-scale, 1))', paddingLeft: 'var(--density-padding-md, 0.5rem)', paddingRight: 'var(--density-padding-md, 0.5rem)' }}>
       {/* Left section */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <Tooltip content="Toggle sidebar">
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors"
+            className="p-1.5 rounded hover:bg-sunken transition-colors"
             aria-label="Toggle sidebar"
           >
-            <Menu size={18} className="text-[var(--theme-text-secondary)]" />
+            <Menu size={18} className="text-ink-muted" />
           </button>
         </Tooltip>
         
-        <span className="font-semibold text-[var(--theme-text-primary)] shrink-0">RendMD</span>
+        <span className="font-semibold text-ink shrink-0">RendMD</span>
         
-        <span className="text-[var(--theme-text-muted)] hidden sm:inline">•</span>
+        <span className="text-ink-faint hidden sm:inline">•</span>
         
         <div className="hidden sm:block min-w-0">
           <FileIndicator isSaving={isSaving} lastSaved={lastSaved} />
@@ -51,7 +51,7 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
           <Tooltip content="New file (Ctrl+N)">
             <button
               onClick={() => newFile()}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-secondary)] transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-sunken text-ink-muted transition-colors"
               aria-label="New file (Ctrl+N)"
             >
               <FilePlus size={14} />
@@ -61,7 +61,7 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
           <Tooltip content="Open file (Ctrl+O)">
             <button
               onClick={() => openFile()}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-secondary)] transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-sunken text-ink-muted transition-colors"
               aria-label="Open file (Ctrl+O)"
             >
               <FolderOpen size={14} />
@@ -71,7 +71,7 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
           <Tooltip content="Save file (Ctrl+S)">
             <button
               onClick={() => saveFile()}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-secondary)] transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-sunken text-ink-muted transition-colors"
               aria-label="Save file (Ctrl+S)"
             >
               <Save size={14} />
@@ -100,20 +100,20 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
         <Tooltip content="Keyboard shortcuts (Ctrl+H)">
           <button
             onClick={() => setShortcutsModalOpen(!shortcutsModalOpen)}
-            className="hidden sm:inline-flex p-1.5 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors"
+            className="hidden sm:inline-flex p-1.5 rounded hover:bg-sunken transition-colors"
             aria-label="Keyboard shortcuts (Ctrl+H)"
           >
-            <Keyboard size={18} className="text-[var(--theme-text-secondary)]" />
+            <Keyboard size={18} className="text-ink-muted" />
           </button>
         </Tooltip>
         
         <Tooltip content="Settings">
           <button
             onClick={onOpenSettings}
-            className="hidden sm:inline-flex p-1.5 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors"
+            className="hidden sm:inline-flex p-1.5 rounded hover:bg-sunken transition-colors"
             aria-label="Settings"
           >
-            <Settings size={18} className="text-[var(--theme-text-secondary)]" />
+            <Settings size={18} className="text-ink-muted" />
           </button>
         </Tooltip>
 
@@ -129,7 +129,7 @@ function MobileDirtyDot() {
   const { isDirty } = useEditorStore();
   if (!isDirty) return null;
   return (
-    <span className="w-2 h-2 rounded-full bg-[var(--theme-accent-primary)]" title="Unsaved changes" />
+    <span className="w-2 h-2 rounded-full bg-accent" title="Unsaved changes" />
   );
 }
 
@@ -147,7 +147,7 @@ function ViewModeToggle({ viewMode, setViewMode }: ViewModeToggleProps) {
 
   return (
     <div 
-      className="flex items-center bg-[var(--theme-bg-tertiary)] rounded-md p-0.5"
+      className="flex items-center bg-sunken rounded-md p-0.5"
       role="group"
       aria-label="View mode"
     >
@@ -159,8 +159,8 @@ function ViewModeToggle({ viewMode, setViewMode }: ViewModeToggleProps) {
               "flex items-center justify-center p-1.5 rounded transition-colors",
               mobileHidden && "hidden md:inline-flex",
               viewMode === value
-                ? "bg-[var(--theme-accent-primary)] text-white"
-                : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)]"
+                ? "bg-accent text-white"
+                : "text-ink-muted hover:text-ink"
             )}
             aria-pressed={viewMode === value}
             aria-label={title}

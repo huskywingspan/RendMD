@@ -86,16 +86,16 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
   return (
     <NodeViewWrapper className="code-block-wrapper relative my-4 group">
       {/* Header bar with language selector and copy button */}
-      <div className="code-block-header flex items-center justify-between px-4 py-2 bg-[var(--theme-code-bg)] border border-b-0 border-[var(--theme-code-border)] rounded-t-lg">
+      <div className="code-block-header flex items-center justify-between px-4 py-2 bg-sunken border border-b-0 border-line rounded-t-lg">
         {/* Language selector */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className={cn(
               "flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors",
-              "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)]",
-              "hover:bg-[var(--theme-bg-hover)]",
-              isDropdownOpen && "bg-[var(--theme-bg-hover)] text-[var(--theme-text-primary)]"
+              "text-ink-muted hover:text-ink",
+              "hover:bg-hover",
+              isDropdownOpen && "bg-hover text-ink"
             )}
             contentEditable={false}
           >
@@ -108,7 +108,7 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
 
           {/* Language dropdown */}
           {isDropdownOpen && (
-            <div className="absolute left-0 top-full mt-1 w-40 max-h-64 overflow-y-auto bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg shadow-lg z-50 py-1">
+            <div className="absolute left-0 top-full mt-1 w-40 max-h-64 overflow-y-auto bg-surface border border-line rounded-lg shadow-lg z-50 py-1">
               {LANGUAGE_OPTIONS.map((lang) => (
                 <button
                   key={lang.value}
@@ -116,8 +116,8 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
                   className={cn(
                     "w-full px-3 py-1.5 text-left text-sm transition-colors",
                     language === lang.value
-                      ? "bg-[var(--theme-accent-primary)]/10 text-[var(--theme-accent-primary)]"
-                      : "hover:bg-[var(--theme-bg-hover)] text-[var(--theme-text-primary)]"
+                      ? "bg-accent/10 text-accent"
+                      : "hover:bg-hover text-ink"
                   )}
                   contentEditable={false}
                 >
@@ -135,8 +135,8 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
             "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-all",
             "opacity-0 group-hover:opacity-100",
             isCopied 
-              ? "text-[var(--color-success)]" 
-              : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)]"
+              ? "text-[var(--rmd-success)]" 
+              : "text-ink-muted hover:text-ink hover:bg-hover"
           )}
           contentEditable={false}
           aria-label={isCopied ? "Copied!" : "Copy code"}
@@ -160,7 +160,7 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
         {/* Shiki highlighted preview (visible, non-editable) */}
         {highlightedHtml && (
           <div
-            className="shiki-preview absolute inset-0 pointer-events-none overflow-auto rounded-b-lg border border-t-0 border-[var(--theme-code-border)]"
+            className="shiki-preview absolute inset-0 pointer-events-none overflow-auto rounded-b-lg border border-t-0 border-line"
             dangerouslySetInnerHTML={{ __html: highlightedHtml }}
             aria-hidden="true"
           />
@@ -169,9 +169,9 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
         {/* Actual editable content (transparent text, handles editing) */}
         <pre 
           className={cn(
-            "rounded-b-lg border border-t-0 border-[var(--theme-code-border)] p-4 overflow-auto",
-            "bg-[var(--theme-code-bg)]",
-            highlightedHtml ? "text-transparent caret-[var(--theme-text-primary)]" : "text-[var(--theme-code-text)]"
+            "rounded-b-lg border border-t-0 border-line p-4 overflow-auto",
+            "bg-sunken",
+            highlightedHtml ? "text-transparent caret-ink" : "text-ink"
           )}
           style={{ minHeight: '3rem' }}
         >

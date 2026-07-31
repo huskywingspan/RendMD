@@ -74,7 +74,7 @@ export function ExportDropdown({ editor }: ExportDropdownProps) {
     <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-secondary)] transition-colors"
+        className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-sunken text-ink-muted transition-colors"
         title="Export document"
         aria-expanded={isOpen}
         aria-haspopup="menu"
@@ -85,13 +85,13 @@ export function ExportDropdown({ editor }: ExportDropdownProps) {
 
       {isOpen && (
         <div
-          className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-52 py-1 rounded-lg border border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] shadow-lg z-50"
+          className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-52 py-1 rounded-lg border border-line bg-surface shadow-lg z-50"
           role="menu"
         >
           <button
             onClick={handleExportHTML}
             disabled={!editor}
-            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] transition-colors disabled:opacity-40"
+            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-ink-muted hover:bg-sunken hover:text-ink transition-colors disabled:opacity-40"
             role="menuitem"
           >
             <FileText size={14} />
@@ -100,17 +100,17 @@ export function ExportDropdown({ editor }: ExportDropdownProps) {
           <button
             onClick={handleExportPDF}
             disabled={!editor}
-            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] transition-colors disabled:opacity-40"
+            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-ink-muted hover:bg-sunken hover:text-ink transition-colors disabled:opacity-40"
             role="menuitem"
           >
             <Printer size={14} />
             Print / Save as PDF
           </button>
-          <div className="h-px my-1 bg-[var(--theme-border-primary)]" />
+          <div className="h-px my-1 bg-[var(--rmd-line)]" />
           <button
             onClick={handleCopyRichText}
             disabled={!editor}
-            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] transition-colors disabled:opacity-40"
+            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-ink-muted hover:bg-sunken hover:text-ink transition-colors disabled:opacity-40"
             role="menuitem"
           >
             <ClipboardCopy size={14} />

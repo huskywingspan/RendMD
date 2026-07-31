@@ -12,7 +12,6 @@ import { EditorToolbar } from './EditorToolbar';
 import { createEditorExtensions } from './extensions';
 import type { EditorExtensionOptions } from './extensions';
 import { isImageFile } from '@/utils/imageHelpers';
-import './editor-styles.css';
 
 const INITIAL_CONTENT = `# Welcome to RendMD
 
@@ -290,7 +289,7 @@ export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrol
       <div className="w-full flex flex-col overflow-hidden">
         {/* Editor toolbar - formatting + table controls (collapsible) */}
         {editor && (
-          <div className="sticky top-0 z-10 bg-[var(--theme-bg-primary)] border-b border-[var(--theme-border-primary)]">
+          <div className="sticky top-0 z-10 bg-canvas border-b border-line">
             <div className="flex items-center">
               {!toolbarCollapsed && (
                 <div className="flex-1 p-2">
@@ -299,7 +298,7 @@ export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrol
               )}
               <button
                 onClick={toggleToolbar}
-                className="px-2 py-1 text-[var(--theme-text-muted)] hover:text-[var(--theme-text-secondary)] transition-colors"
+                className="px-2 py-1 text-ink-faint hover:text-ink-muted transition-colors"
                 aria-label={toolbarCollapsed ? 'Show toolbar' : 'Hide toolbar'}
                 title={toolbarCollapsed ? 'Show toolbar' : 'Hide toolbar'}
               >

@@ -1,0 +1,93 @@
+/**
+ * Print / PDF export.
+ *
+ * exportAsPDF() builds a standalone #print-container and hides #root, so what
+ * the printer sees is a clean document rather than the app with its chrome
+ * display:none'd. These rules cover the direct Ctrl+P path and set the page
+ * box for both.
+ *
+ * Printed output is always light-on-white regardless of the active theme:
+ * a dark canvas either wastes toner or gets dropped by the print pipeline,
+ * and neither produces a document worth keeping.
+ */
+@media print {
+  #root {
+    display: none !important;
+  }
+
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  #print-container {
+    color: #16181d;
+    background: #ffffff;
+    font-family: 'Source Serif Variable', Georgia, serif;
+    font-size: 11.5pt;
+    line-height: 1.55;
+  }
+
+  #print-container a {
+    color: #1f3f9e;
+    text-decoration: underline;
+  }
+
+  #print-container pre,
+  #print-container code {
+    font-family: 'JetBrains Mono Variable', Consolas, monospace;
+    font-size: 9.5pt;
+    background: #f4f5f7;
+    border: 1px solid #e2e4e9;
+    border-radius: 3px;
+  }
+
+  #print-container pre {
+    padding: 8pt;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  #print-container blockquote {
+    margin-left: 0;
+    padding-left: 12pt;
+    border-left: 2pt solid #c9ccd4;
+    color: #454a55;
+  }
+
+  #print-container table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  #print-container th,
+  #print-container td {
+    padding: 4pt 6pt;
+    border: 1px solid #d5d8df;
+    text-align: left;
+  }
+
+  #print-container th {
+    background: #f4f5f7;
+  }
+
+  #print-container img {
+    max-width: 100%;
+  }
+
+  /* Keep headings attached to the text they introduce, and never split a
+     code block or table row across a page if it can be avoided. */
+  #print-container :is(h1, h2, h3, h4, h5, h6) {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  #print-container :is(pre, table, blockquote, img) {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #print-container p {
+    orphans: 3;
+    widows: 3;
+  }
+}

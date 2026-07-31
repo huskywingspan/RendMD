@@ -107,10 +107,10 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, forceVisible = f
   if (!editor || !shouldShow) return null;
 
   const buttonClass = (isActive: boolean) =>
-    `p-2 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors ${
+    `p-2 rounded hover:bg-sunken transition-colors ${
       isActive 
-        ? 'bg-[var(--theme-accent)] text-white' 
-        : 'text-[var(--theme-text-secondary)]'
+        ? 'bg-[var(--rmd-accent)] text-white' 
+        : 'text-ink-muted'
     }`;
 
   return (
@@ -122,7 +122,7 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, forceVisible = f
         left: `${position.left}px`,
         zIndex: 50,
       }}
-      className="flex items-center gap-1 p-1 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)] rounded-lg shadow-lg"
+      className="flex items-center gap-1 p-1 bg-surface border border-line rounded-lg shadow-lg"
     >
       {/* Text formatting */}
       <Tooltip content="Bold (Ctrl+B)" position="top">
@@ -166,7 +166,7 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, forceVisible = f
         </button>
       </Tooltip>
       
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="w-px h-6 bg-[var(--rmd-line)] mx-1" />
       
       {/* Headings */}
       <Tooltip content="Heading 1 (Ctrl+1)" position="top">
@@ -200,7 +200,7 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, forceVisible = f
         </button>
       </Tooltip>
       
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="w-px h-6 bg-[var(--rmd-line)] mx-1" />
       
       {/* Lists */}
       <Tooltip content="Bullet List" position="top">
@@ -234,7 +234,7 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, forceVisible = f
         </button>
       </Tooltip>
       
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="w-px h-6 bg-[var(--rmd-line)] mx-1" />
       
       {/* Blockquote */}
       <Tooltip content="Blockquote" position="top">
@@ -248,7 +248,7 @@ export function BubbleMenu({ editor, onLinkClick, onImageClick, forceVisible = f
         </button>
       </Tooltip>
       
-      <div className="w-px h-6 bg-[var(--theme-border)] mx-1" />
+      <div className="w-px h-6 bg-[var(--rmd-line)] mx-1" />
       
       {/* Link */}
       <Tooltip content="Add Link (Ctrl+K)" position="top">

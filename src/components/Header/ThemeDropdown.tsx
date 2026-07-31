@@ -64,19 +64,19 @@ export function ThemeDropdown() {
       {/* Quick toggle button */}
       <button
         onClick={toggleDarkLight}
-        className="p-1.5 rounded-l hover:bg-[var(--theme-bg-tertiary)] transition-colors"
+        className="p-1.5 rounded-l hover:bg-sunken transition-colors"
         aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       >
-        <QuickToggleIcon size={18} className="text-[var(--theme-text-secondary)]" />
+        <QuickToggleIcon size={18} className="text-ink-muted" />
       </button>
 
       {/* Dropdown trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "p-1.5 rounded-r hover:bg-[var(--theme-bg-tertiary)] transition-colors",
-          isOpen && "bg-[var(--theme-bg-tertiary)]"
+          "p-1.5 rounded-r hover:bg-sunken transition-colors",
+          isOpen && "bg-sunken"
         )}
         aria-label="Theme options"
         aria-expanded={isOpen}
@@ -85,7 +85,7 @@ export function ThemeDropdown() {
         <ChevronDown 
           size={14} 
           className={cn(
-            "text-[var(--theme-text-secondary)] transition-transform",
+            "text-ink-muted transition-transform",
             isOpen && "rotate-180"
           )} 
         />
@@ -94,7 +94,7 @@ export function ThemeDropdown() {
       {/* Dropdown menu */}
       {isOpen && (
         <div 
-          className="absolute right-0 top-full mt-1 w-48 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg shadow-lg z-50 py-1 overflow-hidden"
+          className="absolute right-0 top-full mt-1 w-48 bg-surface border border-line rounded-lg shadow-lg z-50 py-1 overflow-hidden"
           role="listbox"
           aria-label="Select theme"
         >
@@ -109,19 +109,19 @@ export function ThemeDropdown() {
                 className={cn(
                   "w-full px-3 py-2 flex items-center gap-3 text-left transition-colors",
                   isSelected 
-                    ? "bg-[var(--theme-accent-primary)]/10 text-[var(--theme-accent-primary)]" 
-                    : "hover:bg-[var(--theme-bg-hover)] text-[var(--theme-text-primary)]"
+                    ? "bg-accent/10 text-accent" 
+                    : "hover:bg-hover text-ink"
                 )}
                 role="option"
                 aria-selected={isSelected}
               >
-                <Icon size={16} className={isSelected ? "text-[var(--theme-accent-primary)]" : "text-[var(--theme-text-secondary)]"} />
+                <Icon size={16} className={isSelected ? "text-accent" : "text-ink-muted"} />
                 <div className="flex-1">
                   <div className="text-sm font-medium">{option.label}</div>
-                  <div className="text-xs text-[var(--theme-text-muted)]">{option.description}</div>
+                  <div className="text-xs text-ink-faint">{option.description}</div>
                 </div>
                 {isSelected && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--theme-accent-primary)]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent" />
                 )}
               </button>
             );

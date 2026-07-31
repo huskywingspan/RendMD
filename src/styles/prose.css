@@ -1,0 +1,457 @@
+/**
+ * The reading surface.
+ *
+ * This is the part of RendMD that matters most: the rendered document, which
+ * doubles as the editing surface. Everything here is tuned for reading long
+ * documents comfortably rather than for demonstrating that markdown was
+ * parsed correctly.
+ *
+ * Three variables drive it, all set from user settings:
+ *   --reading-measure  line length, in ch
+ *   --reading-size     base font size
+ *   --reading-family   sans, serif, or mono
+ */
+
+.prose-surface {
+  max-width: var(--reading-measure);
+  margin-inline: auto;
+  font-family: var(--reading-family);
+  font-size: var(--reading-size);
+  line-height: var(--reading-leading);
+  color: var(--rmd-ink);
+  /* Hyphenation only helps at narrow measures; the browser decides. */
+  hyphens: auto;
+  hyphenate-limit-chars: 8 4 4;
+}
+
+.prose-surface:focus,
+.prose-surface:focus-visible {
+  outline: none;
+}
+
+/* ── Block rhythm ─────────────────────────────────────────────────────────
+ * Headings carry more space above than below, so each one sits with the
+ * content it introduces rather than floating between two blocks.
+ * ─────────────────────────────────────────────────────────────────────── */
+.prose-surface > * + * {
+  margin-top: 1.05em;
+}
+
+.prose-surface p {
+  margin: 0;
+  /* Avoid a lone last line stranded at the top of the next screen. */
+  text-wrap: pretty;
+}
+
+/* ── Headings ─────────────────────────────────────────────────────────── */
+.prose-surface h1,
+.prose-surface h2,
+.prose-surface h3,
+.prose-surface h4,
+.prose-surface h5,
+.prose-surface h6 {
+  margin: 0;
+  color: var(--rmd-ink);
+  font-weight: 620;
+  line-height: 1.25;
+  text-wrap: balance;
+  scroll-margin-top: 2rem;
+}
+
+.prose-surface > :is(h1, h2, h3, h4, h5, h6) + * {
+  margin-top: 0.6em;
+}
+
+.prose-surface > h1 {
+  margin-top: 1.6em;
+  font-size: 1.9em;
+  font-weight: 660;
+  line-height: 1.15;
+  letter-spacing: -0.021em;
+}
+
+.prose-surface > h2 {
+  margin-top: 1.9em;
+  font-size: 1.45em;
+  letter-spacing: -0.016em;
+  /* A hairline rule under h2 gives long documents a scannable spine. */
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--rmd-line);
+}
+
+.prose-surface > h3 {
+  margin-top: 1.7em;
+  font-size: 1.2em;
+  letter-spacing: -0.011em;
+}
+
+.prose-surface > h4 {
+  margin-top: 1.5em;
+  font-size: 1.04em;
+  font-weight: 640;
+}
+
+.prose-surface > h5 {
+  margin-top: 1.4em;
+  font-size: 0.95em;
+  font-weight: 660;
+}
+
+.prose-surface > h6 {
+  margin-top: 1.4em;
+  font-size: 0.9em;
+  font-weight: 660;
+  color: var(--rmd-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* The document's first block should sit at the top of the page, not below
+   a heading margin that has nothing above it to separate from. */
+.prose-surface > :first-child {
+  margin-top: 0;
+}
+
+/* ── Inline ───────────────────────────────────────────────────────────── */
+.prose-surface strong {
+  font-weight: 650;
+  color: var(--rmd-ink);
+}
+
+.prose-surface em {
+  font-style: italic;
+}
+
+.prose-surface del {
+  color: var(--rmd-ink-faint);
+  text-decoration-thickness: 1px;
+}
+
+.prose-surface a {
+  color: var(--rmd-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in oklch, var(--rmd-accent) 40%, transparent);
+  transition: text-decoration-color var(--rmd-duration-fast) var(--rmd-ease);
+  cursor: pointer;
+}
+
+.prose-surface a:hover {
+  text-decoration-color: var(--rmd-accent);
+}
+
+/* ── Code ─────────────────────────────────────────────────────────────── */
+.prose-surface code {
+  font-family: var(--rmd-font-mono);
+  font-size: 0.875em;
+  font-variant-ligatures: none;
+  padding: 0.15em 0.36em;
+  background-color: var(--rmd-sunken);
+  border: 1px solid var(--rmd-line);
+  border-radius: var(--rmd-radius-sm);
+  /* Long identifiers should wrap rather than push the measure open. */
+  overflow-wrap: break-word;
+}
+
+.prose-surface pre {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.prose-surface pre code {
+  display: block;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: inherit;
+  overflow-wrap: normal;
+}
+
+/* Code blocks break the measure — code should not be re-wrapped to 68ch. */
+.prose-surface .code-block-wrapper {
+  margin-block: 1.4em;
+}
+
+/* ── Blockquote ───────────────────────────────────────────────────────────
+ * Not italic. Long italic passages are measurably slower to read, and AI
+ * transcripts quote in paragraphs, not epigraphs.
+ * ─────────────────────────────────────────────────────────────────────── */
+.prose-surface blockquote {
+  margin: 1.4em 0;
+  padding: 0.15em 0 0.15em 1.15em;
+  border-left: 2px solid var(--rmd-line-strong);
+  color: var(--rmd-ink-muted);
+}
+
+.prose-surface blockquote > * + * {
+  margin-top: 0.8em;
+}
+
+/* ── Lists ────────────────────────────────────────────────────────────── */
+.prose-surface ul,
+.prose-surface ol {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.prose-surface ul {
+  list-style-type: disc;
+}
+
+.prose-surface ol {
+  list-style-type: decimal;
+}
+
+.prose-surface li {
+  margin-block: 0.28em;
+  padding-left: 0.2em;
+}
+
+.prose-surface li::marker {
+  color: var(--rmd-ink-faint);
+}
+
+.prose-surface li > ul,
+.prose-surface li > ol {
+  margin-top: 0.28em;
+}
+
+.prose-surface li p {
+  margin: 0;
+}
+
+.prose-surface li > p + p {
+  margin-top: 0.6em;
+}
+
+/* ── Task lists ───────────────────────────────────────────────────────── */
+.prose-surface ul[data-type='taskList'] {
+  padding-left: 0;
+  list-style: none;
+}
+
+.prose-surface ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6em;
+  padding-left: 0;
+}
+
+.prose-surface ul[data-type='taskList'] li > label {
+  display: flex;
+  align-items: center;
+  height: calc(var(--reading-leading) * 1em);
+  margin: 0;
+  user-select: none;
+}
+
+.prose-surface ul[data-type='taskList'] li > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.prose-surface input[type='checkbox'] {
+  appearance: none;
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0;
+  border: 1.5px solid var(--rmd-line-strong);
+  border-radius: var(--rmd-radius-sm);
+  background-color: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--rmd-duration-fast) var(--rmd-ease),
+    border-color var(--rmd-duration-fast) var(--rmd-ease);
+}
+
+.prose-surface input[type='checkbox']:hover {
+  border-color: var(--rmd-accent);
+}
+
+.prose-surface input[type='checkbox']:checked {
+  background-color: var(--rmd-accent);
+  border-color: var(--rmd-accent);
+  /* Inline SVG tick, coloured to sit on the accent fill. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+  background-size: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.prose-surface ul[data-type='taskList'] li[data-checked='true'] > div {
+  color: var(--rmd-ink-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--rmd-ink-faint);
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────────
+ * AI-session documents are full of comparison tables, so these get real
+ * attention. The wrapper scrolls independently so a wide table never forces
+ * the page to scroll sideways.
+ * ─────────────────────────────────────────────────────────────────────── */
+.prose-surface .tableWrapper {
+  margin-block: 1.4em;
+  overflow-x: auto;
+  border: 1px solid var(--rmd-line);
+  border-radius: var(--rmd-radius-md);
+}
+
+.prose-surface table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+
+.prose-surface th,
+.prose-surface td {
+  padding: 0.5em 0.75em;
+  text-align: left;
+  vertical-align: top;
+  border-right: 1px solid var(--rmd-line);
+  border-bottom: 1px solid var(--rmd-line);
+}
+
+.prose-surface th:last-child,
+.prose-surface td:last-child {
+  border-right: none;
+}
+
+.prose-surface tr:last-child td {
+  border-bottom: none;
+}
+
+.prose-surface th {
+  font-weight: 620;
+  color: var(--rmd-ink);
+  background-color: var(--rmd-sunken);
+}
+
+.prose-surface td p,
+.prose-surface th p {
+  margin: 0;
+}
+
+/* Column selection while editing. */
+.prose-surface .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--rmd-accent-soft);
+  pointer-events: none;
+}
+
+.prose-surface th,
+.prose-surface td {
+  position: relative;
+}
+
+.prose-surface .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--rmd-accent);
+  pointer-events: none;
+}
+
+/* ── Rules, images, media ─────────────────────────────────────────────── */
+.prose-surface hr {
+  margin-block: 2.2em;
+  border: none;
+  border-top: 1px solid var(--rmd-line);
+}
+
+.prose-surface img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-block: 1.4em;
+  border-radius: var(--rmd-radius-md);
+  border: 1px solid var(--rmd-line);
+}
+
+.prose-surface img.ProseMirror-selectednode {
+  outline: 2px solid var(--rmd-accent);
+  outline-offset: 2px;
+}
+
+/* ── ProseMirror plumbing ─────────────────────────────────────────────── */
+.prose-surface .ProseMirror-gapcursor::after {
+  border-top-color: var(--rmd-ink);
+}
+
+.prose-surface .ProseMirror-selectednode {
+  outline: 2px solid var(--rmd-accent);
+  outline-offset: 2px;
+  border-radius: var(--rmd-radius-sm);
+}
+
+/* Placeholder on the first empty paragraph of an empty document. */
+.prose-surface p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--rmd-ink-faint);
+  pointer-events: none;
+}
+
+/* ── Search highlighting ──────────────────────────────────────────────────
+ * Class names come from the search extension's decoration set.
+ * ─────────────────────────────────────────────────────────────────────── */
+.search-highlight {
+  background-color: var(--rmd-warning-soft);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--rmd-warning-soft);
+}
+
+.search-highlight-active {
+  background-color: var(--rmd-warning);
+  color: oklch(0.16 0.02 265);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--rmd-warning);
+}
+
+/* ── Code block node view ─────────────────────────────────────────────────
+ * The block renders twice: a Shiki-highlighted layer for display, and a
+ * transparent contenteditable <pre> on top that receives input. The two must
+ * agree on metrics exactly or the caret drifts away from the glyphs.
+ * ─────────────────────────────────────────────────────────────────────── */
+.code-block-wrapper {
+  position: relative;
+}
+
+.code-block-wrapper .code-block-content {
+  position: relative;
+}
+
+.code-block-wrapper .shiki-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: auto;
+}
+
+.code-block-wrapper .shiki-preview pre,
+.code-block-wrapper pre {
+  margin: 0;
+  padding: 0.875rem 1rem;
+  border: none;
+  background: transparent !important;
+}
+
+.code-block-wrapper .shiki-preview code,
+.code-block-wrapper pre code {
+  display: block;
+  font-family: var(--rmd-font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  font-variant-ligatures: none;
+  tab-size: 2;
+  background: none !important;
+}

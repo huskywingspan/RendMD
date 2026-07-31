@@ -86,7 +86,7 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
   return (
     <div className={cn(
       "source-editor relative h-full overflow-hidden",
-      "bg-[var(--theme-code-bg)]",
+      "bg-sunken",
       className
     )}>
       {/* Shiki highlighted background (non-interactive) */}
@@ -111,7 +111,7 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
         className={cn(
           "source-textarea absolute inset-0 w-full h-full",
           "resize-none p-4 m-0",
-          "bg-transparent text-transparent caret-[var(--theme-text-primary)]",
+          "bg-transparent text-transparent caret-ink",
           "outline-none border-none"
         )}
         style={{

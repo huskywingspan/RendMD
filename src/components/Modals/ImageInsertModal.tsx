@@ -185,18 +185,18 @@ export function ImageInsertModal({
 
   const inputStyles = cn(
     'w-full px-3 py-2 rounded-md text-sm',
-    'bg-[var(--theme-bg-secondary)]',
-    'text-[var(--theme-text-primary)]',
-    'placeholder:text-[var(--theme-text-muted)]',
-    'border border-[var(--theme-border)]',
-    'focus:outline-none focus:border-[var(--theme-accent-primary)]',
+    'bg-surface',
+    'text-ink',
+    'placeholder:text-ink-faint',
+    'border border-line',
+    'focus:outline-none focus:border-accent',
     'transition-colors'
   );
 
   const buttonPrimaryStyles = cn(
     'flex items-center justify-center gap-2',
     'px-4 py-2 rounded-md text-sm font-medium',
-    'bg-[var(--theme-accent-primary)] text-white',
+    'bg-accent text-white',
     'hover:opacity-90 transition-opacity',
     'disabled:opacity-40 disabled:cursor-not-allowed'
   );
@@ -208,20 +208,20 @@ export function ImageInsertModal({
       <div
         className={cn(
           'flex items-center gap-3 p-3 rounded-md',
-          'bg-[var(--theme-bg-tertiary)]',
-          'border border-[var(--theme-border)]'
+          'bg-sunken',
+          'border border-line'
         )}
       >
         <img
           src={previewUrl}
           alt="Preview"
-          className="w-16 h-16 object-cover rounded border border-[var(--theme-border)]"
+          className="w-16 h-16 object-cover rounded border border-line"
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-[var(--theme-text-primary)] truncate">
+          <p className="text-sm text-ink truncate">
             {file?.name}
           </p>
-          <p className="text-xs text-[var(--theme-text-muted)]">
+          <p className="text-xs text-ink-faint">
             {file ? formatFileSize(file.size) : ''}
           </p>
         </div>
@@ -233,7 +233,7 @@ export function ImageInsertModal({
     return (
       <div className="space-y-3">
         <div>
-          <label htmlFor="img-url-input" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
+          <label htmlFor="img-url-input" className="block text-xs font-medium text-ink-muted mb-1">
             Image URL
           </label>
           <input
@@ -247,7 +247,7 @@ export function ImageInsertModal({
           />
         </div>
         <div>
-          <label htmlFor="img-url-alt" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
+          <label htmlFor="img-url-alt" className="block text-xs font-medium text-ink-muted mb-1">
             Alt text
           </label>
           <input
@@ -278,7 +278,7 @@ export function ImageInsertModal({
       <div className="space-y-3">
         {file && renderPreviewThumbnail()}
         <div>
-          <label htmlFor="img-local-path" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
+          <label htmlFor="img-local-path" className="block text-xs font-medium text-ink-muted mb-1">
             File path (relative to your markdown file)
           </label>
           <input
@@ -290,12 +290,12 @@ export function ImageInsertModal({
             placeholder="image.png or assets/image.png"
             className={inputStyles}
           />
-          <p className="text-xs text-[var(--theme-text-muted)] mt-1">
+          <p className="text-xs text-ink-faint mt-1">
             The image must be accessible relative to your .md file on disk.
           </p>
         </div>
         <div>
-          <label htmlFor="img-local-alt" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
+          <label htmlFor="img-local-alt" className="block text-xs font-medium text-ink-muted mb-1">
             Alt text
           </label>
           <input
@@ -327,8 +327,8 @@ export function ImageInsertModal({
         {file && renderPreviewThumbnail()}
         {!file && (
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <ImageIcon size={32} className="text-[var(--theme-text-muted)] mb-2" />
-            <p className="text-sm text-[var(--theme-text-muted)]">
+            <ImageIcon size={32} className="text-ink-faint mb-2" />
+            <p className="text-sm text-ink-faint">
               No file provided. Paste or drop an image to embed.
             </p>
           </div>
@@ -354,17 +354,17 @@ export function ImageInsertModal({
             <div
               className={cn(
                 'w-5 h-5 border-2 rounded-full animate-spin',
-                'border-[var(--theme-text-muted)]',
-                'border-t-[var(--theme-accent-primary)]'
+                'border-[var(--rmd-ink-faint)]',
+                'border-t-[var(--rmd-accent)]'
               )}
             />
-            <span className="ml-2 text-sm text-[var(--theme-text-muted)]">
+            <span className="ml-2 text-sm text-ink-faint">
               Converting to base64…
             </span>
           </div>
         )}
         <div>
-          <label htmlFor="img-embed-alt" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
+          <label htmlFor="img-embed-alt" className="block text-xs font-medium text-ink-muted mb-1">
             Alt text
           </label>
           <input
@@ -413,8 +413,8 @@ export function ImageInsertModal({
           'relative z-10 flex flex-col',
           'w-full max-w-md',
           'mx-4 rounded-lg shadow-xl',
-          'bg-[var(--theme-bg-primary)]',
-          'border border-[var(--theme-border-primary)]'
+          'bg-canvas',
+          'border border-line'
         )}
       >
         {/* Header */}
@@ -422,10 +422,10 @@ export function ImageInsertModal({
           className={cn(
             'flex items-center justify-between',
             'px-5 py-4',
-            'border-b border-[var(--theme-border)]'
+            'border-b border-line'
           )}
         >
-          <h2 className="text-lg font-semibold text-[var(--theme-text-primary)] flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
             <ImageIcon size={20} />
             Insert Image
           </h2>
@@ -434,9 +434,9 @@ export function ImageInsertModal({
             className={cn(
               'flex items-center justify-center',
               'w-8 h-8 rounded-md',
-              'text-[var(--theme-text-secondary)]',
-              'hover:bg-[var(--theme-bg-tertiary)]',
-              'hover:text-[var(--theme-text-primary)]',
+              'text-ink-muted',
+              'hover:bg-sunken',
+              'hover:text-ink',
               'transition-colors'
             )}
             aria-label="Close image insert modal"
@@ -450,8 +450,8 @@ export function ImageInsertModal({
           <div
             className={cn(
               'flex rounded-md p-0.5',
-              'bg-[var(--theme-bg-tertiary)]',
-              'border border-[var(--theme-border)]'
+              'bg-sunken',
+              'border border-line'
             )}
             role="tablist"
             aria-label="Image source"
@@ -467,8 +467,8 @@ export function ImageInsertModal({
                   'px-3 py-1.5 rounded text-xs font-medium',
                   'transition-colors',
                   activeTab === tab.id
-                    ? 'bg-[var(--theme-accent-primary)] text-white shadow-sm'
-                    : 'text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)]'
+                    ? 'bg-accent text-white shadow-sm'
+                    : 'text-ink-muted hover:text-ink'
                 )}
               >
                 {tab.icon}

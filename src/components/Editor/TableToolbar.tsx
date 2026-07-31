@@ -38,8 +38,8 @@ function ToolbarButton({ onClick, icon, label, disabled, variant = 'default' }: 
         "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         variant === 'danger' 
-          ? "text-[var(--color-error)] hover:bg-[var(--color-error)]/10"
-          : "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]"
+          ? "text-[var(--rmd-danger)] hover:bg-[var(--rmd-danger)]/10"
+          : "text-ink-muted hover:bg-hover hover:text-ink"
       )}
       title={label}
     >
@@ -210,14 +210,14 @@ export function TableToolbar({ editor }: TableToolbarProps) {
   // When not in a table, show insert button with grid picker
   if (!isInTable) {
     return (
-      <div className="table-toolbar flex items-center gap-1 p-1 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg relative">
+      <div className="table-toolbar flex items-center gap-1 p-1 bg-surface border border-line rounded-lg relative">
         <button
           ref={gridPickerButtonRef}
           onClick={() => setShowGridPicker(!showGridPicker)}
           className={cn(
             "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
-            "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]",
-            showGridPicker && "bg-[var(--theme-bg-hover)] text-[var(--theme-text-primary)]"
+            "text-ink-muted hover:bg-hover hover:text-ink",
+            showGridPicker && "bg-hover text-ink"
           )}
           title="Insert Table"
           aria-expanded={showGridPicker}
@@ -248,10 +248,10 @@ export function TableToolbar({ editor }: TableToolbarProps) {
 
   // When in a table, show editing controls
   return (
-    <div className="table-toolbar flex items-center gap-1 p-1 bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg flex-wrap">
+    <div className="table-toolbar flex items-center gap-1 p-1 bg-surface border border-line rounded-lg flex-wrap">
       {/* Row operations */}
-      <div className="flex items-center gap-0.5 pr-2 border-r border-[var(--theme-border-primary)]">
-        <span className="text-xs text-[var(--theme-text-muted)] px-1">Row:</span>
+      <div className="flex items-center gap-0.5 pr-2 border-r border-line">
+        <span className="text-xs text-ink-faint px-1">Row:</span>
         <ToolbarButton
           onClick={addRowBefore}
           icon={<><Plus size={12} /><ArrowUp size={12} /></>}
@@ -273,8 +273,8 @@ export function TableToolbar({ editor }: TableToolbarProps) {
       </div>
 
       {/* Column operations */}
-      <div className="flex items-center gap-0.5 pr-2 border-r border-[var(--theme-border-primary)]">
-        <span className="text-xs text-[var(--theme-text-muted)] px-1">Column:</span>
+      <div className="flex items-center gap-0.5 pr-2 border-r border-line">
+        <span className="text-xs text-ink-faint px-1">Column:</span>
         <ToolbarButton
           onClick={addColumnBefore}
           icon={<><Plus size={12} /><ArrowLeft size={12} /></>}
@@ -295,15 +295,15 @@ export function TableToolbar({ editor }: TableToolbarProps) {
       </div>
 
       {/* Alignment operations */}
-      <div className="flex items-center gap-0.5 pr-2 border-r border-[var(--theme-border-primary)]">
-        <span className="text-xs text-[var(--theme-text-muted)] px-1">Align:</span>
+      <div className="flex items-center gap-0.5 pr-2 border-r border-line">
+        <span className="text-xs text-ink-faint px-1">Align:</span>
         <button
           onClick={() => setColumnAlignment('left')}
           className={cn(
             "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
             getColumnAlignment() === 'left'
-              ? "bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]"
-              : "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]"
+              ? "bg-accent/20 text-accent"
+              : "text-ink-muted hover:bg-hover hover:text-ink"
           )}
           title="Align Left"
         >
@@ -314,8 +314,8 @@ export function TableToolbar({ editor }: TableToolbarProps) {
           className={cn(
             "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
             getColumnAlignment() === 'center'
-              ? "bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]"
-              : "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]"
+              ? "bg-accent/20 text-accent"
+              : "text-ink-muted hover:bg-hover hover:text-ink"
           )}
           title="Align Center"
         >
@@ -326,8 +326,8 @@ export function TableToolbar({ editor }: TableToolbarProps) {
           className={cn(
             "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors",
             getColumnAlignment() === 'right'
-              ? "bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]"
-              : "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]"
+              ? "bg-accent/20 text-accent"
+              : "text-ink-muted hover:bg-hover hover:text-ink"
           )}
           title="Align Right"
         >

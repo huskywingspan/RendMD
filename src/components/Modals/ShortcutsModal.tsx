@@ -11,7 +11,7 @@ interface ShortcutsModalProps {
 
 function renderKeys(keys: string): React.ReactNode {
   if (keys === '—') {
-    return <span className="text-[var(--theme-text-muted)] text-xs italic">Not set</span>;
+    return <span className="text-ink-faint text-xs italic">Not set</span>;
   }
 
   const parts = keys.split('+');
@@ -24,16 +24,16 @@ function renderKeys(keys: string): React.ReactNode {
               'inline-flex items-center justify-center',
               'min-w-[1.5rem] px-1.5 py-0.5',
               'text-xs font-medium rounded',
-              'bg-[var(--theme-bg-tertiary)]',
-              'text-[var(--theme-text-primary)]',
-              'border border-[var(--theme-border)]',
+              'bg-sunken',
+              'text-ink',
+              'border border-line',
               'shadow-sm'
             )}
           >
             {key}
           </kbd>
           {index < parts.length - 1 && (
-            <span className="text-[var(--theme-text-muted)] mx-0.5">+</span>
+            <span className="text-ink-faint mx-0.5">+</span>
           )}
         </span>
       ))}
@@ -154,8 +154,8 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
           'relative z-10 flex flex-col',
           'w-full max-w-xl max-h-[80vh]',
           'mx-4 rounded-lg shadow-xl',
-          'bg-[var(--theme-bg-primary)]',
-          'border border-[var(--theme-border-primary)]'
+          'bg-canvas',
+          'border border-line'
         )}
       >
         {/* Header */}
@@ -163,10 +163,10 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
           className={cn(
             'flex items-center justify-between',
             'px-5 py-4',
-            'border-b border-[var(--theme-border)]'
+            'border-b border-line'
           )}
         >
-          <h2 className="text-lg font-semibold text-[var(--theme-text-primary)]">
+          <h2 className="text-lg font-semibold text-ink">
             Keyboard Shortcuts
           </h2>
           <button
@@ -174,9 +174,9 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
             className={cn(
               'flex items-center justify-center',
               'w-8 h-8 rounded-md',
-              'text-[var(--theme-text-secondary)]',
-              'hover:bg-[var(--theme-bg-tertiary)]',
-              'hover:text-[var(--theme-text-primary)]',
+              'text-ink-muted',
+              'hover:bg-sunken',
+              'hover:text-ink',
               'transition-colors'
             )}
             aria-label="Close shortcuts modal"
@@ -186,11 +186,11 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
         </div>
 
         {/* Search */}
-        <div className="px-5 py-3 border-b border-[var(--theme-border)]">
+        <div className="px-5 py-3 border-b border-line">
           <div className="relative">
             <Search
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--theme-text-muted)]"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
             />
             <input
               ref={searchInputRef}
@@ -201,11 +201,11 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
               className={cn(
                 'w-full pl-9 pr-3 py-2 rounded-md',
                 'text-sm',
-                'bg-[var(--theme-bg-secondary)]',
-                'text-[var(--theme-text-primary)]',
-                'placeholder:text-[var(--theme-text-muted)]',
-                'border border-[var(--theme-border)]',
-                'focus:outline-none focus:border-[var(--theme-accent-primary)]',
+                'bg-surface',
+                'text-ink',
+                'placeholder:text-ink-faint',
+                'border border-line',
+                'focus:outline-none focus:border-accent',
                 'transition-colors'
               )}
             />
@@ -216,12 +216,12 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {/* Touch device note */}
           {typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0) && (
-            <p className="text-sm text-[var(--theme-text-muted)] text-center py-3 px-4 mb-3 rounded-md bg-[var(--theme-bg-secondary)]">
+            <p className="text-sm text-ink-faint text-center py-3 px-4 mb-3 rounded-md bg-surface">
               Keyboard shortcuts are designed for desktop use. On mobile, use the toolbar and menu instead.
             </p>
           )}
           {Object.keys(groupedShortcuts).length === 0 ? (
-            <p className="text-sm text-[var(--theme-text-muted)] text-center py-6">
+            <p className="text-sm text-ink-faint text-center py-6">
               No shortcuts found for &ldquo;{search}&rdquo;
             </p>
           ) : (
@@ -234,7 +234,7 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
                   <h3
                     className={cn(
                       'text-xs font-semibold uppercase tracking-wider',
-                      'text-[var(--theme-accent-primary)]',
+                      'text-accent',
                       'mb-2'
                     )}
                   >
@@ -247,11 +247,11 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.
                         className={cn(
                           'flex items-center justify-between',
                           'px-3 py-1.5 rounded-md',
-                          'hover:bg-[var(--theme-bg-secondary)]',
+                          'hover:bg-surface',
                           'transition-colors'
                         )}
                       >
-                        <span className="text-sm text-[var(--theme-text-primary)]">
+                        <span className="text-sm text-ink">
                           {shortcut.action}
                         </span>
                         {renderKeys(shortcut.keys)}

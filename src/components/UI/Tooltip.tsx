@@ -57,7 +57,7 @@ export function Tooltip({ content, children, position = 'bottom', delay = 400 }:
       {children}
       {visible && (
         <div
-          className={`absolute ${positionClasses[position]} z-50 px-2 py-1 text-xs rounded bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-primary)] border border-[var(--theme-border-primary)] shadow-md whitespace-nowrap pointer-events-none`}
+          className={`absolute ${positionClasses[position]} z-50 px-2 py-1 text-xs rounded bg-sunken text-ink border border-line shadow-md whitespace-nowrap pointer-events-none`}
           role="tooltip"
         >
           {content}

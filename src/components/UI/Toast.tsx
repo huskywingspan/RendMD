@@ -48,7 +48,7 @@ function ToastItem({ toast }: { toast: ToastData }) {
     <div
       className={cn(
         'flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 shadow-lg backdrop-blur-sm',
-        'bg-[var(--theme-bg-secondary)] border-[var(--theme-border-primary)]',
+        'bg-surface border-line',
         'transition-all duration-300 ease-in-out',
         colorMap[toast.type],
         animationClass
@@ -56,13 +56,13 @@ function ToastItem({ toast }: { toast: ToastData }) {
       role="alert"
     >
       <Icon size={16} className="flex-shrink-0" />
-      <span className="text-sm text-[var(--theme-text-primary)] flex-1">{toast.message}</span>
+      <span className="text-sm text-ink flex-1">{toast.message}</span>
       <button
         onClick={() => removeToast(toast.id)}
-        className="p-0.5 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors flex-shrink-0"
+        className="p-0.5 rounded hover:bg-sunken transition-colors flex-shrink-0"
         aria-label="Dismiss"
       >
-        <X size={14} className="text-[var(--theme-text-muted)]" />
+        <X size={14} className="text-ink-faint" />
       </button>
     </div>
   );

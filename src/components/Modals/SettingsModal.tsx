@@ -66,17 +66,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
-        className="w-full max-w-md mx-4 rounded-xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] shadow-2xl max-h-[85vh] flex flex-col"
+        className="w-full max-w-md mx-4 rounded-xl border border-line bg-canvas shadow-2xl max-h-[85vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--theme-border-primary)]">
-          <h2 className="text-lg font-semibold text-[var(--theme-text-primary)]">Settings</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+          <h2 className="text-lg font-semibold text-ink">Settings</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors"
+            className="p-1 rounded hover:bg-sunken transition-colors"
             aria-label="Close settings"
           >
-            <X size={18} className="text-[var(--theme-text-secondary)]" />
+            <X size={18} className="text-ink-muted" />
           </button>
         </div>
 
@@ -91,21 +91,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
               <button
                 onClick={() => setFontSize(Math.max(FONT_MIN, fontSize - 1))}
                 disabled={fontSize <= FONT_MIN}
-                className="p-1 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors disabled:opacity-30"
+                className="p-1 rounded hover:bg-sunken transition-colors disabled:opacity-30"
                 aria-label="Decrease font size"
               >
-                <Minus size={14} className="text-[var(--theme-text-secondary)]" />
+                <Minus size={14} className="text-ink-muted" />
               </button>
-              <span className="w-12 text-center text-sm font-mono text-[var(--theme-text-primary)]">
+              <span className="w-12 text-center text-sm font-mono text-ink">
                 {fontSize}px
               </span>
               <button
                 onClick={() => setFontSize(Math.min(FONT_MAX, fontSize + 1))}
                 disabled={fontSize >= FONT_MAX}
-                className="p-1 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors disabled:opacity-30"
+                className="p-1 rounded hover:bg-sunken transition-colors disabled:opacity-30"
                 aria-label="Increase font size"
               >
-                <Plus size={14} className="text-[var(--theme-text-secondary)]" />
+                <Plus size={14} className="text-ink-muted" />
               </button>
             </div>
           </SettingRow>
@@ -117,7 +117,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
               aria-checked={autoSaveEnabled}
               onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                autoSaveEnabled ? 'bg-[var(--theme-accent-primary)]' : 'bg-[var(--theme-bg-tertiary)]'
+                autoSaveEnabled ? 'bg-accent' : 'bg-sunken'
               }`}
             >
               <span
@@ -133,15 +133,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
 
           {/* UI Density toggle */}
           <SettingRow label="UI density" description="Adjust spacing and padding across the interface">
-            <div className="flex rounded-lg border border-[var(--theme-border-primary)] overflow-hidden">
+            <div className="flex rounded-lg border border-line overflow-hidden">
               {DENSITY_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setUIDensity(opt.value)}
                   className={`px-3 py-1 text-xs font-medium transition-colors ${
                     uiDensity === opt.value
-                      ? 'bg-[var(--theme-accent-primary)] text-white'
-                      : 'bg-[var(--theme-bg-secondary)] text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)]'
+                      ? 'bg-accent text-white'
+                      : 'bg-surface text-ink-muted hover:bg-sunken'
                   }`}
                 >
                   {opt.label}
@@ -155,10 +155,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-[var(--theme-border-primary)] flex justify-end">
+        <div className="px-6 py-3 border-t border-line flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-sm rounded-md bg-[var(--theme-accent-primary)] text-white hover:opacity-90 transition-opacity"
+            className="px-4 py-1.5 text-sm rounded-md bg-accent text-white hover:opacity-90 transition-opacity"
           >
             Done
           </button>
@@ -174,7 +174,7 @@ interface SectionHeaderProps {
 
 function SectionHeader({ label }: SectionHeaderProps) {
   return (
-    <div className="text-xs font-semibold uppercase tracking-wide text-[var(--theme-text-muted)] mt-2 first:mt-0">
+    <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint mt-2 first:mt-0">
       {label}
     </div>
   );
@@ -190,9 +190,9 @@ function SettingRow({ label, description, children }: SettingRowProps) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-[var(--theme-text-primary)]">{label}</div>
+        <div className="text-sm font-medium text-ink">{label}</div>
         {description && (
-          <div className="text-xs text-[var(--theme-text-muted)] mt-0.5">{description}</div>
+          <div className="text-xs text-ink-faint mt-0.5">{description}</div>
         )}
       </div>
       {children}

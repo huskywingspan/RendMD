@@ -116,8 +116,8 @@ export function TableGridPicker({ onSelect, onClose }: TableGridPickerProps) {
       className={cn(
         "table-grid-picker",
         "p-3 rounded-lg shadow-lg z-50",
-        "bg-[var(--theme-bg-secondary)]",
-        "border border-[var(--theme-border-primary)]"
+        "bg-surface",
+        "border border-line"
       )}
       role="grid"
       aria-label="Select table dimensions"
@@ -145,10 +145,10 @@ export function TableGridPicker({ onSelect, onClose }: TableGridPickerProps) {
                 key={`${row}-${col}`}
                 className={cn(
                   "grid-cell rounded-sm transition-colors cursor-pointer",
-                  "border border-[var(--theme-border-secondary)]",
+                  "border border-line-strong",
                   highlighted
-                    ? "bg-[var(--theme-accent-primary)] border-[var(--theme-accent-primary)]"
-                    : "bg-[var(--theme-bg-tertiary)] hover:border-[var(--theme-border-primary)]"
+                    ? "bg-accent border-accent"
+                    : "bg-sunken hover:border-line"
                 )}
                 onMouseEnter={() => handleCellHover(row, col)}
                 onClick={() => handleCellClick(row, col)}
@@ -164,7 +164,7 @@ export function TableGridPicker({ onSelect, onClose }: TableGridPickerProps) {
       </div>
 
       {/* Dimension label */}
-      <div className="text-center mt-2 text-xs text-[var(--theme-text-secondary)] font-medium">
+      <div className="text-center mt-2 text-xs text-ink-muted font-medium">
         {hoveredCell.col} × {hoveredCell.row} table
       </div>
     </div>

@@ -52,10 +52,10 @@ export function FileIndicator({ isSaving, lastSaved }: FileIndicatorProps) {
   return (
     <div className="flex items-center gap-2 text-sm">
       {/* File icon */}
-      <FileText size={16} className="text-[var(--theme-text-muted)]" />
+      <FileText size={16} className="text-ink-faint" />
       
       {/* File name */}
-      <span className="text-[var(--theme-text-primary)] font-medium max-w-24 sm:max-w-48 truncate">
+      <span className="text-ink font-medium max-w-24 sm:max-w-48 truncate">
         {fileName || 'Untitled'}
       </span>
       
@@ -63,7 +63,7 @@ export function FileIndicator({ isSaving, lastSaved }: FileIndicatorProps) {
       <div className="flex items-center gap-1.5">
         {/* Saving indicator */}
         {isSaving && (
-          <span className="flex items-center gap-1 text-[var(--theme-text-muted)] text-xs">
+          <span className="flex items-center gap-1 text-ink-faint text-xs">
             <Loader2 size={12} className="animate-spin" />
             <span>Saving...</span>
           </span>
@@ -72,7 +72,7 @@ export function FileIndicator({ isSaving, lastSaved }: FileIndicatorProps) {
         {/* Dirty indicator (unsaved changes) */}
         {!isSaving && isDirty && (
           <span 
-            className="flex items-center gap-1 text-[var(--theme-accent-primary)]"
+            className="flex items-center gap-1 text-accent"
             title="Unsaved changes"
           >
             <Circle size={8} fill="currentColor" />
@@ -84,11 +84,11 @@ export function FileIndicator({ isSaving, lastSaved }: FileIndicatorProps) {
           <span 
             className={cn(
               "flex items-center gap-1 text-xs",
-              "text-[var(--theme-text-muted)]"
+              "text-ink-faint"
             )}
             title={`Last saved: ${lastSaved.toLocaleString()}`}
           >
-            <Save size={12} className="text-[var(--theme-text-muted)]" />
+            <Save size={12} className="text-ink-faint" />
             <span>{timeAgo}</span>
           </span>
         )}

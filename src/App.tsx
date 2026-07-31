@@ -282,11 +282,11 @@ function App() {
   }, [handleKeyDown]);
 
   return (
-    <div className="h-dvh flex flex-col bg-[var(--theme-bg-primary)]" style={{ '--editor-font-size': `${fontSize}px`, '--ui-density-scale': uiDensity === 'compact' ? '0.85' : '1', height: '100dvh' } as React.CSSProperties}>
+    <div className="h-dvh flex flex-col bg-canvas" style={{ '--editor-font-size': `${fontSize}px`, '--ui-density-scale': uiDensity === 'compact' ? '0.85' : '1', height: '100dvh' } as React.CSSProperties}>
       {/* Skip-to-content link for screen readers */}
       <a
         href="#main-editor"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[var(--theme-accent-primary)] focus:text-white focus:rounded-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:rounded-lg"
       >
         Skip to editor
       </a>
@@ -317,7 +317,7 @@ function App() {
               <>
                 {/* Rendered editor - shown in 'render' and 'split' modes */}
                 {(effectiveViewMode === 'render' || effectiveViewMode === 'split') && (
-                  <div className={effectiveViewMode === 'split' ? 'w-1/2 flex flex-col border-r border-[var(--theme-border-primary)]' : 'flex-1 flex flex-col'}>
+                  <div className={effectiveViewMode === 'split' ? 'w-1/2 flex flex-col border-r border-line' : 'flex-1 flex flex-col'}>
                     <Editor 
                       onEditorReady={handleEditorReady}
                       onImageFile={handleImageFile}
@@ -330,7 +330,7 @@ function App() {
                 {/* Source editor - shown in 'source' and 'split' modes */}
                 {(effectiveViewMode === 'source' || effectiveViewMode === 'split') && (
                   <div className={effectiveViewMode === 'split' ? 'w-1/2' : 'flex-1'}>
-                    <Suspense fallback={<div className="flex-1 flex items-center justify-center text-[var(--theme-text-muted)]">Loading source editor…</div>}>
+                    <Suspense fallback={<div className="flex-1 flex items-center justify-center text-ink-faint">Loading source editor…</div>}>
                       <SourceEditor 
                         value={fullMarkdown}
                         onChange={handleSourceChange}

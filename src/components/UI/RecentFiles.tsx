@@ -30,13 +30,13 @@ export function RecentFiles({ maxVisible = 5 }: RecentFilesProps) {
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--theme-text-muted)] uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-ink-faint uppercase tracking-wider">
           <Clock size={12} />
           Recent files
         </div>
         <button
           onClick={clearRecentFiles}
-          className="flex items-center gap-1 text-xs text-[var(--theme-text-muted)] hover:text-[var(--theme-text-secondary)] transition-colors"
+          className="flex items-center gap-1 text-xs text-ink-faint hover:text-ink-muted transition-colors"
           title="Clear recent files"
         >
           <Trash2 size={12} />
@@ -49,12 +49,12 @@ export function RecentFiles({ maxVisible = 5 }: RecentFilesProps) {
           <li key={entry.name}>
             <button
               onClick={() => handleOpen(entry)}
-              className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg border border-transparent hover:bg-[var(--theme-bg-tertiary)] hover:border-[var(--theme-border-primary)] transition-colors group"
+              className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg border border-transparent hover:bg-sunken hover:border-line transition-colors group"
             >
-              <span className="flex-1 text-sm font-medium text-[var(--theme-text-primary)] truncate">
+              <span className="flex-1 text-sm font-medium text-ink truncate">
                 {entry.name}
               </span>
-              <span className="text-xs text-[var(--theme-text-muted)] whitespace-nowrap">
+              <span className="text-xs text-ink-faint whitespace-nowrap">
                 {formatRelativeTime(entry.lastOpened)}
               </span>
               <span
@@ -69,9 +69,9 @@ export function RecentFiles({ maxVisible = 5 }: RecentFilesProps) {
                     removeRecentFile(entry.name);
                   }
                 }}
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[var(--theme-bg-secondary)] transition-opacity"
+                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-surface transition-opacity"
               >
-                <X size={14} className="text-[var(--theme-text-muted)]" />
+                <X size={14} className="text-ink-faint" />
               </span>
             </button>
           </li>

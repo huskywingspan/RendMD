@@ -127,24 +127,24 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps) {
     setShortcutsModalOpen(true);
   }, [close, setShortcutsModalOpen]);
 
-  const itemClass = "flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] transition-colors";
-  const divider = <div className="h-px my-1 bg-[var(--theme-border-primary)]" />;
+  const itemClass = "flex items-center gap-3 w-full px-4 py-2.5 text-sm text-ink-muted hover:bg-sunken hover:text-ink transition-colors";
+  const divider = <div className="h-px my-1 bg-[var(--rmd-line)]" />;
 
   return (
     <div ref={menuRef} className="relative sm:hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors"
+        className="p-2 rounded hover:bg-sunken transition-colors"
         aria-label="More actions"
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <MoreVertical size={18} className="text-[var(--theme-text-secondary)]" />
+        <MoreVertical size={18} className="text-ink-muted" />
       </button>
 
       {isOpen && (
         <div
-          className="absolute top-full right-0 mt-1 w-56 py-1 rounded-lg border border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] shadow-lg z-50"
+          className="absolute top-full right-0 mt-1 w-56 py-1 rounded-lg border border-line bg-surface shadow-lg z-50"
           role="menu"
         >
           {/* File operations */}
@@ -177,12 +177,12 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps) {
           {divider}
 
           {/* View Mode — only render & source (no split on mobile) */}
-          <div className="px-4 py-1.5 text-xs font-medium text-[var(--theme-text-muted)] uppercase tracking-wide">
+          <div className="px-4 py-1.5 text-xs font-medium text-ink-faint uppercase tracking-wide">
             View
           </div>
           <button
             onClick={() => handleViewMode('render')}
-            className={cn(itemClass, viewMode === 'render' && 'text-[var(--theme-accent-primary)]')}
+            className={cn(itemClass, viewMode === 'render' && 'text-accent')}
             role="menuitemradio"
             aria-checked={viewMode === 'render'}
           >
@@ -190,7 +190,7 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps) {
           </button>
           <button
             onClick={() => handleViewMode('source')}
-            className={cn(itemClass, viewMode === 'source' && 'text-[var(--theme-accent-primary)]')}
+            className={cn(itemClass, viewMode === 'source' && 'text-accent')}
             role="menuitemradio"
             aria-checked={viewMode === 'source'}
           >
@@ -207,7 +207,7 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps) {
             aria-expanded={themeSubmenu}
           >
             <Palette size={16} /> Theme
-            <span className="ml-auto text-xs text-[var(--theme-text-muted)]">
+            <span className="ml-auto text-xs text-ink-faint">
               {THEMES.find(t => t.value === theme)?.label}
             </span>
           </button>
@@ -220,8 +220,8 @@ export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps) {
                   className={cn(
                     "w-full text-left px-4 py-2 text-sm transition-colors",
                     theme === t.value
-                      ? "text-[var(--theme-accent-primary)]"
-                      : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-tertiary)]"
+                      ? "text-accent"
+                      : "text-ink-muted hover:text-ink hover:bg-sunken"
                   )}
                   role="menuitemradio"
                   aria-checked={theme === t.value}

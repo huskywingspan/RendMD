@@ -60,7 +60,7 @@ function ToolbarButton({
         disabled && 'opacity-40 cursor-not-allowed',
         variant === 'danger'
           ? 'text-red-500 hover:bg-red-500/10 hover:text-red-600'
-          : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]',
+          : 'text-ink-muted hover:bg-hover hover:text-ink',
       )}
       title={label}
       onMouseDown={(e) => e.preventDefault()}
@@ -101,8 +101,8 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
     cn(
       'p-[var(--density-button-padding)] rounded transition-colors',
       isActive
-        ? 'bg-[var(--theme-accent-primary)] text-white'
-        : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)]',
+        ? 'bg-accent text-white'
+        : 'text-ink-muted hover:bg-sunken',
     );
 
   const isInTable = editor.isActive('table');
@@ -155,7 +155,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </button>
       </Tooltip>
 
-      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--rmd-line)] mx-0.5 sm:mx-1" />
 
       {/* Headings */}
       <Tooltip content="Heading 1 (Ctrl+1)" position="bottom">
@@ -189,7 +189,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </button>
       </Tooltip>
 
-      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--rmd-line)] mx-0.5 sm:mx-1" />
 
       {/* Lists */}
       <Tooltip content="Bullet List" position="bottom">
@@ -223,7 +223,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </button>
       </Tooltip>
 
-      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--rmd-line)] mx-0.5 sm:mx-1" />
 
       {/* Blockquote */}
       <Tooltip content="Blockquote" position="bottom">
@@ -237,7 +237,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </button>
       </Tooltip>
 
-      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--rmd-line)] mx-0.5 sm:mx-1" />
 
       {/* Link */}
       <Tooltip content="Add Link (Ctrl+K)" position="bottom">
@@ -265,13 +265,13 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
         </Tooltip>
       )}
 
-      <div className="hidden sm:block w-px h-6 bg-[var(--theme-border)] mx-0.5 sm:mx-1" />
+      <div className="hidden sm:block w-px h-6 bg-[var(--rmd-line)] mx-0.5 sm:mx-1" />
 
       {/* Table insert */}
       <TableInsertButton editor={editor} />
 
       {/* Hint — hidden on touch devices */}
-      <span className="hidden md:inline-flex ml-auto text-xs text-[var(--theme-text-muted)] select-none">
+      <span className="hidden md:inline-flex ml-auto text-xs text-ink-faint select-none">
         Ctrl+Space for inline menu
       </span>
     </div>
@@ -321,8 +321,8 @@ function TableInsertButton({ editor }: { editor: Editor }) {
           onClick={() => setShowGridPicker(!showGridPicker)}
           className={cn(
             'flex items-center gap-1 p-2 rounded transition-colors',
-            'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)]',
-            showGridPicker && 'bg-[var(--theme-bg-tertiary)]',
+            'text-ink-muted hover:bg-sunken',
+            showGridPicker && 'bg-sunken',
           )}
           aria-label="Insert Table"
           aria-expanded={showGridPicker}
@@ -396,8 +396,8 @@ function TableControls({ editor }: { editor: Editor }) {
   return (
     <div className="editor-toolbar flex items-center gap-1 flex-wrap">
       {/* Row operations */}
-      <div className="flex items-center gap-0.5 pr-2 border-r border-[var(--theme-border-primary)]">
-        <span className="text-xs text-[var(--theme-text-muted)] px-1">Row:</span>
+      <div className="flex items-center gap-0.5 pr-2 border-r border-line">
+        <span className="text-xs text-ink-faint px-1">Row:</span>
         <ToolbarButton
           onClick={addRowBefore}
           icon={<><Plus size={12} /><ArrowUp size={12} /></>}
@@ -419,8 +419,8 @@ function TableControls({ editor }: { editor: Editor }) {
       </div>
 
       {/* Column operations */}
-      <div className="flex items-center gap-0.5 pr-2 border-r border-[var(--theme-border-primary)]">
-        <span className="text-xs text-[var(--theme-text-muted)] px-1">Column:</span>
+      <div className="flex items-center gap-0.5 pr-2 border-r border-line">
+        <span className="text-xs text-ink-faint px-1">Column:</span>
         <ToolbarButton
           onClick={addColumnBefore}
           icon={<><Plus size={12} /><ArrowLeft size={12} /></>}
@@ -441,15 +441,15 @@ function TableControls({ editor }: { editor: Editor }) {
       </div>
 
       {/* Alignment operations */}
-      <div className="flex items-center gap-0.5 pr-2 border-r border-[var(--theme-border-primary)]">
-        <span className="text-xs text-[var(--theme-text-muted)] px-1">Align:</span>
+      <div className="flex items-center gap-0.5 pr-2 border-r border-line">
+        <span className="text-xs text-ink-faint px-1">Align:</span>
         <button
           onClick={() => setColumnAlignment('left')}
           className={cn(
             'flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors',
             getColumnAlignment() === 'left'
-              ? 'bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]'
-              : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]',
+              ? 'bg-accent/20 text-accent'
+              : 'text-ink-muted hover:bg-hover hover:text-ink',
           )}
           title="Align Left"
           onMouseDown={(e) => e.preventDefault()}
@@ -461,8 +461,8 @@ function TableControls({ editor }: { editor: Editor }) {
           className={cn(
             'flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors',
             getColumnAlignment() === 'center'
-              ? 'bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]'
-              : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]',
+              ? 'bg-accent/20 text-accent'
+              : 'text-ink-muted hover:bg-hover hover:text-ink',
           )}
           title="Align Center"
           onMouseDown={(e) => e.preventDefault()}
@@ -474,8 +474,8 @@ function TableControls({ editor }: { editor: Editor }) {
           className={cn(
             'flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors',
             getColumnAlignment() === 'right'
-              ? 'bg-[var(--theme-accent-primary)]/20 text-[var(--theme-accent-primary)]'
-              : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-primary)]',
+              ? 'bg-accent/20 text-accent'
+              : 'text-ink-muted hover:bg-hover hover:text-ink',
           )}
           title="Align Right"
           onMouseDown={(e) => e.preventDefault()}

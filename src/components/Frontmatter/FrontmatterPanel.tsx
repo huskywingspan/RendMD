@@ -58,13 +58,13 @@ export function FrontmatterPanel() {
 
   if (!hasFrontmatter) {
     return (
-      <div className="frontmatter-panel border-b border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)]">
+      <div className="frontmatter-panel border-b border-line bg-surface">
         <button
           onClick={handleCreateFrontmatter}
           className={cn(
             "flex items-center gap-2 w-full px-4 py-2",
-            "text-sm text-[var(--theme-text-muted)]",
-            "hover:bg-[var(--theme-bg-hover)] hover:text-[var(--theme-text-secondary)]",
+            "text-sm text-ink-faint",
+            "hover:bg-hover hover:text-ink-muted",
             "transition-colors"
           )}
         >
@@ -76,14 +76,14 @@ export function FrontmatterPanel() {
   }
 
   return (
-    <div className="frontmatter-panel border-b border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)]">
+    <div className="frontmatter-panel border-b border-line bg-surface">
       {/* Header with collapse toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "flex items-center gap-2 w-full px-4 py-2",
-          "text-sm font-medium text-[var(--theme-text-secondary)]",
-          "hover:bg-[var(--theme-bg-hover)]",
+          "text-sm font-medium text-ink-muted",
+          "hover:bg-hover",
           "transition-colors"
         )}
       >
@@ -115,7 +115,7 @@ export function FrontmatterPanel() {
             {customFields.map(key => (
               <div key={key} className="flex gap-2">
                 <div className="flex-1">
-                  <label className="block text-xs text-[var(--theme-text-muted)] mb-1 capitalize">
+                  <label className="block text-xs text-ink-faint mb-1 capitalize">
                     {key.replace(/_/g, ' ')}
                   </label>
                   <input
@@ -124,15 +124,15 @@ export function FrontmatterPanel() {
                     onChange={(e) => handleFieldChange(key, e.target.value)}
                     className={cn(
                       "w-full px-2 py-1.5 text-sm rounded",
-                      "bg-[var(--theme-bg-primary)] border border-[var(--theme-border-primary)]",
-                      "text-[var(--theme-text-primary)]",
-                      "focus:outline-none focus:ring-1 focus:ring-[var(--theme-accent-primary)]"
+                      "bg-canvas border border-line",
+                      "text-ink",
+                      "focus:outline-none focus:ring-1 focus:ring-accent"
                     )}
                   />
                 </div>
                 <button
                   onClick={() => handleRemoveField(key)}
-                  className="self-end p-1.5 text-[var(--theme-text-muted)] hover:text-[var(--color-error)] transition-colors"
+                  className="self-end p-1.5 text-ink-faint hover:text-[var(--rmd-danger)] transition-colors"
                   title="Remove field"
                 >
                   <X size={14} />
@@ -152,9 +152,9 @@ export function FrontmatterPanel() {
               title="Type a field name and press Enter or click + to add"
               className={cn(
                 "flex-1 px-2 py-1.5 text-sm rounded",
-                "bg-[var(--theme-bg-primary)] border border-[var(--theme-border-primary)]",
-                "text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-muted)]",
-                "focus:outline-none focus:ring-1 focus:ring-[var(--theme-accent-primary)]"
+                "bg-canvas border border-line",
+                "text-ink placeholder:text-ink-faint",
+                "focus:outline-none focus:ring-1 focus:ring-accent"
               )}
             />
             <button
@@ -163,7 +163,7 @@ export function FrontmatterPanel() {
               title="Add custom field"
               className={cn(
                 "px-2 py-1.5 text-sm rounded transition-colors",
-                "bg-[var(--theme-accent-primary)] text-white",
+                "bg-accent text-white",
                 "hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
@@ -225,7 +225,7 @@ function FieldEditor({ field, value, onChange }: FieldEditorProps) {
 
   return (
     <div>
-      <label className="block text-xs text-[var(--theme-text-muted)] mb-1">
+      <label className="block text-xs text-ink-faint mb-1">
         {field.label}
       </label>
       <input
@@ -238,9 +238,9 @@ function FieldEditor({ field, value, onChange }: FieldEditorProps) {
         placeholder={field.placeholder}
         className={cn(
           "w-full px-2 py-1.5 text-sm rounded",
-          "bg-[var(--theme-bg-primary)] border border-[var(--theme-border-primary)]",
-          "text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-muted)]",
-          "focus:outline-none focus:ring-1 focus:ring-[var(--theme-accent-primary)]"
+          "bg-canvas border border-line",
+          "text-ink placeholder:text-ink-faint",
+          "focus:outline-none focus:ring-1 focus:ring-accent"
         )}
       />
     </div>

@@ -29,15 +29,15 @@ export function Sidebar({ onTocItemClick }: SidebarProps) {
         aria-hidden="true"
       />
       <aside className={cn(
-        "w-64 bg-[var(--theme-bg-secondary)] border-r border-[var(--theme-border)]",
+        "w-64 bg-surface border-r border-line",
         "flex flex-col",
         // Mobile: full-height overlay
         "fixed inset-y-0 left-0 z-40",
         // Desktop: inline in flex layout
         "md:relative md:z-auto",
       )}>
-        <div className="p-4 border-b border-[var(--theme-border)]">
-          <h2 className="text-sm font-medium text-[var(--theme-text-secondary)] uppercase tracking-wide">
+        <div className="p-4 border-b border-line">
+          <h2 className="text-sm font-medium text-ink-muted uppercase tracking-wide">
             Table of Contents
           </h2>
         </div>

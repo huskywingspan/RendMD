@@ -100,7 +100,7 @@ export function TOCPanel({ onItemClick }: TOCPanelProps): React.ReactElement {
 
   if (tocItems.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 py-8 px-4 text-[var(--theme-text-muted)]">
+      <div className="flex flex-col items-center justify-center gap-2 py-8 px-4 text-ink-faint">
         <List size={24} strokeWidth={1.5} />
         <span className="text-xs">No headings found</span>
       </div>
@@ -116,7 +116,7 @@ export function TOCPanel({ onItemClick }: TOCPanelProps): React.ReactElement {
         <button
           type="button"
           onClick={allCollapsed ? expandAll : collapseAll}
-          className="flex items-center gap-1.5 px-2 py-1 mb-1 text-xs text-[var(--theme-text-muted)] hover:text-[var(--theme-text-primary)] transition-colors rounded hover:bg-[var(--theme-bg-tertiary)]"
+          className="flex items-center gap-1.5 px-2 py-1 mb-1 text-xs text-ink-faint hover:text-ink transition-colors rounded hover:bg-sunken"
           title={allCollapsed ? 'Expand all' : 'Collapse all'}
         >
           {allCollapsed ? <ChevronsUpDown size={14} /> : <ChevronsDownUp size={14} />}
@@ -139,7 +139,7 @@ export function TOCPanel({ onItemClick }: TOCPanelProps): React.ReactElement {
                 <button
                   type="button"
                   onClick={() => toggleCollapse(item.id)}
-                  className="flex-shrink-0 p-1.5 -m-0.5 rounded text-[var(--theme-text-muted)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-tertiary)] transition-all"
+                  className="flex-shrink-0 p-1.5 -m-0.5 rounded text-ink-faint hover:text-ink hover:bg-sunken transition-all"
                   aria-label={isCollapsed ? 'Expand section' : 'Collapse section'}
                 >
                   <ChevronRight
@@ -158,11 +158,11 @@ export function TOCPanel({ onItemClick }: TOCPanelProps): React.ReactElement {
                 className={cn(
                   'flex-1 min-w-0 text-left rounded px-1.5 py-1 transition-colors truncate',
                   getTextClass(item.level),
-                  item.level === 2 && 'border-l-2 border-[var(--theme-border)]',
-                  item.level >= 3 && 'border-l border-[var(--theme-text-muted)]/30',
+                  item.level === 2 && 'border-l-2 border-line',
+                  item.level >= 3 && 'border-l border-[var(--rmd-ink-faint)]/30',
                   isActive
-                    ? 'bg-[var(--theme-accent-primary)]/15 text-[var(--theme-text-primary)]'
-                    : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)]'
+                    ? 'bg-accent/15 text-ink'
+                    : 'text-ink-muted hover:bg-sunken hover:text-ink'
                 )}
               >
                 {item.text}
