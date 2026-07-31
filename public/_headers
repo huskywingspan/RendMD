@@ -1,0 +1,68 @@
+# Cloudflare Pages response headers.
+#
+# RendMD reads and writes the user's disk, and opens documents the user did not
+# write. The Content Security Policy below is the backstop for that: even if a
+# document somehow achieved script execution, `connect-src 'self'` means it has
+# nowhere to send anything.
+#
+# Syntax: https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  # ── Content Security Policy ────────────────────────────────────────────────
+  #
+  # default-src 'self'
+  #   Everything not named below may only come from this origin.
+  #
+  # script-src 'self'
+  #   No inline scripts at all — the theme bootstrap was moved to
+  #   /theme-init.js precisely so this could stay strict. No 'unsafe-eval'
+  #   either; nothing in the bundle needs it.
+  #
+  # style-src 'self' 'unsafe-inline'
+  #   Required: React sets element styles inline, and both Shiki and Mermaid
+  #   emit styled markup. Style injection cannot exfiltrate on its own, and
+  #   connect-src closes the channel it would need.
+  #
+  # img-src 'self' data: blob: https:
+  #   Deliberately permissive. Markdown routinely references images by absolute
+  #   URL, and refusing them would break ordinary documents. The tradeoff is
+  #   real and documented: opening a document containing a remote image tells
+  #   that server your IP and that you opened it. It cannot leak file contents.
+  #
+  # connect-src 'self'
+  #   The important one. fetch, XHR, WebSocket and sendBeacon may only reach
+  #   this origin, so there is no route off the machine for document text or
+  #   anything read through a directory handle.
+  #
+  # frame-src, object-src, frame-ancestors 'none'
+  #   No embedding of anything, and RendMD may not itself be framed — which
+  #   also rules out clickjacking a permission prompt.
+  #
+  # form-action 'none'
+  #   RendMD has no forms that submit. This blocks a planted form from POSTing
+  #   somewhere.
+  #
+  # base-uri 'self'
+  #   Stops a <base> tag repointing every relative URL on the page.
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; media-src 'self' blob:; frame-src 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; base-uri 'self'
+
+  # Don't leak the path of the page a user came from to third parties.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # No MIME sniffing: a .md served as text must not be executed as script.
+  X-Content-Type-Options: nosniff
+
+  # Redundant alongside frame-ancestors, but honoured by older engines.
+  X-Frame-Options: DENY
+
+  # Switch off capabilities RendMD never uses, so a compromise cannot reach
+  # them either.
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()
+
+# The service worker must not be cached, or clients pin themselves to an old
+# build and stop seeing updates.
+/sw.js
+  Cache-Control: no-cache
+
+/theme-init.js
+  Cache-Control: no-cache

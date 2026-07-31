@@ -48,6 +48,44 @@ Brave blocks the File System Access API by default, listing it among its deviati
 
 Open `brave://flags`, search for **File System**, set it to Enabled, and restart. Folders and save-in-place then work exactly as they do in Chrome. RendMD detects Brave and says so in place rather than telling you to go and install another browser.
 
+## Installing it on Windows
+
+RendMD can install as a desktop app. It's still the browser engine underneath — no separate runtime is downloaded — but it gets its own window with no tabs or address bar, a Start Menu entry, and the ability to open `.md` files directly.
+
+**1. Install.** Open the site in Chrome or Edge and click the install icon in the address bar, or take the prompt RendMD offers. (Brave: enable the flag above *first*.)
+
+**2. Associate `.md` files.** Right-click any markdown file, choose *Open with* → *Choose another app* → RendMD, and tick **Always**.
+
+That second step is manual on purpose. Installing registers RendMD as *an* option under "Open with"; it never takes over your file associations on its own.
+
+### What that actually gets you
+
+Double-clicking a `.md` file launches RendMD and hands it a **writable handle** to that file — a live reference, not a copy. So `Ctrl+S` writes back to the original. That's the difference between this and a web app that "opens" a file: no download folder, nothing to reconcile afterwards.
+
+Opening a second file reuses the window you already have rather than spawning another.
+
+### Before you click Install
+
+- **Nothing is uploaded.** There is no server and no analytics. Your documents, your chosen folder, and your settings live in your browser's storage on your machine. The app cannot send them anywhere — see [Security](#security).
+- **It works offline.** The app is cached on install.
+- **The first save on a file asks permission once.** So does opening a folder. That's Windows and the browser, not RendMD.
+- **Folder access needs re-granting after a browser restart.** Chromium deliberately doesn't persist that grant. RendMD remembers *which* folder and offers one click to restore it — the click itself is a platform requirement.
+- **Uninstalling removes the file association** and leaves your `.md` files untouched.
+- **Installs are per-browser.** Installing from both Edge and Chrome gives you two entries under "Open with", each with its own storage.
+
+## Security
+
+RendMD reads and writes your disk and opens documents you didn't write, so the obvious question is whether a malicious `.md` file could leak your files. The short answer is no, and the design makes it structural rather than a matter of care:
+
+- **There is no network code.** The app contains no `fetch`, `XMLHttpRequest`, `WebSocket` or `sendBeacon` calls. Nothing is transmitted because nothing can transmit.
+- **A Content Security Policy of `connect-src 'self'`** means that even if something did execute, it has nowhere to send data. `script-src` is `'self'` with no `unsafe-inline` and no `unsafe-eval`.
+- **Documents cannot execute.** Raw HTML in markdown renders as text; `javascript:`, `vbscript:` and `data:text/html` links are neutralised; Mermaid runs with `securityLevel: 'strict'`. All of this is asserted in `src/test/sanitization.test.ts`, which runs in CI.
+- **No third-party requests.** Fonts are self-hosted; there are no CDN scripts, no trackers, no telemetry.
+
+One deliberate exception, worth knowing: a document containing an image at an absolute URL (`![](https://…)`) will load it, which tells that server your IP and that you opened the document. It cannot expose file contents. Blocking this would break ordinary markdown, so it's allowed and documented rather than silently prevented.
+
+Full findings in [docs/SECURITY.md](docs/SECURITY.md).
+
 ## Running it locally
 
 ```bash
@@ -86,6 +124,7 @@ Full list in [docs/KEYBOARD.md](docs/KEYBOARD.md), or press `Ctrl+/` in the app.
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How it's built, and why |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deploying to Cloudflare Pages |
 | [KEYBOARD.md](docs/KEYBOARD.md) | Every shortcut |
+| [SECURITY.md](docs/SECURITY.md) | Security review: can a document leak your files? |
 | [DECISIONS.md](docs/DECISIONS.md) | The decisions behind the v2 rewrite |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Working on the code |
 
