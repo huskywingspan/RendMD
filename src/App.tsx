@@ -6,6 +6,7 @@ import { TabStrip } from '@/components/shell/TabStrip';
 import { StatusBar } from '@/components/shell/StatusBar';
 import { Rail } from '@/components/shell/Rail';
 import { Welcome } from '@/components/shell/Welcome';
+import { UpdatePrompt } from '@/components/shell/UpdatePrompt';
 import { Editor } from '@/components/Editor';
 import { FrontmatterPanel } from '@/components/Frontmatter';
 import { ToastContainer } from '@/components/UI/Toast';
@@ -14,6 +15,7 @@ import { useAppearance } from '@/hooks/useAppearance';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useFileDrop } from '@/hooks/useFileDrop';
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts';
+import { useLaunchQueue, useLaunchShortcuts } from '@/hooks/useLaunchQueue';
 import { useOutline, type OutlineItem } from '@/hooks/useOutline';
 import { useScrollSync } from '@/hooks/useScrollSync';
 
@@ -63,6 +65,8 @@ export default function App() {
   useAppearance();
   useAutoSave();
   useGlobalShortcuts(editor);
+  useLaunchQueue();
+  useLaunchShortcuts();
 
   /* ── Boot ──────────────────────────────────────────────────────────────── */
 
@@ -242,6 +246,7 @@ export default function App() {
 
       {isDragging && <DropOverlay />}
 
+      <UpdatePrompt />
       <ToastContainer />
     </div>
   );
