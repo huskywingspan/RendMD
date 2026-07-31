@@ -8,7 +8,7 @@ interface DebugPanelProps {
   proseMirrorDoc: object | null;
 }
 
-export function DebugPanel({ inputMarkdown, outputMarkdown, proseMirrorDoc }: DebugPanelProps): JSX.Element | null {
+export function DebugPanel({ inputMarkdown, outputMarkdown, proseMirrorDoc }: DebugPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'input' | 'output' | 'doc' | 'diff'>('diff');
 
@@ -95,7 +95,7 @@ interface DiffViewProps {
   output: string;
 }
 
-function DiffView({ input, output }: DiffViewProps): JSX.Element {
+function DiffView({ input, output }: DiffViewProps) {
   if (input === output) {
     return (
       <div className="text-[var(--color-success)] text-sm">

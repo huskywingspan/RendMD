@@ -1,31 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { NodeViewContent, NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { Check, Copy, ChevronDown } from 'lucide-react';
-import { codeToHtml } from 'shiki';
+import { highlightCode, LANGUAGE_OPTIONS } from '@/lib/highlighter';
 import { cn } from '@/utils/cn';
 
-// Common programming languages for the dropdown
-const POPULAR_LANGUAGES = [
-  { value: 'typescript', label: 'TypeScript' },
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'python', label: 'Python' },
-  { value: 'rust', label: 'Rust' },
-  { value: 'go', label: 'Go' },
-  { value: 'java', label: 'Java' },
-  { value: 'c', label: 'C' },
-  { value: 'cpp', label: 'C++' },
-  { value: 'csharp', label: 'C#' },
-  { value: 'html', label: 'HTML' },
-  { value: 'css', label: 'CSS' },
-  { value: 'json', label: 'JSON' },
-  { value: 'yaml', label: 'YAML' },
-  { value: 'markdown', label: 'Markdown' },
-  { value: 'bash', label: 'Bash' },
-  { value: 'sql', label: 'SQL' },
-  { value: 'plaintext', label: 'Plain Text' },
-];
-
-export function CodeBlockComponent({ node, updateAttributes, extension }: NodeViewProps): JSX.Element {
+export function CodeBlockComponent({ node, updateAttributes, extension }: NodeViewProps) {
   const { language } = node.attrs;
   const [highlightedHtml, setHighlightedHtml] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
@@ -33,8 +12,7 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Get theme from extension options (defaults to dark)
-  const isDark = extension.options?.isDark ?? true;
-  const shikiTheme = isDark ? 'github-dark-default' : 'github-light-default';
+  const isDark: boolean = extension.options?.isDark ?? true;
   
   // Get code content from the node
   const codeContent = node.textContent;
@@ -43,47 +21,19 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
   useEffect(() => {
     let cancelled = false;
 
-    async function highlight() {
-      if (!codeContent) {
-        setHighlightedHtml('');
-        return;
-      }
-
-      try {
-        const html = await codeToHtml(codeContent, {
-          lang: language || 'plaintext',
-          theme: shikiTheme,
-        });
-        
-        if (!cancelled) {
-          setHighlightedHtml(html);
-        }
-      } catch {
-        // Fallback for unsupported languages
-        console.warn(`Shiki: Language "${language}" not supported, falling back to plaintext`);
-        try {
-          const html = await codeToHtml(codeContent, {
-            lang: 'plaintext',
-            theme: shikiTheme,
-          });
-          if (!cancelled) {
-            setHighlightedHtml(html);
-          }
-        } catch {
-          // Complete fallback - just show plain text
-          if (!cancelled) {
-            setHighlightedHtml('');
-          }
-        }
-      }
+    if (!codeContent) {
+      setHighlightedHtml('');
+      return;
     }
 
-    highlight();
+    highlightCode(codeContent, language, isDark).then((html) => {
+      if (!cancelled) setHighlightedHtml(html);
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [codeContent, language, shikiTheme]);
+  }, [codeContent, language, isDark]);
 
   // Copy code to clipboard
   const handleCopy = useCallback(async () => {
@@ -131,7 +81,7 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
   }, [isDropdownOpen]);
 
   // Find current language label
-  const currentLanguageLabel = POPULAR_LANGUAGES.find(l => l.value === language)?.label || language || 'Plain Text';
+  const currentLanguageLabel = LANGUAGE_OPTIONS.find(l => l.value === language)?.label || language || 'Plain text';
 
   return (
     <NodeViewWrapper className="code-block-wrapper relative my-4 group">
@@ -159,7 +109,7 @@ export function CodeBlockComponent({ node, updateAttributes, extension }: NodeVi
           {/* Language dropdown */}
           {isDropdownOpen && (
             <div className="absolute left-0 top-full mt-1 w-40 max-h-64 overflow-y-auto bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg shadow-lg z-50 py-1">
-              {POPULAR_LANGUAGES.map((lang) => (
+              {LANGUAGE_OPTIONS.map((lang) => (
                 <button
                   key={lang.value}
                   onClick={() => handleLanguageChange(lang.value)}

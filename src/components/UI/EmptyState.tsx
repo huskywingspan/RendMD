@@ -4,7 +4,7 @@ import { useEditorStore } from '@/stores/editorStore';
 import { TEMPLATES, getTemplateContent } from '@/utils/templates';
 import { RecentFiles } from './RecentFiles';
 
-export function EmptyState(): JSX.Element {
+export function EmptyState() {
   const { openFile } = useFileSystem();
   const { setShortcutsModalOpen, newFile } = useEditorStore();
 

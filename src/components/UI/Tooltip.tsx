@@ -12,7 +12,7 @@ interface TooltipProps {
 const IS_TOUCH_DEVICE = typeof window !== 'undefined' &&
   ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-export function Tooltip({ content, children, position = 'bottom', delay = 400 }: TooltipProps): JSX.Element {
+export function Tooltip({ content, children, position = 'bottom', delay = 400 }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);

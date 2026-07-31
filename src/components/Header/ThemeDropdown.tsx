@@ -18,7 +18,7 @@ const themeOptions: ThemeOption[] = [
   { value: 'light-glass', label: 'Light Glass', icon: Sparkles, description: 'Modern light with glass effects' },
 ];
 
-export function ThemeDropdown(): JSX.Element {
+export function ThemeDropdown() {
   const { theme, setTheme, toggleDarkLight } = useEditorStore();
   const isDark = useIsDark();
   const [isOpen, setIsOpen] = useState(false);

@@ -17,7 +17,7 @@ interface HeaderProps {
   onOpenSettings?: () => void;
 }
 
-export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderProps): JSX.Element {
+export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderProps) {
   const { viewMode, setViewMode, toggleSidebar, shortcutsModalOpen, setShortcutsModalOpen, newFile } = useEditorStore();
   const { openFile, saveFile } = useFileSystem();
 
@@ -125,7 +125,7 @@ export function Header({ isSaving, lastSaved, editor, onOpenSettings }: HeaderPr
 }
 
 /** Tiny dot indicator for unsaved changes — mobile header only */
-function MobileDirtyDot(): JSX.Element | null {
+function MobileDirtyDot() {
   const { isDirty } = useEditorStore();
   if (!isDirty) return null;
   return (
@@ -138,7 +138,7 @@ interface ViewModeToggleProps {
   setViewMode: (mode: ViewMode) => void;
 }
 
-function ViewModeToggle({ viewMode, setViewMode }: ViewModeToggleProps): JSX.Element {
+function ViewModeToggle({ viewMode, setViewMode }: ViewModeToggleProps) {
   const modes: { value: ViewMode; icon: typeof Eye; label: string; title: string; mobileHidden?: boolean }[] = [
     { value: 'render', icon: Eye, label: 'Render', title: 'Rendered view' },
     { value: 'split', icon: Columns2, label: 'Split', title: 'Split view (Ctrl+/)', mobileHidden: true },

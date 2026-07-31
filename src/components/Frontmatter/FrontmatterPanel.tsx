@@ -15,7 +15,7 @@ import { cn } from '@/utils/cn';
  * Displays common fields (title, author, date, tags) and allows
  * custom key-value pairs.
  */
-export function FrontmatterPanel(): JSX.Element | null {
+export function FrontmatterPanel() {
   const { frontmatter, setFrontmatter } = useEditorStore();
   const [isOpen, setIsOpen] = useState(false);
   const [newFieldKey, setNewFieldKey] = useState('');
@@ -182,7 +182,7 @@ interface FieldEditorProps {
   onChange: (value: unknown) => void;
 }
 
-function FieldEditor({ field, value, onChange }: FieldEditorProps): JSX.Element {
+function FieldEditor({ field, value, onChange }: FieldEditorProps) {
   // For tags, we need local state to allow typing commas
   // Only parse and save on blur
   const [localValue, setLocalValue] = useState('');

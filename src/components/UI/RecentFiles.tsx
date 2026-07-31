@@ -8,7 +8,7 @@ interface RecentFilesProps {
   maxVisible?: number;
 }
 
-export function RecentFiles({ maxVisible = 5 }: RecentFilesProps): JSX.Element | null {
+export function RecentFiles({ maxVisible = 5 }: RecentFilesProps) {
   const recentFiles = useEditorStore((s) => s.recentFiles);
   const removeRecentFile = useEditorStore((s) => s.removeRecentFile);
   const clearRecentFiles = useEditorStore((s) => s.clearRecentFiles);

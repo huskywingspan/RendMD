@@ -16,7 +16,7 @@ const colorMap: Record<ToastType, string> = {
   info: 'border-blue-500 text-blue-400',
 };
 
-function ToastItem({ toast }: { toast: ToastData }): JSX.Element {
+function ToastItem({ toast }: { toast: ToastData }) {
   const { removeToast } = useToastStore();
   const [isEntered, setIsEntered] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
@@ -68,7 +68,7 @@ function ToastItem({ toast }: { toast: ToastData }): JSX.Element {
   );
 }
 
-export function ToastContainer(): JSX.Element | null {
+export function ToastContainer() {
   const { toasts } = useToastStore();
 
   if (toasts.length === 0) return null;

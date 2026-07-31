@@ -20,7 +20,7 @@ interface MobileMenuProps {
   onOpenSettings: () => void;
 }
 
-export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps): JSX.Element {
+export function MobileMenu({ editor, onOpenSettings }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [themeSubmenu, setThemeSubmenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

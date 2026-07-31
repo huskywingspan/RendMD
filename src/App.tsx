@@ -19,7 +19,7 @@ const ImageInsertModal = lazy(() => import('@/components/Modals/ImageInsertModal
 const SettingsModal = lazy(() => import('@/components/Modals/SettingsModal'));
 const SearchBar = lazy(() => import('@/components/Editor/SearchBar'));
 
-function App(): JSX.Element {
+function App() {
   const { 
     isDirty, content, frontmatter, filePath: storedFilePath, fileName, setContent, setFrontmatter, 
     viewMode, setViewMode, cycleViewMode, 

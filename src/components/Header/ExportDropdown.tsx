@@ -9,7 +9,7 @@ interface ExportDropdownProps {
   editor: Editor | null;
 }
 
-export function ExportDropdown({ editor }: ExportDropdownProps): JSX.Element {
+export function ExportDropdown({ editor }: ExportDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToastStore();

@@ -50,7 +50,7 @@ function ToolbarButton({
   label: string;
   disabled?: boolean;
   variant?: 'default' | 'danger';
-}): JSX.Element {
+}) {
   return (
     <button
       onClick={onClick}
@@ -93,7 +93,7 @@ function getTableColumnCount(editor: Editor): number {
   return 0;
 }
 
-export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolbarProps): JSX.Element | null {
+export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolbarProps) {
   if (!editor) return null;
 
   // ── Formatting button active state helper ──────────────────────
@@ -280,7 +280,7 @@ export function EditorToolbar({ editor, onLinkClick, onImageClick }: EditorToolb
 
 // ── Table insert button with grid picker ──────────────────────────
 
-function TableInsertButton({ editor }: { editor: Editor }): JSX.Element {
+function TableInsertButton({ editor }: { editor: Editor }) {
   const [showGridPicker, setShowGridPicker] = useState(false);
   const gridPickerButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -348,7 +348,7 @@ function TableInsertButton({ editor }: { editor: Editor }): JSX.Element {
 
 // ── Table editing controls (shown when cursor is inside a table) ──
 
-function TableControls({ editor }: { editor: Editor }): JSX.Element {
+function TableControls({ editor }: { editor: Editor }) {
   // Force re-render on selection/transaction changes
   const [, setTick] = useState(0);
   useEffect(() => {

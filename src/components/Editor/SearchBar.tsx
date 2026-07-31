@@ -10,7 +10,7 @@ interface SearchBarProps {
   showReplace?: boolean;
 }
 
-export function SearchBar({ editor, onClose, showReplace: initialShowReplace = false }: SearchBarProps): JSX.Element {
+export function SearchBar({ editor, onClose, showReplace: initialShowReplace = false }: SearchBarProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [replaceTerm, setReplaceTerm] = useState('');
   const [showReplace, setShowReplace] = useState(initialShowReplace);

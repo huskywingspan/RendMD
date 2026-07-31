@@ -60,7 +60,7 @@ export interface EditorProps {
   onScrollSync?: () => void;
 }
 
-export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrollSync }: EditorProps): JSX.Element {
+export function Editor({ onEditorReady, onImageFile, scrollContainerRef, onScrollSync }: EditorProps) {
   const { content, setContent, fileName } = useEditorStore();
   const { toolbarCollapsed, toggleToolbar } = useEditorStore();
   const isDark = useIsDark();

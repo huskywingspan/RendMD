@@ -96,7 +96,7 @@ function getTableColumnCount(editor: Editor): number {
  * Shows "Insert Table" when not in a table.
  * Shows row/column operations when cursor is in a table.
  */
-export function TableToolbar({ editor }: TableToolbarProps): JSX.Element | null {
+export function TableToolbar({ editor }: TableToolbarProps) {
   // Force re-render on editor selection/transaction changes
   const [, forceUpdate] = useState(0);
   const [showGridPicker, setShowGridPicker] = useState(false);

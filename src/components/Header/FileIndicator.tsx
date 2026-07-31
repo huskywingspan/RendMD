@@ -28,7 +28,7 @@ function formatTimeAgo(date: Date): string {
 /**
  * FileIndicator - Shows current file name, dirty state, and save status
  */
-export function FileIndicator({ isSaving, lastSaved }: FileIndicatorProps): JSX.Element {
+export function FileIndicator({ isSaving, lastSaved }: FileIndicatorProps) {
   const { fileName, isDirty } = useEditorStore();
   const [timeAgo, setTimeAgo] = useState<string>('');
 

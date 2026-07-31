@@ -17,7 +17,7 @@ const CELL_GAP = 2;
  * Displays an 8×6 grid where users can hover to preview dimensions
  * and click to insert a table with those dimensions.
  */
-export function TableGridPicker({ onSelect, onClose }: TableGridPickerProps): JSX.Element {
+export function TableGridPicker({ onSelect, onClose }: TableGridPickerProps) {
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number }>({ row: 1, col: 1 });
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number }>({ row: 1, col: 1 });
   const containerRef = useRef<HTMLDivElement>(null);

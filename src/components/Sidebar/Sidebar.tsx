@@ -7,7 +7,7 @@ interface SidebarProps {
   onTocItemClick?: (item: TOCItem) => void;
 }
 
-export function Sidebar({ onTocItemClick }: SidebarProps): JSX.Element | null {
+export function Sidebar({ onTocItemClick }: SidebarProps) {
   const { sidebar, toggleSidebar } = useEditorStore();
 
   if (!sidebar.isOpen) return null;

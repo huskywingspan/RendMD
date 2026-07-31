@@ -172,7 +172,7 @@ interface SectionHeaderProps {
   label: string;
 }
 
-function SectionHeader({ label }: SectionHeaderProps): JSX.Element {
+function SectionHeader({ label }: SectionHeaderProps) {
   return (
     <div className="text-xs font-semibold uppercase tracking-wide text-[var(--theme-text-muted)] mt-2 first:mt-0">
       {label}
@@ -186,7 +186,7 @@ interface SettingRowProps {
   children: React.ReactNode;
 }
 
-function SettingRow({ label, description, children }: SettingRowProps): JSX.Element {
+function SettingRow({ label, description, children }: SettingRowProps) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex-1 min-w-0">
