@@ -12,7 +12,6 @@ import { Markdown } from 'tiptap-markdown';
 import { CustomKeyboardShortcuts } from './keyboard-shortcuts';
 import { CodeBlockShiki } from './CodeBlockShiki';
 import { SearchExtension } from './search';
-import { GhostText } from './GhostText';
 
 /**
  * Extended TableCell with textAlign attribute support
@@ -108,12 +107,10 @@ const CustomImage = Image.extend({
 
 export interface EditorExtensionOptions {
   isDark?: boolean;
-  ghostTextEnabled?: boolean;
-  getGhostSuggestion?: (text: string, signal: AbortSignal) => Promise<string>;
 }
 
 /**
- * Create editor extensions with theme awareness and optional AI features
+ * Create editor extensions with theme awareness
  */
 export function createEditorExtensions(isDarkOrOptions: boolean | EditorExtensionOptions = true) {
   const opts: EditorExtensionOptions = typeof isDarkOrOptions === 'boolean'
@@ -169,16 +166,6 @@ export function createEditorExtensions(isDarkOrOptions: boolean | EditorExtensio
     }),
     CustomKeyboardShortcuts,
     SearchExtension,
-    // Ghost Text — only enabled when a callback is provided
-    ...(opts.getGhostSuggestion
-      ? [
-          GhostText.configure({
-            getSuggestion: opts.getGhostSuggestion,
-            debounceMs: 1500,
-            enabled: opts.ghostTextEnabled ?? true,
-          }),
-        ]
-      : []),
   ];
 }
 

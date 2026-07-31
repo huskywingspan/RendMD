@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { X, Minus, Plus } from 'lucide-react';
 import { useEditorStore } from '@/stores/editorStore';
-import { AISettingsSection } from '@/components/AI/AISettingsSection';
 import type { UIDensity } from '@/types';
 
 interface SettingsModalProps {
@@ -153,7 +152,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps): React.Re
 
           {/* AI section */}
           <SectionHeader label="AI Assistant" />
-          <AISettingsSection />
         </div>
 
         {/* Footer */}
