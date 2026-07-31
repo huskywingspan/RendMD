@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { codeToHtml } from 'shiki';
-import { useIsDark } from '@/stores/editorStore';
+import { highlightCode } from '@/lib/highlighter';
+import { useSettingsStore, resolveTheme } from '@/stores/settingsStore';
 import { cn } from '@/utils/cn';
 
 interface SourceEditorProps {
@@ -13,10 +13,12 @@ interface SourceEditorProps {
 
 // Shared text styling for perfect alignment between textarea and Shiki output
 const TEXT_STYLES = {
-  fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace",
-  fontSize: 'var(--editor-font-size, 14px)',
-  lineHeight: '1.6',
+  fontFamily: 'var(--rmd-font-mono)',
+  // Steps down from the reading size: source is scanned, not read.
+  fontSize: 'calc(var(--reading-size) * 0.82)',
+  lineHeight: '1.65',
   tabSize: 2,
+  fontVariantLigatures: 'none',
 } as const;
 
 /**
@@ -28,13 +30,12 @@ const TEXT_STYLES = {
  * CRITICAL: Both textarea and Shiki output must have identical text styling
  * (font, size, line-height) for proper alignment.
  */
-export function SourceEditor({ value, onChange, className, onScrollSync, scrollContainerRef }: SourceEditorProps): JSX.Element {
-  const isDark = useIsDark();
+export function SourceEditor({ value, onChange, className, onScrollSync, scrollContainerRef }: SourceEditorProps) {
+  const isDark = resolveTheme(useSettingsStore((s) => s.theme)) === 'dark';
   const [highlightedHtml, setHighlightedHtml] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   
-  const shikiTheme = isDark ? 'github-dark-default' : 'github-light-default';
 
   // Sync scroll between textarea and highlighted view
   const handleScroll = useCallback(() => {
@@ -57,10 +58,7 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
     
     const highlight = async () => {
       try {
-        const html = await codeToHtml(value || ' ', {
-          lang: 'markdown',
-          theme: shikiTheme,
-        });
+        const html = await highlightCode(value || ' ', 'markdown', isDark);
         
         if (!cancelled) {
           setHighlightedHtml(html);
@@ -81,7 +79,7 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [value, shikiTheme]);
+  }, [value, isDark]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
@@ -90,13 +88,13 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
   return (
     <div className={cn(
       "source-editor relative h-full overflow-hidden",
-      "bg-[var(--theme-code-bg)]",
+      "bg-sunken",
       className
     )}>
       {/* Shiki highlighted background (non-interactive) */}
       <div
         ref={highlightRef}
-        className="source-highlight absolute inset-0 overflow-auto p-4 pointer-events-none"
+        className="source-highlight pointer-events-none absolute inset-0 overflow-auto p-6"
         aria-hidden="true"
         style={{
           ...TEXT_STYLES,
@@ -114,8 +112,8 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
         onScroll={handleScroll}
         className={cn(
           "source-textarea absolute inset-0 w-full h-full",
-          "resize-none p-4 m-0",
-          "bg-transparent text-transparent caret-[var(--theme-text-primary)]",
+          "m-0 resize-none p-6",
+          "bg-transparent text-transparent caret-ink",
           "outline-none border-none"
         )}
         style={{

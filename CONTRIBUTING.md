@@ -1,139 +1,75 @@
-# Contributing to RendMD
+# Contributing
 
-Thanks for your interest in contributing to RendMD! This guide will help you get started.
+## Setup
 
-## Development Setup
-
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-- Git
-
-### Getting Started
+Node 20+ and npm 10+.
 
 ```bash
-git clone https://github.com/your-username/rendmd.git
-cd rendmd
+git clone https://github.com/huskywingspan/RendMD.git
+cd RendMD
 npm install
 npm run dev
 ```
 
-The dev server starts at http://localhost:5173 with hot module replacement.
+Dev server at http://localhost:5173.
 
-### Available Scripts
+| Command | |
+|---|---|
+| `npm run dev` | Dev server with HMR |
+| `npm run build` | Typecheck and production build |
+| `npm run lint` | ESLint, including jsx-a11y |
+| `npm run test` | Tests once |
+| `npm run test:watch` | Tests in watch mode |
+| `npm run check` | Lint + test + build — what CI runs |
+| `npm run icons` | Regenerate PWA icons from `public/icons/*.svg` |
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | TypeScript check + production build |
-| `npm run lint` | Run ESLint (includes jsx-a11y) |
-| `npm run test` | Run tests once |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run test:coverage` | Run tests with coverage report |
-| `npm run preview` | Preview production build |
+Use Chrome or Edge for development. The File System Access API — folders, saving in place — doesn't exist elsewhere, and you'll be testing the fallback path without meaning to.
 
-## Project Structure
+Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before making structural changes, and [docs/DECISIONS.md](docs/DECISIONS.md) before undoing something that looks odd. Several things that look like oversights are load-bearing.
 
-```
-src/
-├── components/
-│   ├── Editor/           # TipTap editor, toolbar, bubble menu, extensions
-│   ├── Sidebar/          # Table of Contents panel
-│   ├── Header/           # App header, theme switcher, export menu
-│   ├── Frontmatter/      # YAML metadata panel
-│   ├── Modals/           # Link, image, settings, shortcuts modals
-│   └── UI/               # Reusable primitives (Toast, Tooltip, etc.)
-├── hooks/                # Custom React hooks
-├── stores/               # Zustand state stores
-├── themes/               # CSS theme files
-├── utils/                # Helper functions
-├── types/                # TypeScript type definitions
-├── test/                 # Test setup
-└── App.tsx               # Root component
-```
+## Conventions
 
-For detailed architecture, see [docs/DESIGN_DOCUMENT.md](docs/DESIGN_DOCUMENT.md).
+**TypeScript** is strict. Explicit return types on exported functions. `interface` for object shapes unless you need a union.
 
-## Coding Standards
+**Components** are functions with named exports. Props interfaces are suffixed `Props` and destructured in the signature.
 
-### TypeScript
+**Styling** is Tailwind over the token layer in `src/styles/tokens.css`. Use the semantic utilities — `bg-surface`, `text-ink-muted`, `border-line` — never a raw colour and never a `dark:` variant. Tokens resolve per theme through `@theme inline`, so one class is correct in both. If you need a colour that doesn't exist, add a token rather than a one-off.
 
-- Strict mode is enabled — no implicit `any`
-- Explicit return types on exported functions
-- Use `interface` over `type` for object shapes (unless unions needed)
-- Descriptive names — no single-letter variables except loop counters
+**State** lives in the Zustand store that matches its lifetime, not its feature. Documents and workspace are session state in IndexedDB; settings and chrome are preferences in localStorage. Read [ARCHITECTURE.md](docs/ARCHITECTURE.md#state) before adding a fifth store.
 
-### React Components
+**Comments** explain why, not what. A comment restating the line below it is noise; a comment explaining why the obvious approach was rejected is the most valuable thing in the file.
 
-- Functional components only — no class components
-- Named exports (avoid default exports)
-- Props interfaces suffixed with `Props`
-- Destructure props in the function signature
+## Where things go
 
-### Styling
+**A new command** — add it to `src/lib/commands.ts`. That single registry feeds the palette, the keyboard handler, and the shortcuts sheet. Don't wire a shortcut anywhere else, or the three will drift.
 
-- Tailwind CSS with CSS variables for theming
-- Use `var(--theme-*)` references — never hardcode colors
-- Components must look correct in all 4 themes
+**A new TipTap extension** — a file in `src/components/Editor/extensions/`, registered in `createEditorExtensions()`. Check whether StarterKit already bundles it; TipTap 3 includes more than it used to, and a duplicate name is a silent misconfiguration. Then confirm the markdown round-trip still passes — that test is what protects users' files.
 
-### State Management
+**A new syntax-highlighting language** — one line in `LANGUAGE_LOADERS` and one in `LANGUAGE_OPTIONS`, both in `src/lib/highlighter.ts`. It becomes a lazily-loaded chunk automatically.
 
-- Zustand stores with the slice pattern
-- Selectors for derived state
-- Actions as store methods
-
-## Adding a TipTap Extension
-
-1. Create a file in `src/components/Editor/extensions/`
-2. Define the extension using TipTap's API
-3. Register it in `extensions/index.ts` inside `createEditorExtensions()`
-4. Add toolbar/menu controls if needed
-5. Ensure markdown serialization works via `tiptap-markdown`
-
-## Adding a Theme
-
-1. Create a CSS file in `src/themes/` (copy from an existing theme)
-2. Define all `--theme-*` CSS variables
-3. Add the theme name to the `ThemeName` type in `src/types/index.ts`
-4. Add it to the theme list in the settings modal
-5. Test all components in the new theme
+**A colour** — `src/styles/tokens.css`, in both theme blocks, plus the `@theme inline` bridge. If it renders as text, add the pair to `src/styles/__tests__/contrast.test.ts`.
 
 ## Testing
 
-- Write unit tests alongside your code in `__tests__/` directories
-- Use Vitest with `@testing-library/react` for component tests
-- Test pure functions thoroughly; mock DOM APIs when needed
-- Run `npm run test` before submitting PRs
+Tests live in `__tests__/` beside what they cover. Vitest with jsdom.
 
-## Commit Messages
+Coverage is deliberately uneven. Weight effort toward things that are hard to eyeball and expensive to get wrong — markdown round-tripping, file IO, contrast, fuzzy matching — rather than toward rendering assertions that restate the JSX.
 
-We use [Conventional Commits](https://www.conventionalcommits.org/):
+`src/test/roundtrip.test.ts` is the important one. It asserts content survives markdown → ProseMirror → markdown. If it fails, RendMD is corrupting people's files.
 
-```
-feat: add table column resize
-fix: handle empty frontmatter gracefully
-docs: update keyboard shortcuts table
-refactor: extract theme variables into hook
-test: add frontmatter parser edge cases
-```
+## Pull requests
 
-## Pull Request Process
+1. Branch from `master`.
+2. `npm run check` must pass.
+3. Verify the core loop by hand: open a folder, open a file, edit it, `Ctrl+S`, confirm the file changed on disk. No test covers this, and it's the thing that matters.
+4. Describe what changed and why. If you rejected an obvious approach, say so — that's the part worth reviewing.
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make your changes with clear, focused commits
-4. Run `npm run lint && npm run test && npm run build` — all must pass
-5. Submit a PR with a clear description of what changed and why
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `build:`.
 
-## Reporting Issues
+## Reporting issues
 
-- Use GitHub Issues
-- Include browser name and version
-- Include steps to reproduce
-- Attach a screenshot if it's a visual bug
-- Paste any console errors
+Browser and version, steps to reproduce, console errors, and a screenshot for anything visual. If it involves opening or saving files, say which browser — that path differs substantially between Chromium and everything else.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+Contributions are licensed under the [MIT License](LICENSE).

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="RendMD">
+  <rect width="512" height="512" rx="112" fill="#16171c" />
+  <!-- A page with the top-right corner turned: a document, not a file icon. -->
+  <path
+    d="M144 104h160l80 80v224a16 16 0 0 1-16 16H144a16 16 0 0 1-16-16V120a16 16 0 0 1 16-16z"
+    fill="none"
+    stroke="#8aa5f5"
+    stroke-width="24"
+    stroke-linejoin="round"
+  />
+  <path d="M304 104v80h80" fill="none" stroke="#8aa5f5" stroke-width="24" stroke-linejoin="round" />
+  <!-- Three lines of set text, the shortest last, as a paragraph reads. -->
+  <g stroke="#f2f3f7" stroke-width="24" stroke-linecap="round">
+    <path d="M184 256h144" />
+    <path d="M184 312h144" />
+    <path d="M184 368h88" />
+  </g>
+</svg>

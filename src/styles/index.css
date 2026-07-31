@@ -1,0 +1,19 @@
+/**
+ * Stylesheet entry point. Order matters:
+ *
+ *   fonts   @font-face declarations, needed before anything renders text
+ *   tailwind utility engine, plus the @theme bridge in tokens.css
+ *   tokens  design tokens and the per-theme colour ramps
+ *   base    resets, focus, scrollbars
+ *   prose   the reading surface
+ *   print   PDF / Ctrl+P output
+ */
+@import './fonts.css';
+@import 'tailwindcss';
+@import './tokens.css';
+@import './base.css';
+@import './prose.css';
+@import './print.css';
+
+/* Tailwind scans these for class names. */
+@source '../**/*.{ts,tsx}';

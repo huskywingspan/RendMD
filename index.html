@@ -1,10 +1,54 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="theme-dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>RendMD - The thinking person's markdown editor</title>
+
+    <title>RendMD</title>
+    <meta name="description" content="A rendered-first markdown editor. Open a folder, read and edit your .md files, save straight back to disk. No accounts, no upload, no tracking." />
+    <meta name="theme-color" content="#16171c" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+
+    <!--
+      Applied before first paint so the app never flashes the wrong theme or
+      re-lays-out when reading preferences load. Reads the same localStorage key
+      the settings store persists to; if anything is missing or malformed it
+      falls through to the system preference, which is also the default.
+    -->
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('rendmd:settings');
+          var s = raw ? (JSON.parse(raw).state || {}) : {};
+          var pref = s.theme || 'system';
+          var dark =
+            pref === 'dark' ||
+            (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+          var root = document.documentElement;
+          root.classList.toggle('theme-dark', dark);
+          root.classList.toggle('theme-light', !dark);
+
+          var families = {
+            sans: 'var(--rmd-font-sans)',
+            serif: 'var(--rmd-font-serif)',
+            mono: 'var(--rmd-font-mono)',
+          };
+          var measures = { narrow: '56ch', normal: '68ch', wide: '82ch', full: 'none' };
+
+          if (s.readingFamily && families[s.readingFamily])
+            root.style.setProperty('--reading-family', families[s.readingFamily]);
+          if (s.readingSize) root.style.setProperty('--reading-size', s.readingSize + 'px');
+          if (s.readingMeasure && measures[s.readingMeasure])
+            root.style.setProperty('--reading-measure', measures[s.readingMeasure]);
+        } catch (e) {
+          /* First run, private mode, or blocked storage — defaults are fine. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

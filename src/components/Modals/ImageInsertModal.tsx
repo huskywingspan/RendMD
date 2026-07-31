@@ -1,491 +1,254 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Link, HardDrive, Code2, AlertTriangle, X, Image as ImageIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FolderDown, Image as ImageIcon, Link2, TriangleAlert, Upload } from 'lucide-react';
+import type { Editor } from '@tiptap/react';
+import { Modal } from '@/components/UI/Modal';
+import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { useActiveDocument } from '@/stores/documentsStore';
+import { writeBinaryFile } from '@/lib/fs';
+import { toast } from '@/stores/toastStore';
+import {
+  fileToBase64,
+  formatFileSize,
+  generateImageFilename,
+  isImageFile,
+  IMAGE_SIZE_WARNING_THRESHOLD,
+} from '@/utils/imageHelpers';
 import { cn } from '@/utils/cn';
-import { fileToBase64, formatFileSize, IMAGE_SIZE_WARNING_THRESHOLD, isImageFile } from '@/utils/imageHelpers';
-
-type Tab = 'url' | 'local' | 'embed';
 
 interface ImageInsertModalProps {
+  editor: Editor;
+  onClose: () => void;
+  /** Pre-selected file, when the modal was opened by a drop or paste. */
   file?: File;
-  onInsertUrl: (url: string, alt: string) => void;
-  onInsertBase64: (dataUrl: string, alt: string) => void;
-  onInsertLocal: (relativePath: string, alt: string) => void;
-  onCancel: () => void;
 }
 
-const TAB_CONFIG: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'url', label: 'URL', icon: <Link size={14} /> },
-  { id: 'local', label: 'Local File', icon: <HardDrive size={14} /> },
-  { id: 'embed', label: 'Embed (Base64)', icon: <Code2 size={14} /> },
-];
-
-function getDefaultTab(file: File | undefined): Tab {
-  if (file) {
-    return 'local';
-  }
-  return 'url';
-}
-
-export function ImageInsertModal({
-  file,
-  onInsertUrl,
-  onInsertBase64,
-  onInsertLocal,
-  onCancel,
-}: ImageInsertModalProps): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<Tab>(() => getDefaultTab(file));
+/**
+ * Insert an image.
+ *
+ * Two paths, chosen by what's available rather than by making the user pick a
+ * strategy:
+ *
+ *   With a workspace open, a chosen file is written into an `assets/` folder
+ *   beside your notes and referenced by relative path. That keeps the markdown
+ *   portable and the file small.
+ *
+ *   Otherwise it is embedded as a data URL, with a warning past a few
+ *   megabytes — base64 inflates by a third and bloats the document.
+ */
+export function ImageInsertModal({ editor, onClose, file: initialFile }: ImageInsertModalProps) {
   const [url, setUrl] = useState('');
-  const [alt, setAlt] = useState('');
-  const [localPath, setLocalPath] = useState('');
-  const [base64Data, setBase64Data] = useState<string | null>(null);
-  const [isConverting, setIsConverting] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [altOverride, setAlt] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(initialFile ?? null);
+  const [busy, setBusy] = useState(false);
 
-  const modalRef = useRef<HTMLDivElement>(null);
-  const firstInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const workspaceRoot = useWorkspaceStore((s) => s.root);
+  const refreshWorkspace = useWorkspaceStore((s) => s.refresh);
+  const doc = useActiveDocument();
 
-  // Create object URL preview for the file
+  // Derived during render rather than set from an effect, so the thumbnail is
+  // there on first paint. The effect exists only to release it afterwards.
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => {
-    if (!file || !isImageFile(file)) return;
+    if (!preview) return;
+    return () => URL.revokeObjectURL(preview);
+  }, [preview]);
 
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
+  // Alt text defaults to a tidied file name until the user types something.
+  // Derived rather than seeded via setState, so choosing a different file
+  // updates the suggestion instead of leaving the previous one stranded.
+  const suggestedAlt = file ? file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') : '';
+  const alt = altOverride ?? suggestedAlt;
 
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [file]);
-
-  // Pre-fill alt text and local path from filename
-  useEffect(() => {
-    if (file) {
-      const lastDot = file.name.lastIndexOf('.');
-      const name = lastDot !== -1 ? file.name.slice(0, lastDot) : file.name;
-      setAlt(name);
-      setLocalPath(file.name);
-    }
-  }, [file]);
-
-  // Lazily convert to base64 when embed tab is selected
-  useEffect(() => {
-    if (activeTab !== 'embed' || !file || base64Data) return;
-
-    let cancelled = false;
-    setIsConverting(true);
-
-    fileToBase64(file)
-      .then((data) => {
-        if (!cancelled) {
-          setBase64Data(data);
-        }
-      })
-      .catch(() => {
-        // Conversion failed — user will see no preview
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsConverting(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTab, file, base64Data]);
-
-  // Escape key handler
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onCancel();
-      }
+  const insert = useCallback(
+    (src: string, altText: string) => {
+      editor.chain().focus().setImage({ src, alt: altText }).run();
+      onClose();
     },
-    [onCancel]
+    [editor, onClose],
   );
 
-  // Focus trap + key listeners
-  useEffect(() => {
-    const modal = modalRef.current;
-    if (!modal) return;
+  const handleFileSubmit = useCallback(async () => {
+    if (!file) return;
+    setBusy(true);
 
-    const focusableSelectors =
-      'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    try {
+      if (workspaceRoot) {
+        // Alongside the document when we know where it lives, otherwise at the
+        // workspace root.
+        const docDir = doc?.path.includes('/')
+          ? doc.path.slice(0, doc.path.lastIndexOf('/'))
+          : '';
+        const fileName = generateImageFilename(file);
+        const relativeToRoot = docDir ? `${docDir}/assets/${fileName}` : `assets/${fileName}`;
 
-    function handleTabTrap(event: KeyboardEvent): void {
-      if (event.key !== 'Tab' || !modal) return;
+        await writeBinaryFile(workspaceRoot, relativeToRoot, file);
+        void refreshWorkspace();
 
-      const focusableElements = modal.querySelectorAll<HTMLElement>(focusableSelectors);
-      if (focusableElements.length === 0) return;
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-
-      if (event.shiftKey) {
-        if (document.activeElement === firstElement) {
-          event.preventDefault();
-          lastElement.focus();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          event.preventDefault();
-          firstElement.focus();
-        }
+        // The markdown reference is relative to the document, not the root.
+        insert(`assets/${fileName}`, alt);
+        toast.success(`Saved to ${relativeToRoot}`);
+        return;
       }
+
+      insert(await fileToBase64(file), alt);
+    } catch (error) {
+      console.error('[RendMD] Could not insert image:', error);
+      toast.error('Could not insert that image');
+    } finally {
+      setBusy(false);
     }
+  }, [file, workspaceRoot, doc, alt, insert, refreshWorkspace]);
 
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keydown', handleTabTrap);
-
-    requestAnimationFrame(() => {
-      firstInputRef.current?.focus();
-    });
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('keydown', handleTabTrap);
-    };
-  }, [handleKeyDown]);
-
-  const fileSizeWarning = useMemo(() => {
-    return file ? file.size > IMAGE_SIZE_WARNING_THRESHOLD : false;
-  }, [file]);
-
-  function handleInsert(): void {
-    switch (activeTab) {
-      case 'url':
-        if (url.trim()) {
-          onInsertUrl(url.trim(), alt.trim());
-        }
-        break;
-      case 'local':
-        if (localPath.trim()) {
-          onInsertLocal(localPath.trim(), alt.trim());
-        }
-        break;
-      case 'embed':
-        if (base64Data) {
-          onInsertBase64(base64Data, alt.trim());
-        }
-        break;
-    }
-  }
-
-  function canInsert(): boolean {
-    switch (activeTab) {
-      case 'url':
-        return url.trim().length > 0;
-      case 'local':
-        return localPath.trim().length > 0;
-      case 'embed':
-        return !!base64Data && !isConverting;
-      default:
-        return false;
-    }
-  }
-
-  const inputStyles = cn(
-    'w-full px-3 py-2 rounded-md text-sm',
-    'bg-[var(--theme-bg-secondary)]',
-    'text-[var(--theme-text-primary)]',
-    'placeholder:text-[var(--theme-text-muted)]',
-    'border border-[var(--theme-border)]',
-    'focus:outline-none focus:border-[var(--theme-accent-primary)]',
-    'transition-colors'
-  );
-
-  const buttonPrimaryStyles = cn(
-    'flex items-center justify-center gap-2',
-    'px-4 py-2 rounded-md text-sm font-medium',
-    'bg-[var(--theme-accent-primary)] text-white',
-    'hover:opacity-90 transition-opacity',
-    'disabled:opacity-40 disabled:cursor-not-allowed'
-  );
-
-  function renderPreviewThumbnail(): React.ReactNode {
-    if (!previewUrl) return null;
-
-    return (
-      <div
-        className={cn(
-          'flex items-center gap-3 p-3 rounded-md',
-          'bg-[var(--theme-bg-tertiary)]',
-          'border border-[var(--theme-border)]'
-        )}
-      >
-        <img
-          src={previewUrl}
-          alt="Preview"
-          className="w-16 h-16 object-cover rounded border border-[var(--theme-border)]"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-[var(--theme-text-primary)] truncate">
-            {file?.name}
-          </p>
-          <p className="text-xs text-[var(--theme-text-muted)]">
-            {file ? formatFileSize(file.size) : ''}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  function renderUrlTab(): React.ReactNode {
-    return (
-      <div className="space-y-3">
-        <div>
-          <label htmlFor="img-url-input" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
-            Image URL
-          </label>
-          <input
-            id="img-url-input"
-            ref={activeTab === 'url' ? firstInputRef : undefined}
-            type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://example.com/image.png"
-            className={inputStyles}
-          />
-        </div>
-        <div>
-          <label htmlFor="img-url-alt" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
-            Alt text
-          </label>
-          <input
-            id="img-url-alt"
-            type="text"
-            value={alt}
-            onChange={(e) => setAlt(e.target.value)}
-            placeholder="Describe the image..."
-            className={inputStyles}
-          />
-        </div>
-        <div className="flex justify-end pt-1">
-          <button
-            onClick={handleInsert}
-            disabled={!canInsert()}
-            className={buttonPrimaryStyles}
-          >
-            <ImageIcon size={14} />
-            Insert
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  function renderLocalTab(): React.ReactNode {
-    return (
-      <div className="space-y-3">
-        {file && renderPreviewThumbnail()}
-        <div>
-          <label htmlFor="img-local-path" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
-            File path (relative to your markdown file)
-          </label>
-          <input
-            id="img-local-path"
-            ref={activeTab === 'local' ? firstInputRef : undefined}
-            type="text"
-            value={localPath}
-            onChange={(e) => setLocalPath(e.target.value)}
-            placeholder="image.png or assets/image.png"
-            className={inputStyles}
-          />
-          <p className="text-xs text-[var(--theme-text-muted)] mt-1">
-            The image must be accessible relative to your .md file on disk.
-          </p>
-        </div>
-        <div>
-          <label htmlFor="img-local-alt" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
-            Alt text
-          </label>
-          <input
-            id="img-local-alt"
-            type="text"
-            value={alt}
-            onChange={(e) => setAlt(e.target.value)}
-            placeholder="Describe the image..."
-            className={inputStyles}
-          />
-        </div>
-        <div className="flex justify-end pt-1">
-          <button
-            onClick={handleInsert}
-            disabled={!canInsert()}
-            className={buttonPrimaryStyles}
-          >
-            <HardDrive size={14} />
-            Insert Reference
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  function renderEmbedTab(): React.ReactNode {
-    return (
-      <div className="space-y-3">
-        {file && renderPreviewThumbnail()}
-        {!file && (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <ImageIcon size={32} className="text-[var(--theme-text-muted)] mb-2" />
-            <p className="text-sm text-[var(--theme-text-muted)]">
-              No file provided. Paste or drop an image to embed.
-            </p>
-          </div>
-        )}
-        {fileSizeWarning && (
-          <div
-            className={cn(
-              'flex items-start gap-2 p-3 rounded-md',
-              'bg-yellow-500/10 border border-yellow-500/30',
-              'text-yellow-600 dark:text-yellow-400'
-            )}
-          >
-            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-            <p className="text-xs">
-              This image is over {formatFileSize(IMAGE_SIZE_WARNING_THRESHOLD)}.
-              Embedding large files as base64 will significantly increase your
-              document size. Consider using the URL or Local File option instead.
-            </p>
-          </div>
-        )}
-        {isConverting && (
-          <div className="flex items-center justify-center py-3">
-            <div
-              className={cn(
-                'w-5 h-5 border-2 rounded-full animate-spin',
-                'border-[var(--theme-text-muted)]',
-                'border-t-[var(--theme-accent-primary)]'
-              )}
-            />
-            <span className="ml-2 text-sm text-[var(--theme-text-muted)]">
-              Converting to base64…
-            </span>
-          </div>
-        )}
-        <div>
-          <label htmlFor="img-embed-alt" className="block text-xs font-medium text-[var(--theme-text-secondary)] mb-1">
-            Alt text
-          </label>
-          <input
-            id="img-embed-alt"
-            ref={activeTab === 'embed' ? firstInputRef : undefined}
-            type="text"
-            value={alt}
-            onChange={(e) => setAlt(e.target.value)}
-            placeholder="Describe the image..."
-            className={inputStyles}
-          />
-        </div>
-        <div className="flex justify-end pt-1">
-          <button
-            onClick={handleInsert}
-            disabled={!canInsert()}
-            className={buttonPrimaryStyles}
-          >
-            <Code2 size={14} />
-            Embed
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const oversized = file !== null && file.size > IMAGE_SIZE_WARNING_THRESHOLD;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="presentation"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onCancel}
-        aria-hidden="true"
-      />
+    <Modal isOpen onClose={onClose} title="Insert image">
+      <div className="flex flex-col gap-5">
+        {/* From a file */}
+        <section>
+          <h3 className="mb-2 text-2xs font-medium tracking-wide text-ink-faint uppercase">
+            From your computer
+          </h3>
 
-      {/* Modal */}
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Insert image"
-        className={cn(
-          'relative z-10 flex flex-col',
-          'w-full max-w-md',
-          'mx-4 rounded-lg shadow-xl',
-          'bg-[var(--theme-bg-primary)]',
-          'border border-[var(--theme-border-primary)]'
-        )}
-      >
-        {/* Header */}
-        <div
-          className={cn(
-            'flex items-center justify-between',
-            'px-5 py-4',
-            'border-b border-[var(--theme-border)]'
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => {
+              const chosen = event.target.files?.[0];
+              if (chosen && isImageFile(chosen)) setFile(chosen);
+              else if (chosen) toast.error('That file is not a supported image');
+            }}
+          />
+
+          {file ? (
+            <div className="flex items-center gap-3 rounded-lg border border-line bg-sunken p-2.5">
+              {preview ? (
+                <img
+                  src={preview}
+                  alt=""
+                  className="size-12 shrink-0 rounded-md border border-line object-cover"
+                />
+              ) : (
+                <span className="grid size-12 shrink-0 place-items-center rounded-md bg-hover text-ink-faint">
+                  <ImageIcon size={18} />
+                </span>
+              )}
+
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-ink">{file.name}</span>
+                <span className="block text-xs text-ink-faint">{formatFileSize(file.size)}</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setFile(null)}
+                className="shrink-0 text-sm text-ink-muted underline underline-offset-2 hover:text-ink"
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                'flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-line',
+                'px-3 py-6 text-sm text-ink-muted hover:border-accent hover:text-ink',
+              )}
+            >
+              <Upload size={15} aria-hidden />
+              Choose an image
+            </button>
           )}
-        >
-          <h2 className="text-lg font-semibold text-[var(--theme-text-primary)] flex items-center gap-2">
-            <ImageIcon size={20} />
-            Insert Image
-          </h2>
-          <button
-            onClick={onCancel}
-            className={cn(
-              'flex items-center justify-center',
-              'w-8 h-8 rounded-md',
-              'text-[var(--theme-text-secondary)]',
-              'hover:bg-[var(--theme-bg-tertiary)]',
-              'hover:text-[var(--theme-text-primary)]',
-              'transition-colors'
-            )}
-            aria-label="Close image insert modal"
+
+          {file && (
+            <>
+              <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-ink-faint">
+                <FolderDown size={13} className="mt-px shrink-0" aria-hidden />
+                {workspaceRoot
+                  ? 'Saved into an assets folder next to your document and linked by relative path.'
+                  : 'Embedded directly in the document. Open a folder first to save it as a separate file instead.'}
+              </p>
+
+              {oversized && !workspaceRoot && (
+                <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-warning">
+                  <TriangleAlert size={13} className="mt-px shrink-0" aria-hidden />
+                  This image is {formatFileSize(file.size)}. Embedding it will add roughly{' '}
+                  {formatFileSize(file.size * 1.37)} of base64 to the file.
+                </p>
+              )}
+            </>
+          )}
+        </section>
+
+        {/* From a URL */}
+        <section>
+          <h3 className="mb-2 text-2xs font-medium tracking-wide text-ink-faint uppercase">
+            From a link
+          </h3>
+          <div className="relative">
+            <Link2
+              size={14}
+              className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-ink-faint"
+              aria-hidden
+            />
+            <input
+              type="url"
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              placeholder="https://example.com/diagram.png"
+              aria-label="Image URL"
+              className="h-9 w-full rounded-md border border-line bg-sunken pr-2.5 pl-8 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+            />
+          </div>
+        </section>
+
+        {/* Alt text */}
+        <section>
+          <label
+            htmlFor="image-alt"
+            className="mb-2 block text-2xs font-medium tracking-wide text-ink-faint uppercase"
           >
-            <X size={18} />
+            Alt text
+          </label>
+          <input
+            id="image-alt"
+            type="text"
+            value={alt}
+            onChange={(event) => setAlt(event.target.value)}
+            placeholder="What the image shows"
+            className="h-9 w-full rounded-md border border-line bg-sunken px-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+          />
+          <p className="mt-1.5 text-xs text-ink-faint">
+            Describes the image to screen readers, and shows if it fails to load.
+          </p>
+        </section>
+
+        <div className="flex justify-end gap-2 border-t border-line pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy || (!file && !url.trim())}
+            onClick={() => {
+              if (file) void handleFileSubmit();
+              else if (url.trim()) insert(url.trim(), alt);
+            }}
+            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink hover:bg-accent-hover disabled:opacity-40"
+          >
+            {busy ? 'Inserting…' : 'Insert'}
           </button>
         </div>
-
-        {/* Tab segmented control */}
-        <div className="px-5 pt-4">
-          <div
-            className={cn(
-              'flex rounded-md p-0.5',
-              'bg-[var(--theme-bg-tertiary)]',
-              'border border-[var(--theme-border)]'
-            )}
-            role="tablist"
-            aria-label="Image source"
-          >
-            {TAB_CONFIG.map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex-1 flex items-center justify-center gap-1.5',
-                  'px-3 py-1.5 rounded text-xs font-medium',
-                  'transition-colors',
-                  activeTab === tab.id
-                    ? 'bg-[var(--theme-accent-primary)] text-white shadow-sm'
-                    : 'text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)]'
-                )}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab content */}
-        <div className="px-5 py-4">
-          {activeTab === 'url' && renderUrlTab()}
-          {activeTab === 'local' && renderLocalTab()}
-          {activeTab === 'embed' && renderEmbedTab()}
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

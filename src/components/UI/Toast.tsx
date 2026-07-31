@@ -1,80 +1,73 @@
-import { useEffect, useState } from 'react';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
-import { useToastStore } from '@/stores/toastStore';
-import type { Toast as ToastData, ToastType } from '@/stores/toastStore';
+import { CircleAlert, CircleCheck, Info, X } from 'lucide-react';
+import { useToastStore, type Toast, type ToastKind } from '@/stores/toastStore';
 import { cn } from '@/utils/cn';
 
-const iconMap: Record<ToastType, typeof CheckCircle> = {
-  success: CheckCircle,
-  error: AlertCircle,
+const ICONS: Record<ToastKind, typeof Info> = {
+  success: CircleCheck,
+  error: CircleAlert,
   info: Info,
 };
 
-const colorMap: Record<ToastType, string> = {
-  success: 'border-green-500 text-green-400',
-  error: 'border-red-500 text-red-400',
-  info: 'border-blue-500 text-blue-400',
+const ACCENTS: Record<ToastKind, string> = {
+  success: 'text-success',
+  error: 'text-danger',
+  info: 'text-accent',
 };
 
-function ToastItem({ toast }: { toast: ToastData }): JSX.Element {
-  const { removeToast } = useToastStore();
-  const [isEntered, setIsEntered] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
-  const Icon = iconMap[toast.type];
-
-  // Trigger entry animation on mount
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setIsEntered(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    // Start exit animation slightly before removal
-    if (toast.duration > 0) {
-      const exitTimer = setTimeout(() => {
-        setIsExiting(true);
-      }, toast.duration - 300);
-      return () => clearTimeout(exitTimer);
-    }
-  }, [toast.duration]);
-
-  const animationClass = isExiting
-    ? 'opacity-0 translate-x-4'
-    : isEntered
-      ? 'opacity-100 translate-x-0'
-      : 'opacity-0 translate-x-4';
+function ToastItem({ toast }: { toast: Toast }) {
+  const dismiss = useToastStore((s) => s.dismiss);
+  const Icon = ICONS[toast.kind];
 
   return (
     <div
+      role={toast.kind === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 shadow-lg backdrop-blur-sm',
-        'bg-[var(--theme-bg-secondary)] border-[var(--theme-border-primary)]',
-        'transition-all duration-300 ease-in-out',
-        colorMap[toast.type],
-        animationClass
+        'pointer-events-auto flex items-start gap-2.5 rounded-lg border border-line',
+        'bg-overlay px-3 py-2.5 shadow-lg',
+        'animate-[toast-in_190ms_cubic-bezier(0.2,0,0,1)]',
       )}
-      role="alert"
     >
-      <Icon size={16} className="flex-shrink-0" />
-      <span className="text-sm text-[var(--theme-text-primary)] flex-1">{toast.message}</span>
+      <Icon size={15} className={cn('mt-px shrink-0', ACCENTS[toast.kind])} aria-hidden />
+
+      <span className="flex-1 text-sm leading-snug text-ink">{toast.message}</span>
+
+      {toast.action && (
+        <button
+          type="button"
+          onClick={() => {
+            toast.action?.onPress();
+            dismiss(toast.id);
+          }}
+          className="shrink-0 rounded-sm px-1.5 py-0.5 text-sm font-medium text-accent hover:bg-accent-soft"
+        >
+          {toast.action.label}
+        </button>
+      )}
+
       <button
-        onClick={() => removeToast(toast.id)}
-        className="p-0.5 rounded hover:bg-[var(--theme-bg-tertiary)] transition-colors flex-shrink-0"
+        type="button"
+        onClick={() => dismiss(toast.id)}
         aria-label="Dismiss"
+        className="-mr-1 shrink-0 rounded-sm p-0.5 text-ink-faint hover:bg-hover hover:text-ink"
       >
-        <X size={14} className="text-[var(--theme-text-muted)]" />
+        <X size={13} />
       </button>
     </div>
   );
 }
 
-export function ToastContainer(): JSX.Element | null {
-  const { toasts } = useToastStore();
+export function ToastContainer() {
+  const toasts = useToastStore((s) => s.toasts);
 
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <div
+      // aria-live on the container, not the item, so additions are announced
+      // without the region being re-read each time one expires.
+      aria-live="polite"
+      className="pointer-events-none fixed right-4 bottom-4 z-[90] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2"
+    >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} />
       ))}

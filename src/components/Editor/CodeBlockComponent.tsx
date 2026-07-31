@@ -1,232 +1,231 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { NodeViewContent, NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import { Check, Copy, ChevronDown } from 'lucide-react';
-import { codeToHtml } from 'shiki';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
+import { Check, ChevronDown, Copy, Eye, PenLine, TriangleAlert } from 'lucide-react';
+import { highlightCode, LANGUAGE_OPTIONS } from '@/lib/highlighter';
+import { renderMermaid } from '@/lib/mermaid';
 import { cn } from '@/utils/cn';
 
-// Common programming languages for the dropdown
-const POPULAR_LANGUAGES = [
-  { value: 'typescript', label: 'TypeScript' },
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'python', label: 'Python' },
-  { value: 'rust', label: 'Rust' },
-  { value: 'go', label: 'Go' },
-  { value: 'java', label: 'Java' },
-  { value: 'c', label: 'C' },
-  { value: 'cpp', label: 'C++' },
-  { value: 'csharp', label: 'C#' },
-  { value: 'html', label: 'HTML' },
-  { value: 'css', label: 'CSS' },
-  { value: 'json', label: 'JSON' },
-  { value: 'yaml', label: 'YAML' },
-  { value: 'markdown', label: 'Markdown' },
-  { value: 'bash', label: 'Bash' },
-  { value: 'sql', label: 'SQL' },
-  { value: 'plaintext', label: 'Plain Text' },
-];
+/**
+ * Code block node view.
+ *
+ * Renders as two stacked layers: a Shiki-highlighted display layer, and a
+ * transparent contenteditable <pre> above it that takes input. They must share
+ * exact text metrics or the caret drifts from the glyphs — see prose.css.
+ *
+ * A ```mermaid block additionally offers a rendered view of the diagram, which
+ * is what you actually want when reading a document rather than writing one.
+ */
+export function CodeBlockComponent({ node, updateAttributes, extension }: NodeViewProps) {
+  const language: string = node.attrs.language ?? '';
+  const code = node.textContent;
+  const isDark: boolean = extension.options?.isDark ?? true;
+  const isMermaid = language.toLowerCase() === 'mermaid';
 
-export function CodeBlockComponent({ node, updateAttributes, extension }: NodeViewProps): JSX.Element {
-  const { language } = node.attrs;
-  const [highlightedHtml, setHighlightedHtml] = useState<string>('');
-  const [isCopied, setIsCopied] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  
-  // Get theme from extension options (defaults to dark)
-  const isDark = extension.options?.isDark ?? true;
-  const shikiTheme = isDark ? 'github-dark-default' : 'github-light-default';
-  
-  // Get code content from the node
-  const codeContent = node.textContent;
+  const [highlighted, setHighlighted] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Diagrams open rendered: reading is the common case, editing the exception.
+  const [showDiagram, setShowDiagram] = useState(true);
+  const [diagram, setDiagram] = useState<{ svg: string | null; error: string | null }>({
+    svg: null,
+    error: null,
+  });
 
-  // Highlight code with Shiki
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  /* ── Syntax highlighting ───────────────────────────────────────────────── */
+
   useEffect(() => {
+    // Nothing to highlight; the render below falls back to plain text rather
+    // than this effect clearing state and forcing a second pass.
+    if (!code) return;
+
     let cancelled = false;
-
-    async function highlight() {
-      if (!codeContent) {
-        setHighlightedHtml('');
-        return;
-      }
-
-      try {
-        const html = await codeToHtml(codeContent, {
-          lang: language || 'plaintext',
-          theme: shikiTheme,
-        });
-        
-        if (!cancelled) {
-          setHighlightedHtml(html);
-        }
-      } catch {
-        // Fallback for unsupported languages
-        console.warn(`Shiki: Language "${language}" not supported, falling back to plaintext`);
-        try {
-          const html = await codeToHtml(codeContent, {
-            lang: 'plaintext',
-            theme: shikiTheme,
-          });
-          if (!cancelled) {
-            setHighlightedHtml(html);
-          }
-        } catch {
-          // Complete fallback - just show plain text
-          if (!cancelled) {
-            setHighlightedHtml('');
-          }
-        }
-      }
-    }
-
-    highlight();
+    void highlightCode(code, language, isDark).then((html) => {
+      if (!cancelled) setHighlighted(html);
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [codeContent, language, shikiTheme]);
+  }, [code, language, isDark]);
 
-  // Copy code to clipboard
-  const handleCopy = useCallback(async () => {
+  /* ── Diagram rendering ─────────────────────────────────────────────────── */
+
+  useEffect(() => {
+    if (!isMermaid || !showDiagram) return;
+
+    let cancelled = false;
+    // Debounced: re-rendering a diagram on every keystroke is both expensive
+    // and useless, since intermediate states rarely parse.
+    const timer = setTimeout(() => {
+      void renderMermaid(code, isDark).then((result) => {
+        if (!cancelled) setDiagram(result);
+      });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [isMermaid, showDiagram, code, isDark]);
+
+  /* ── Menu ──────────────────────────────────────────────────────────────── */
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onPointerDown = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
+
+  const copy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(codeContent);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
     } catch (error) {
-      console.error('Failed to copy code:', error);
+      console.warn('[RendMD] Could not copy to clipboard:', error);
     }
-  }, [codeContent]);
+  }, [code]);
 
-  // Handle language change
-  const handleLanguageChange = useCallback((newLanguage: string) => {
-    updateAttributes({ language: newLanguage });
-    setIsDropdownOpen(false);
-  }, [updateAttributes]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isDropdownOpen]);
-
-  // Close on Escape
-  useEffect(() => {
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsDropdownOpen(false);
-      }
-    }
-
-    if (isDropdownOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isDropdownOpen]);
-
-  // Find current language label
-  const currentLanguageLabel = POPULAR_LANGUAGES.find(l => l.value === language)?.label || language || 'Plain Text';
+  const label = LANGUAGE_OPTIONS.find((option) => option.value === language)?.label ?? 'Plain text';
 
   return (
-    <NodeViewWrapper className="code-block-wrapper relative my-4 group">
-      {/* Header bar with language selector and copy button */}
-      <div className="code-block-header flex items-center justify-between px-4 py-2 bg-[var(--theme-code-bg)] border border-b-0 border-[var(--theme-code-border)] rounded-t-lg">
-        {/* Language selector */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className={cn(
-              "flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors",
-              "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)]",
-              "hover:bg-[var(--theme-bg-hover)]",
-              isDropdownOpen && "bg-[var(--theme-bg-hover)] text-[var(--theme-text-primary)]"
-            )}
-            contentEditable={false}
-          >
-            <span className="font-medium">{currentLanguageLabel}</span>
-            <ChevronDown 
-              size={12} 
-              className={cn("transition-transform", isDropdownOpen && "rotate-180")} 
-            />
-          </button>
+    <NodeViewWrapper className="code-block-wrapper group">
+      <div className="overflow-hidden rounded-lg border border-line bg-sunken">
+        {/* Header */}
+        <div className="flex items-center gap-1 border-b border-line px-2 py-1" contentEditable={false}>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="flex h-6 items-center gap-1 rounded-sm px-1.5 text-2xs text-ink-muted hover:bg-hover hover:text-ink"
+            >
+              {label}
+              <ChevronDown size={10} aria-hidden />
+            </button>
 
-          {/* Language dropdown */}
-          {isDropdownOpen && (
-            <div className="absolute left-0 top-full mt-1 w-40 max-h-64 overflow-y-auto bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-primary)] rounded-lg shadow-lg z-50 py-1">
-              {POPULAR_LANGUAGES.map((lang) => (
-                <button
-                  key={lang.value}
-                  onClick={() => handleLanguageChange(lang.value)}
-                  className={cn(
-                    "w-full px-3 py-1.5 text-left text-sm transition-colors",
-                    language === lang.value
-                      ? "bg-[var(--theme-accent-primary)]/10 text-[var(--theme-accent-primary)]"
-                      : "hover:bg-[var(--theme-bg-hover)] text-[var(--theme-text-primary)]"
-                  )}
-                  contentEditable={false}
-                >
-                  {lang.label}
-                </button>
-              ))}
-            </div>
-          )}
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute top-full left-0 z-20 mt-1 max-h-64 w-44 overflow-y-auto rounded-lg border border-line bg-overlay py-1 shadow-lg"
+              >
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      updateAttributes({ language: option.value });
+                      setMenuOpen(false);
+                    }}
+                    className={cn(
+                      'w-full px-2.5 py-1 text-left text-sm',
+                      option.value === language
+                        ? 'text-accent'
+                        : 'text-ink-muted hover:bg-hover hover:text-ink',
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="ml-auto flex items-center gap-0.5">
+            {isMermaid && (
+              <button
+                type="button"
+                onClick={() => setShowDiagram((value) => !value)}
+                className="flex h-6 items-center gap-1 rounded-sm px-1.5 text-2xs text-ink-muted hover:bg-hover hover:text-ink"
+              >
+                {showDiagram ? <PenLine size={11} /> : <Eye size={11} />}
+                {showDiagram ? 'Edit' : 'Preview'}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={copy}
+              aria-label={copied ? 'Copied' : 'Copy code'}
+              className={cn(
+                'flex h-6 items-center gap-1 rounded-sm px-1.5 text-2xs transition-opacity',
+                copied
+                  ? 'text-success'
+                  : 'text-ink-muted opacity-0 group-hover:opacity-100 hover:bg-hover hover:text-ink focus-visible:opacity-100',
+              )}
+            >
+              {copied ? <Check size={11} /> : <Copy size={11} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
         </div>
 
-        {/* Copy button */}
-        <button
-          onClick={handleCopy}
-          className={cn(
-            "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-all",
-            "opacity-0 group-hover:opacity-100",
-            isCopied 
-              ? "text-[var(--color-success)]" 
-              : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)]"
-          )}
-          contentEditable={false}
-          aria-label={isCopied ? "Copied!" : "Copy code"}
-        >
-          {isCopied ? (
-            <>
-              <Check size={14} />
-              <span>Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy size={14} />
-              <span>Copy</span>
-            </>
-          )}
-        </button>
-      </div>
+        {/* Rendered diagram, or the code itself */}
+        {isMermaid && showDiagram ? (
+          <div contentEditable={false} className="px-4 py-4">
+            {diagram.error ? (
+              <p className="flex items-start gap-2 text-sm text-warning">
+                <TriangleAlert size={14} className="mt-0.5 shrink-0" aria-hidden />
+                <span>
+                  {diagram.error}
+                  <button
+                    type="button"
+                    onClick={() => setShowDiagram(false)}
+                    className="ml-2 underline underline-offset-2"
+                  >
+                    Edit source
+                  </button>
+                </span>
+              </p>
+            ) : diagram.svg ? (
+              <div
+                className="mermaid-diagram flex justify-center overflow-x-auto"
+                // Mermaid output; rendered with securityLevel 'strict', which
+                // strips scripts and event handlers from the diagram source.
+                dangerouslySetInnerHTML={{ __html: diagram.svg }}
+              />
+            ) : (
+              <p className="text-sm text-ink-faint">Rendering diagram…</p>
+            )}
+          </div>
+        ) : (
+          <div className="code-block-content relative">
+            {code && highlighted && (
+              <div
+                className="shiki-preview"
+                aria-hidden="true"
+                dangerouslySetInnerHTML={{ __html: highlighted }}
+              />
+            )}
 
-      {/* Code content area */}
-      <div className="code-block-content relative">
-        {/* Shiki highlighted preview (visible, non-editable) */}
-        {highlightedHtml && (
-          <div
-            className="shiki-preview absolute inset-0 pointer-events-none overflow-auto rounded-b-lg border border-t-0 border-[var(--theme-code-border)]"
-            dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-            aria-hidden="true"
-          />
+            <pre
+              className={cn(
+                'relative overflow-auto',
+                highlighted ? 'text-transparent caret-ink' : 'text-ink',
+              )}
+            >
+              {/* NodeViewContent's `as` prop is typed to div only; the code
+                  element is what ProseMirror expects inside a code block. */}
+              <NodeViewContent as={'code' as 'div'} />
+            </pre>
+          </div>
         )}
-        
-        {/* Actual editable content (transparent text, handles editing) */}
-        <pre 
-          className={cn(
-            "rounded-b-lg border border-t-0 border-[var(--theme-code-border)] p-4 overflow-auto",
-            "bg-[var(--theme-code-bg)]",
-            highlightedHtml ? "text-transparent caret-[var(--theme-text-primary)]" : "text-[var(--theme-code-text)]"
-          )}
-          style={{ minHeight: '3rem' }}
-        >
-          <NodeViewContent className="font-mono text-sm leading-relaxed block" />
-        </pre>
       </div>
     </NodeViewWrapper>
   );

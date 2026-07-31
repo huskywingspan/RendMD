@@ -10,8 +10,17 @@ interface SearchBarProps {
   showReplace?: boolean;
 }
 
-export function SearchBar({ editor, onClose, showReplace: initialShowReplace = false }: SearchBarProps): JSX.Element {
-  const [searchTerm, setSearchTerm] = useState('');
+export function SearchBar({ editor, onClose, showReplace: initialShowReplace = false }: SearchBarProps) {
+  // Seeded from the selection: pressing Ctrl+F with a word selected should
+  // search for that word. Computed lazily so it lands on the first render
+  // rather than being written in from an effect afterwards.
+  const [searchTerm, setSearchTerm] = useState(() => {
+    const { from, to } = editor.state.selection;
+    if (from === to) return '';
+    const text = editor.state.doc.textBetween(from, to, ' ');
+    // A whole paragraph is a selection, not a search term.
+    return text && text.length < 100 ? text : '';
+  });
   const [replaceTerm, setReplaceTerm] = useState('');
   const [showReplace, setShowReplace] = useState(initialShowReplace);
   const [caseSensitive, setCaseSensitive] = useState(false);
@@ -30,18 +39,13 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
     });
   }, []);
 
-  // Pre-populate with selected text
+  // Push the seeded term into the editor's search state once on mount. The
+  // term itself comes from a lazy useState initialiser (see above) so it is
+  // present on first render rather than arriving a frame later.
   useEffect(() => {
-    const { from, to } = editor.state.selection;
-    if (from !== to) {
-      const text = editor.state.doc.textBetween(from, to, ' ');
-      if (text && text.length < 100) {
-        setSearchTerm(text);
-        editor.commands.setSearchTerm(text);
-      }
-    }
-  // Run only on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (searchTerm) editor.commands.setSearchTerm(searchTerm);
+    // Mount only: later edits flow through handleSearchChange.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearchChange = useCallback(
@@ -122,23 +126,23 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
 
   const inputStyles = cn(
     'flex-1 min-w-0 px-2 py-1 text-sm rounded',
-    'bg-[var(--theme-bg-primary)]',
-    'text-[var(--theme-text-primary)]',
-    'placeholder:text-[var(--theme-text-muted)]',
-    'border border-[var(--theme-border-primary)]',
-    'focus:outline-none focus:border-[var(--theme-accent-primary)]',
+    'bg-canvas',
+    'text-ink',
+    'placeholder:text-ink-faint',
+    'border border-line',
+    'focus:outline-none focus:border-accent',
     'transition-colors',
   );
 
   const btnStyles = cn(
     'p-1 rounded transition-colors',
-    'text-[var(--theme-text-secondary)]',
-    'hover:bg-[var(--theme-bg-tertiary)]',
+    'text-ink-muted',
+    'hover:bg-sunken',
     'disabled:opacity-30 disabled:cursor-not-allowed',
   );
 
   return (
-    <div className="absolute top-0 right-0 z-20 m-2 p-2 rounded-lg border border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] shadow-xl w-[360px] max-w-[calc(100%-1rem)]">
+    <div className="absolute top-0 right-0 z-20 m-2 p-2 rounded-lg border border-line bg-surface shadow-xl w-[360px] max-w-[calc(100%-1rem)]">
       {/* Search row */}
       <div className="flex items-center gap-1">
         <button
@@ -147,7 +151,7 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
           aria-label={showReplace ? 'Hide replace' : 'Show replace'}
           title={showReplace ? 'Hide replace' : 'Show replace'}
         >
-          <Replace size={14} className={cn(showReplace && 'text-[var(--theme-accent-primary)]')} />
+          <Replace size={14} className={cn(showReplace && 'text-accent')} />
         </button>
 
         <input
@@ -163,14 +167,14 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
 
         <button
           onClick={handleCaseSensitiveToggle}
-          className={cn(btnStyles, 'shrink-0', caseSensitive && 'bg-[var(--theme-bg-tertiary)] text-[var(--theme-accent-primary)]')}
+          className={cn(btnStyles, 'shrink-0', caseSensitive && 'bg-sunken text-accent')}
           aria-label="Toggle case sensitivity"
           title="Match case"
         >
           <CaseSensitive size={14} />
         </button>
 
-        <span className="text-xs text-[var(--theme-text-muted)] shrink-0 w-16 text-center tabular-nums">
+        <span className="text-xs text-ink-faint shrink-0 w-16 text-center tabular-nums">
           {matchDisplay}
         </span>
 
@@ -225,8 +229,8 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
             disabled={totalMatches === 0}
             className={cn(
               'shrink-0 px-2 py-1 text-xs rounded transition-colors',
-              'text-[var(--theme-text-secondary)]',
-              'hover:bg-[var(--theme-bg-tertiary)]',
+              'text-ink-muted',
+              'hover:bg-sunken',
               'disabled:opacity-30 disabled:cursor-not-allowed',
             )}
             title="Replace current match"
@@ -239,8 +243,8 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
             disabled={totalMatches === 0}
             className={cn(
               'shrink-0 px-2 py-1 text-xs rounded transition-colors whitespace-nowrap',
-              'text-[var(--theme-text-secondary)]',
-              'hover:bg-[var(--theme-bg-tertiary)]',
+              'text-ink-muted',
+              'hover:bg-sunken',
               'disabled:opacity-30 disabled:cursor-not-allowed',
             )}
             title="Replace all matches"

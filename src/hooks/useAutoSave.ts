@@ -1,95 +1,64 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useEditorStore } from '@/stores/editorStore';
+import { useEffect, useRef } from 'react';
+import { useDocumentsStore } from '@/stores/documentsStore';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { queryPermission } from '@/lib/fs';
 
-const AUTO_SAVE_DELAY_MS = 2000; // 2 seconds after last edit
-
-export interface UseAutoSaveReturn {
-  isSaving: boolean;
-  lastSaved: Date | null;
-  error: Error | null;
-}
+/** How long to wait after the last keystroke before writing to disk. */
+const AUTOSAVE_DELAY_MS = 1200;
 
 /**
- * Hook for auto-saving content after a debounce period.
- * Only saves if a file handle exists and content is dirty.
- * 
- * @param fileHandleRef - Ref to the FileSystemFileHandle
+ * Write dirty documents back to their files a beat after editing stops.
+ *
+ * Two rules keep this from being annoying:
+ *
+ *   Only documents that already have a granted write permission are saved.
+ *   Autosave cannot legally raise a permission prompt — that needs a user
+ *   gesture — so a document whose grant has lapsed simply stays dirty until
+ *   you press Ctrl+S, which can prompt.
+ *
+ *   Untitled documents are never touched. Auto-opening a save dialog for
+ *   something you just started typing would be hostile.
  */
-export function useAutoSave(
-  fileHandleRef: React.MutableRefObject<FileSystemFileHandle | null>
-): UseAutoSaveReturn {
-  const { content, isDirty, markClean, autoSaveEnabled } = useEditorStore();
-  
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const contentRef = useRef(content);
-  
-  // Keep content ref up to date
-  useEffect(() => {
-    contentRef.current = content;
-  }, [content]);
+export function useAutoSave(): void {
+  const autoSave = useSettingsStore((s) => s.autoSave);
+  const documents = useDocumentsStore((s) => s.documents);
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
-  /**
-   * Perform the actual save operation
-   */
-  const performSave = useCallback(async () => {
-    const handle = fileHandleRef.current;
-    
-    // Only save if we have a file handle and content is dirty
-    if (!handle || !isDirty) {
-      return;
-    }
-    
-    setIsSaving(true);
-    setError(null);
-    
-    try {
-      const writable = await handle.createWritable();
-      await writable.write(contentRef.current);
-      await writable.close();
-      
-      markClean();
-      setLastSaved(new Date());
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to auto-save');
-      console.error('Auto-save failed:', error);
-      setError(error);
-      // Don't mark clean on error - keep dirty state
-    } finally {
-      setIsSaving(false);
-    }
-  }, [fileHandleRef, isDirty, markClean]);
-
-  /**
-   * Debounced save - triggers 2s after last content change
-   */
   useEffect(() => {
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+    if (!autoSave) return;
+
+    const pending = timers.current;
+
+    for (const doc of documents) {
+      if (!doc.isDirty || !doc.handle || doc.isUntitled) continue;
+
+      // Restart the countdown on every change, so this debounces the end of a
+      // typing run rather than firing on a fixed interval during one.
+      const existing = pending.get(doc.id);
+      if (existing) clearTimeout(existing);
+
+      const timer = setTimeout(async () => {
+        pending.delete(doc.id);
+
+        const current = useDocumentsStore.getState().documents.find((d) => d.id === doc.id);
+        if (!current?.isDirty || !current.handle) return;
+
+        // Silent path only: no prompting without a gesture.
+        if ((await queryPermission(current.handle, 'readwrite')) !== 'granted') return;
+
+        await useDocumentsStore.getState().save(current.id);
+      }, AUTOSAVE_DELAY_MS);
+
+      pending.set(doc.id, timer);
     }
-    
-    // Only schedule save if auto-save enabled, dirty, and we have a file handle
-    if (autoSaveEnabled && isDirty && fileHandleRef.current) {
-      timeoutRef.current = setTimeout(() => {
-        performSave();
-      }, AUTO_SAVE_DELAY_MS);
-    }
-    
+  }, [autoSave, documents]);
+
+  // Clear every pending timer on unmount.
+  useEffect(() => {
+    const pending = timers.current;
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      for (const timer of pending.values()) clearTimeout(timer);
+      pending.clear();
     };
-  }, [content, isDirty, autoSaveEnabled, fileHandleRef, performSave]);
-
-  return {
-    isSaving,
-    lastSaved,
-    error,
-  };
+  }, []);
 }

@@ -22,23 +22,23 @@ export function exportAsHTML(editor: Editor, fileName: string): void {
       max-width: 800px;
       margin: 0 auto;
       padding: 2rem;
-      color: var(--theme-text-primary, #1a1a1a);
-      background: var(--theme-bg-primary, #ffffff);
+      color: var(--rmd-ink, #1a1a1a);
+      background: var(--rmd-canvas, #ffffff);
     }
     h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; line-height: 1.3; }
-    h1 { font-size: 2em; border-bottom: 1px solid var(--theme-border-primary, #e5e7eb); padding-bottom: 0.3em; }
-    h2 { font-size: 1.5em; border-bottom: 1px solid var(--theme-border-primary, #e5e7eb); padding-bottom: 0.3em; }
+    h1 { font-size: 2em; border-bottom: 1px solid var(--rmd-line, #e5e7eb); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--rmd-line, #e5e7eb); padding-bottom: 0.3em; }
     p { margin: 0.8em 0; }
-    a { color: var(--theme-accent-primary, #3b82f6); }
-    code { background: var(--theme-bg-tertiary, #f3f4f6); padding: 0.2em 0.4em; border-radius: 0.25em; font-size: 0.9em; }
-    pre { background: var(--theme-bg-tertiary, #f3f4f6); padding: 1em; border-radius: 0.5em; overflow-x: auto; }
+    a { color: var(--rmd-accent, #3b82f6); }
+    code { background: var(--rmd-sunken, #f3f4f6); padding: 0.2em 0.4em; border-radius: 0.25em; font-size: 0.9em; }
+    pre { background: var(--rmd-sunken, #f3f4f6); padding: 1em; border-radius: 0.5em; overflow-x: auto; }
     pre code { background: none; padding: 0; }
-    blockquote { border-left: 4px solid var(--theme-accent-primary, #3b82f6); margin: 1em 0; padding: 0.5em 1em; color: var(--theme-text-secondary, #6b7280); }
+    blockquote { border-left: 4px solid var(--rmd-accent, #3b82f6); margin: 1em 0; padding: 0.5em 1em; color: var(--rmd-ink-muted, #6b7280); }
     img { max-width: 100%; height: auto; border-radius: 0.5em; }
     table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-    th, td { border: 1px solid var(--theme-border-primary, #e5e7eb); padding: 0.5em 0.75em; text-align: left; }
-    th { background: var(--theme-bg-secondary, #f9fafb); font-weight: 600; }
-    hr { border: none; border-top: 1px solid var(--theme-border-primary, #e5e7eb); margin: 2em 0; }
+    th, td { border: 1px solid var(--rmd-line, #e5e7eb); padding: 0.5em 0.75em; text-align: left; }
+    th { background: var(--rmd-surface, #f9fafb); font-weight: 600; }
+    hr { border: none; border-top: 1px solid var(--rmd-line, #e5e7eb); margin: 2em 0; }
     ul, ol { padding-left: 1.5em; }
     li { margin: 0.25em 0; }
     ul[data-type="taskList"] { list-style: none; padding-left: 0; }

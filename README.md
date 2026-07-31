@@ -1,136 +1,95 @@
 # RendMD
 
-> **The thinking person's markdown editor**
-> *Intelligent. Elegant. Your data. Open source.*
+**A rendered-first markdown editor.** Open a folder, read your `.md` files properly, edit them in place, save straight back to disk.
 
-## What is RendMD?
+No accounts. No upload. No tracking. Your files never leave your machine — RendMD is a static site that talks directly to your filesystem through the browser.
 
-RendMD is a **rendered-first markdown editor** — edit your documents from their beautifully rendered state, not raw source. Your files stay as portable `.md` files.
+**[rendmd.pages.dev](https://rendmd.pages.dev)**
 
-Built with React, TipTap, and TypeScript. No backend, no accounts, no tracking. Just a fast, beautiful editor that respects your data.
+---
 
-## Features
+## What it's for
 
-- **Rendered-first editing** — click and type in the formatted view
-- **Source view** — toggle between rendered, source, and split views (Ctrl+/)
-- **4 themes** — dark/light basic and glassmorphism variants
-- **Table editing** — visual table manipulation with GFM output
-- **Image handling** — drag-drop, paste, URL, local file, and base64 embedding
-- **Table of Contents** — auto-generated, click to navigate
-- **Frontmatter** — YAML metadata panel with form UI
-- **Export** — HTML download, PDF via print, copy as rich text
-- **Keyboard shortcuts** — full shortcut set with help modal (Ctrl+H)
-- **Settings** — theme, font size, auto-save preferences
-- **Syntax highlighting** — Shiki-powered code blocks with language detection
+Reading and editing markdown that already exists on your disk — notes, READMEs, and the long documents that come out of AI sessions. The whole design is bent around one loop:
 
-## Getting Started
+> open a file → read it comfortably → make an edit → save it back
 
-### Prerequisites
+Everything else is secondary to making that loop feel like nothing.
 
-- Node.js 18+
-- npm 9+
+## What it does
 
-### Install & Run
+**Open a folder, not just a file.** Point RendMD at the directory where you keep your notes. It indexes every markdown file inside, shows them in a tree, and remembers the folder between visits. Files open in tabs.
+
+**Edit what you're reading.** The rendered document *is* the editing surface — click into a heading and change it. Formatting appears when you select text and stays out of the way when you don't. There is no permanent toolbar.
+
+**Save in place.** `Ctrl+S` writes to the original file. Not a download, not a copy in `~/Downloads` — the file you opened.
+
+**Find anything with `Ctrl+K`.** One palette over every file in your workspace, every heading in the current document, and every command. Fuzzy-matched, so `tgfcs` finds "Toggle focus mode".
+
+**Install it.** Chrome and Edge can install RendMD as an app. Once installed, Windows offers it under "Open with" for `.md` files, and it opens in its own window with no browser chrome. It also works offline.
+
+**Read it the way you like.** Sans, serif, or monospace. Adjustable size and line width. Light and dark, with light being warm paper rather than a spreadsheet.
+
+Also: Mermaid diagrams render inline, code blocks are syntax-highlighted, tables and task lists are editable, find-and-replace, YAML frontmatter editing, and export to HTML or PDF.
+
+## Requirements
+
+| Browser | What works |
+|---|---|
+| **Chrome, Edge** | Everything: folders, save-in-place, install, OS file handling. |
+| Firefox, Safari | Open and edit single files. Saving downloads a copy — the File System Access API isn't available. |
+
+The gap isn't RendMD being lazy; writing back to a file you opened is a capability only Chromium ships today. RendMD detects what's available and degrades rather than breaking.
+
+## Running it locally
 
 ```bash
-git clone https://github.com/your-username/rendmd.git
-cd rendmd
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173 in your browser.
-
-### Build for Production
+Then open http://localhost:5173.
 
 ```bash
-npm run build
-npm run preview
+npm run build      # production build into dist/
+npm run preview    # serve that build
+npm run check      # lint + tests + build, what CI runs
 ```
 
-### Run Tests
+## Keyboard
 
-```bash
-npm run test          # Run once
-npm run test:watch    # Watch mode
-npm run test:coverage # With coverage report
-```
+| | |
+|---|---|
+| `Ctrl+K` | Command palette — files, headings, commands |
+| `Ctrl+O` / `Ctrl+N` | Open file / new document |
+| `Ctrl+S` / `Ctrl+Shift+S` | Save / save as |
+| `Ctrl+W` / `Ctrl+Tab` | Close tab / next tab |
+| `Ctrl+B` | Toggle sidebar |
+| `Ctrl+1` `Ctrl+2` `Ctrl+3` | Rendered / split / source |
+| `Ctrl+F` / `Ctrl+H` | Find / find and replace |
+| `Ctrl+Shift+F` | Focus mode |
+| `Ctrl+/` | All shortcuts |
 
-## Keyboard Shortcuts
-
-| Action | Shortcut |
-|--------|----------|
-| Save | Ctrl+S |
-| Open | Ctrl+O |
-| Bold | Ctrl+B |
-| Italic | Ctrl+I |
-| Code | Ctrl+\` |
-| Link | Ctrl+K |
-| Heading 1–3 | Ctrl+1 / 2 / 3 |
-| Toggle source view | Ctrl+/ |
-| Shortcuts help | Ctrl+H |
-| Insert image | Ctrl+Shift+I |
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Framework | React 18 + TypeScript 5 |
-| Editor | TipTap 3 (ProseMirror) |
-| Build | Vite 6 |
-| Styling | Tailwind CSS 4 |
-| State | Zustand 5 |
-| Highlighting | Shiki |
-| Testing | Vitest + Testing Library |
-
-## Project Structure
-
-```
-src/
-├── components/
-│   ├── Editor/           # TipTap editor, toolbar, bubble menu
-│   ├── Sidebar/          # TOC panel
-│   ├── Header/           # App header, theme switcher
-│   ├── Frontmatter/      # YAML metadata panel
-│   ├── Modals/           # Link, image, settings, shortcuts modals
-│   └── UI/               # Reusable UI primitives (Toast, Tooltip, etc.)
-├── hooks/                # Custom React hooks
-├── stores/               # Zustand state stores
-├── themes/               # CSS theme files
-├── utils/                # Helper functions
-├── types/                # TypeScript definitions
-└── App.tsx               # Root component
-```
+Full list in [docs/KEYBOARD.md](docs/KEYBOARD.md), or press `Ctrl+/` in the app. On macOS, `Ctrl` means `⌘`.
 
 ## Documentation
 
-- [Design Document](docs/DESIGN_DOCUMENT.md) — Architecture and coding standards
-- [Project Plan](docs/PROJECT_PLAN.md) — Phases and acceptance criteria
-- [Project Chronicle](docs/PROJECT_CHRONICLE.md) — Decision log and lessons learned
+| | |
+|---|---|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How it's built, and why |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deploying to Cloudflare Pages |
+| [KEYBOARD.md](docs/KEYBOARD.md) | Every shortcut |
+| [DECISIONS.md](docs/DECISIONS.md) | The decisions behind the v2 rewrite |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Working on the code |
 
-## Browser Support
+## Built with
 
-| Browser | Support |
-|---------|---------|
-| Chrome / Edge | Full (native File System Access API) |
-| Firefox | Core features (file input fallback) |
-| Brave | Core features (file input fallback) |
-| Safari | Basic (limited Clipboard API) |
+React 19 · TypeScript 5.9 · Vite 8 · TipTap 3 (ProseMirror) · Tailwind 4 · Zustand 5 · Shiki 4 · Mermaid 11
 
-## Contributing
+## Privacy
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and how to submit changes.
+There is no server. RendMD is static files on a CDN. Your documents, the folder you chose, and your settings live in your browser on your device (IndexedDB and localStorage) and are never transmitted anywhere. There is no analytics script.
 
 ## License
 
 [MIT](LICENSE)
-
-## Roadmap
-
-- **v1.1** — AI writing assistance (BYOK), recent files, file browser sidebar
-- **v1.2** — VS Code extension, Mermaid diagrams, KaTeX math
-- **v2.0** — Plugin API, community themes
-
----
-
-*Built for writers, developers, and thinkers everywhere.*
