@@ -1,270 +1,108 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { X, Search } from 'lucide-react';
-import { cn } from '@/utils/cn';
-import { SHORTCUTS, CATEGORY_LABELS, CATEGORY_ORDER } from '@/utils/shortcuts';
-import type { ShortcutEntry } from '@/types';
+import { useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
+import { Modal } from '@/components/UI/Modal';
+import { COMMANDS, type CommandGroup } from '@/lib/commands';
 
 interface ShortcutsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-function renderKeys(keys: string): React.ReactNode {
-  if (keys === '—') {
-    return <span className="text-ink-faint text-xs italic">Not set</span>;
-  }
+/**
+ * Keyboard reference.
+ *
+ * Generated from the command registry, so it lists what is actually bound
+ * rather than a hand-maintained table that drifts. A handful of bindings
+ * handled directly by the keyboard layer — tab cycling, the palette itself —
+ * are listed separately below.
+ */
 
-  const parts = keys.split('+');
-  return (
-    <span className="flex items-center gap-1">
-      {parts.map((key, index) => (
-        <span key={index}>
-          <kbd
-            className={cn(
-              'inline-flex items-center justify-center',
-              'min-w-[1.5rem] px-1.5 py-0.5',
-              'text-xs font-medium rounded',
-              'bg-sunken',
-              'text-ink',
-              'border border-line',
-              'shadow-sm'
-            )}
-          >
-            {key}
-          </kbd>
-          {index < parts.length - 1 && (
-            <span className="text-ink-faint mx-0.5">+</span>
-          )}
-        </span>
-      ))}
-    </span>
-  );
-}
+const GROUP_ORDER: CommandGroup[] = ['File', 'Workspace', 'Edit', 'View', 'Insert', 'Help'];
 
-export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps): React.ReactElement | null {
-  const [search, setSearch] = useState('');
-  const modalRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+const EXTRA_BINDINGS: { group: CommandGroup; title: string; shortcut: string }[] = [
+  { group: 'Help', title: 'Command palette', shortcut: 'Ctrl+K' },
+  { group: 'View', title: 'Next document', shortcut: 'Ctrl+Tab' },
+  { group: 'View', title: 'Previous document', shortcut: 'Ctrl+Shift+Tab' },
+  { group: 'View', title: 'Jump to document 4–9', shortcut: 'Ctrl+4…9' },
+  { group: 'Edit', title: 'Formatting menu', shortcut: 'Select text' },
+];
 
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose]
-  );
+export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
+  const [query, setQuery] = useState('');
 
-  // Focus trap
-  useEffect(() => {
-    if (!isOpen) return;
+  const grouped = useMemo(() => {
+    const all = [
+      ...COMMANDS.filter((command) => command.shortcut).map((command) => ({
+        group: command.group,
+        title: command.title,
+        shortcut: command.shortcut as string,
+      })),
+      ...EXTRA_BINDINGS,
+    ];
 
-    const modal = modalRef.current;
-    if (!modal) return;
+    const term = query.trim().toLowerCase();
+    const matching = term
+      ? all.filter(
+          (entry) =>
+            entry.title.toLowerCase().includes(term) ||
+            entry.shortcut.toLowerCase().includes(term),
+        )
+      : all;
 
-    const focusableSelectors =
-      'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-    function handleTabTrap(event: KeyboardEvent): void {
-      if (event.key !== 'Tab' || !modal) return;
-
-      const focusableElements = modal.querySelectorAll<HTMLElement>(focusableSelectors);
-      if (focusableElements.length === 0) return;
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-
-      if (event.shiftKey) {
-        if (document.activeElement === firstElement) {
-          event.preventDefault();
-          lastElement.focus();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          event.preventDefault();
-          firstElement.focus();
-        }
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keydown', handleTabTrap);
-
-    // Focus search input on open (skip on touch to avoid soft keyboard)
-    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (!isTouch) {
-      requestAnimationFrame(() => {
-        searchInputRef.current?.focus();
-      });
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('keydown', handleTabTrap);
-    };
-  }, [isOpen, handleKeyDown]);
-
-  // Reset search when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setSearch('');
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const filteredShortcuts = SHORTCUTS.filter((shortcut) => {
-    const query = search.toLowerCase();
-    return (
-      shortcut.action.toLowerCase().includes(query) ||
-      shortcut.keys.toLowerCase().includes(query) ||
-      CATEGORY_LABELS[shortcut.category].toLowerCase().includes(query)
-    );
-  });
-
-  const groupedShortcuts = CATEGORY_ORDER.reduce<
-    Partial<Record<ShortcutEntry['category'], ShortcutEntry[]>>
-  >((acc, category) => {
-    const items = filteredShortcuts.filter((s) => s.category === category);
-    if (items.length > 0) {
-      acc[category] = items;
-    }
-    return acc;
-  }, {});
+    return GROUP_ORDER.map((group) => ({
+      group,
+      entries: matching.filter((entry) => entry.group === group),
+    })).filter((section) => section.entries.length > 0);
+  }, [query]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start pt-12 sm:items-center sm:pt-0 justify-center"
-      role="presentation"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Modal */}
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Keyboard shortcuts"
-        className={cn(
-          'relative z-10 flex flex-col',
-          'w-full max-w-xl max-h-[80vh]',
-          'mx-4 rounded-lg shadow-xl',
-          'bg-canvas',
-          'border border-line'
-        )}
-      >
-        {/* Header */}
-        <div
-          className={cn(
-            'flex items-center justify-between',
-            'px-5 py-4',
-            'border-b border-line'
-          )}
-        >
-          <h2 className="text-lg font-semibold text-ink">
-            Keyboard Shortcuts
-          </h2>
-          <button
-            onClick={onClose}
-            className={cn(
-              'flex items-center justify-center',
-              'w-8 h-8 rounded-md',
-              'text-ink-muted',
-              'hover:bg-sunken',
-              'hover:text-ink',
-              'transition-colors'
-            )}
-            aria-label="Close shortcuts modal"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="px-5 py-3 border-b border-line">
-          <div className="relative">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
-            />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search shortcuts..."
-              className={cn(
-                'w-full pl-9 pr-3 py-2 rounded-md',
-                'text-sm',
-                'bg-surface',
-                'text-ink',
-                'placeholder:text-ink-faint',
-                'border border-line',
-                'focus:outline-none focus:border-accent',
-                'transition-colors'
-              )}
-            />
-          </div>
-        </div>
-
-        {/* Shortcuts List */}
-        <div className="flex-1 overflow-y-auto px-5 py-3">
-          {/* Touch device note */}
-          {typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0) && (
-            <p className="text-sm text-ink-faint text-center py-3 px-4 mb-3 rounded-md bg-surface">
-              Keyboard shortcuts are designed for desktop use. On mobile, use the toolbar and menu instead.
-            </p>
-          )}
-          {Object.keys(groupedShortcuts).length === 0 ? (
-            <p className="text-sm text-ink-faint text-center py-6">
-              No shortcuts found for &ldquo;{search}&rdquo;
-            </p>
-          ) : (
-            CATEGORY_ORDER.map((category) => {
-              const items = groupedShortcuts[category];
-              if (!items) return null;
-
-              return (
-                <div key={category} className="mb-4 last:mb-0">
-                  <h3
-                    className={cn(
-                      'text-xs font-semibold uppercase tracking-wider',
-                      'text-accent',
-                      'mb-2'
-                    )}
-                  >
-                    {CATEGORY_LABELS[category]}
-                  </h3>
-                  <div className="space-y-1">
-                    {items.map((shortcut) => (
-                      <div
-                        key={shortcut.action}
-                        className={cn(
-                          'flex items-center justify-between',
-                          'px-3 py-1.5 rounded-md',
-                          'hover:bg-surface',
-                          'transition-colors'
-                        )}
-                      >
-                        <span className="text-sm text-ink">
-                          {shortcut.action}
-                        </span>
-                        {renderKeys(shortcut.keys)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Keyboard shortcuts" size="lg">
+      <div className="relative mb-4">
+        <Search
+          size={14}
+          className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-ink-faint"
+          aria-hidden
+        />
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Filter shortcuts"
+          aria-label="Filter shortcuts"
+          className="h-8 w-full rounded-md border border-line bg-sunken pr-2.5 pl-8 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+        />
       </div>
-    </div>
+
+      {grouped.length === 0 ? (
+        <p className="py-6 text-center text-sm text-ink-faint">Nothing matches “{query}”</p>
+      ) : (
+        <div className="columns-1 gap-8 sm:columns-2">
+          {grouped.map(({ group, entries }) => (
+            <section key={group} className="mb-5 break-inside-avoid">
+              <h3 className="mb-1.5 text-2xs font-medium tracking-wide text-ink-faint uppercase">
+                {group}
+              </h3>
+              <ul className="flex flex-col gap-0.5">
+                {entries.map((entry) => (
+                  <li
+                    key={`${entry.title}-${entry.shortcut}`}
+                    className="flex items-center justify-between gap-3 py-0.5"
+                  >
+                    <span className="min-w-0 truncate text-sm text-ink-muted">{entry.title}</span>
+                    <kbd className="kbd shrink-0">{entry.shortcut}</kbd>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+
+      <p className="mt-2 border-t border-line pt-3 text-xs leading-relaxed text-ink-faint">
+        On macOS, Ctrl means ⌘. Standard editing shortcuts — bold, italic, undo, select all — work
+        as they do everywhere else.
+      </p>
+    </Modal>
   );
 }
 

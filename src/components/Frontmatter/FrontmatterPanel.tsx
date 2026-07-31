@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ChevronDown, Plus, X } from 'lucide-react';
-import { useEditorStore } from '@/stores/editorStore';
+import { useActiveDocument, useDocumentsStore } from '@/stores/documentsStore';
 import { 
   COMMON_FRONTMATTER_FIELDS, 
   updateFrontmatterField,
@@ -8,6 +8,7 @@ import {
   formatTags
 } from '@/utils/frontmatterParser';
 import { cn } from '@/utils/cn';
+import type { Frontmatter } from '@/types';
 
 /**
  * FrontmatterPanel - Collapsible panel for editing document frontmatter
@@ -16,7 +17,15 @@ import { cn } from '@/utils/cn';
  * custom key-value pairs.
  */
 export function FrontmatterPanel() {
-  const { frontmatter, setFrontmatter } = useEditorStore();
+  const doc = useActiveDocument();
+  const frontmatter = doc?.frontmatter ?? null;
+  const setDocumentFrontmatter = useDocumentsStore((s) => s.setFrontmatter);
+  const setFrontmatter = useCallback(
+    (next: Frontmatter | null) => {
+      if (doc) setDocumentFrontmatter(doc.id, next);
+    },
+    [doc, setDocumentFrontmatter],
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [newFieldKey, setNewFieldKey] = useState('');
 
