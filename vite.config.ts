@@ -78,11 +78,12 @@ export default defineConfig({
         // Precache the shell — app code, styles, fonts, icons — so RendMD
         // opens instantly and works with no network.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        // ...but not the syntax grammars. Precaching all thirty put 3.8 MB on
-        // disk at install for languages a given user will mostly never open.
-        // They are cached on first use instead (see runtimeCaching below),
-        // which takes the install down to about 1 MB.
-        globIgnores: ['**/langs/**'],
+        // ...but not the syntax grammars or the diagram renderer. Precaching
+        // all thirty grammars plus Mermaid put nearly 5 MB on disk at install,
+        // for languages and diagram types a given user mostly never opens.
+        // Both are cached on first use instead (see runtimeCaching below),
+        // which takes the install down to about 1.5 MB.
+        globIgnores: ['**/langs/**', '**/diagrams/**'],
         maximumFileSizeToCacheInBytes: 1024 * 1024,
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
@@ -90,12 +91,20 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern: /\/assets\/langs\/.*\.js$/,
-            // Grammars are content-hashed and immutable, so once one is
-            // cached it never needs revalidating.
+            // Content-hashed and immutable, so once cached, never revalidated.
             handler: 'CacheFirst',
             options: {
               cacheName: 'rendmd-syntax-grammars',
               expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/assets\/diagrams\/.*\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'rendmd-diagrams',
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 90 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
@@ -124,13 +133,18 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
-        // Syntax grammars go in their own directory so the service worker can
-        // tell them apart from app code by path and cache them lazily.
+        // Syntax grammars and the diagram renderer go in their own directories
+        // so the service worker can tell them apart from app code by path and
+        // cache them lazily rather than at install.
         chunkFileNames(chunkInfo) {
-          const fromShikiLangs = chunkInfo.moduleIds?.some((id) =>
-            id.includes('@shikijs/langs'),
-          );
-          return fromShikiLangs ? 'assets/langs/[name]-[hash].js' : 'assets/[name]-[hash].js';
+          const ids = chunkInfo.moduleIds ?? [];
+          if (ids.some((id) => id.includes('@shikijs/langs'))) {
+            return 'assets/langs/[name]-[hash].js';
+          }
+          if (ids.some((id) => id.includes('mermaid') || id.includes('dagre') || id.includes('cytoscape'))) {
+            return 'assets/diagrams/[name]-[hash].js';
+          }
+          return 'assets/[name]-[hash].js';
         },
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;

@@ -86,9 +86,18 @@ export default function App() {
   useEffect(() => {
     const media = window.matchMedia(`(max-width: ${COMPACT_BREAKPOINT - 1}px)`);
     const sync = () => setCompact(media.matches);
+
     sync();
     media.addEventListener('change', sync);
-    return () => media.removeEventListener('change', sync);
+    // Belt and braces: a page zoom or a mobile browser's collapsing toolbar
+    // can change the effective width without the media query re-evaluating in
+    // the same tick. setCompact is idempotent, so the extra calls are free.
+    window.addEventListener('resize', sync);
+
+    return () => {
+      media.removeEventListener('change', sync);
+      window.removeEventListener('resize', sync);
+    };
   }, [setCompact]);
 
   /* ── Unsaved-work guard ────────────────────────────────────────────────── */

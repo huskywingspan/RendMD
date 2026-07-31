@@ -455,3 +455,18 @@
   tab-size: 2;
   background: none !important;
 }
+
+/* ── Mermaid ──────────────────────────────────────────────────────────────
+ * Diagrams size themselves to the block rather than the measure, and the
+ * container scrolls so a wide flowchart never widens the page.
+ * ─────────────────────────────────────────────────────────────────────── */
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-diagram .messageText,
+.mermaid-diagram .nodeLabel,
+.mermaid-diagram .edgeLabel {
+  font-family: var(--rmd-font-sans) !important;
+}
