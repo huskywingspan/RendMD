@@ -76,13 +76,16 @@ export function useOutline(editor: Editor | null): UseOutlineResult {
   /* ── Active heading ────────────────────────────────────────────────────── */
 
   useEffect(() => {
-    if (!editor || items.length === 0) {
+    if (!editor || editor.isDestroyed || items.length === 0) {
       setActiveId(null);
       return;
     }
 
-    const scroller = editor.view.dom.closest('[data-scroll-container]');
-    if (!(scroller instanceof HTMLElement)) return;
+    // `editor.view` throws if the ProseMirror view hasn't attached yet, which
+    // is the case on the first pass when the editor is handed up during
+    // onCreate. Nothing to observe until it exists.
+    const scroller = getScrollContainer(editor);
+    if (!scroller) return;
 
     // Elements resolved fresh each run: ProseMirror replaces DOM nodes freely.
     const elements = new Map<Element, string>();
@@ -137,7 +140,16 @@ function headingElementAt(editor: Editor, pos: number): HTMLElement | null {
     if (node instanceof HTMLElement) return node;
     return node?.parentElement ?? null;
   } catch {
-    // Position went stale between extraction and lookup.
+    // Position went stale between extraction and lookup, or the view is gone.
+    return null;
+  }
+}
+
+function getScrollContainer(editor: Editor): HTMLElement | null {
+  try {
+    const found = editor.view.dom.closest('[data-scroll-container]');
+    return found instanceof HTMLElement ? found : null;
+  } catch {
     return null;
   }
 }

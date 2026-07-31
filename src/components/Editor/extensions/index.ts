@@ -112,18 +112,19 @@ export interface EditorExtensionOptions {
 /**
  * Create editor extensions with theme awareness
  */
-export function createEditorExtensions(isDarkOrOptions: boolean | EditorExtensionOptions = true) {
-  const opts: EditorExtensionOptions = typeof isDarkOrOptions === 'boolean'
-    ? { isDark: isDarkOrOptions }
-    : isDarkOrOptions;
-  const isDark = opts.isDark ?? true;
+export function createEditorExtensions(options: EditorExtensionOptions = {}) {
+  const isDark = options.isDark ?? true;
   return [
     StarterKit.configure({
-      heading: {
-        levels: [1, 2, 3, 4, 5, 6],
-      },
-      // Disable built-in code block, we use CodeBlockShiki instead
+      heading: { levels: [1, 2, 3, 4, 5, 6] },
+      // Replaced below by CodeBlockShiki, which adds highlighting and a
+      // language picker. Leaving both on registers two nodes for the same
+      // name and TipTap warns about it.
       codeBlock: false,
+      // StarterKit bundles Link as of TipTap 3.x; ours is configured
+      // differently (click-to-edit rather than click-to-follow), so its
+      // version has to be turned off or the names collide.
+      link: false,
     }),
     CodeBlockShiki.configure({
       isDark,
@@ -169,5 +170,5 @@ export function createEditorExtensions(isDarkOrOptions: boolean | EditorExtensio
   ];
 }
 
-// Default extensions (dark mode)
-export const editorExtensions = createEditorExtensions(true);
+/** Default set, dark theme. Used by tests and the markdown round-trip check. */
+export const editorExtensions = createEditorExtensions({ isDark: true });

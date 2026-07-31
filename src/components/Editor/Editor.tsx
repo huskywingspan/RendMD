@@ -58,9 +58,16 @@ export function Editor({
         class: 'prose-surface focus:outline-none min-h-full',
       },
     },
-    onCreate: ({ editor }) => onEditorReady?.(editor),
     onUpdate: ({ editor }) => onChangeRef.current(getMarkdown(editor)),
   });
+
+  // Handed up from an effect rather than TipTap's onCreate: at onCreate time
+  // the ProseMirror view has not attached yet, and consumers that reach for
+  // editor.view (the outline observer) would throw. By the time this runs,
+  // EditorContent has rendered and the view exists.
+  useEffect(() => {
+    if (editor) onEditorReady?.(editor);
+  }, [editor, onEditorReady]);
 
   // Spellcheck is set as a live DOM attribute rather than an editor option, so
   // toggling it doesn't tear the editor down.
