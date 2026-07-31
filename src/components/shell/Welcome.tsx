@@ -2,7 +2,7 @@ import { FilePlus2, FolderOpen, FolderTree, Keyboard, Upload } from 'lucide-reac
 import { useDocumentsStore } from '@/stores/documentsStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { useUIStore } from '@/stores/uiStore';
-import { supportsDirectoryPicker } from '@/lib/fs';
+import { useBrowserSupport } from '@/hooks/useBrowserSupport';
 import { cn } from '@/utils/cn';
 
 /**
@@ -18,6 +18,7 @@ export function Welcome() {
   const chooseFolder = useWorkspaceStore((s) => s.chooseFolder);
   const workspaceStatus = useWorkspaceStore((s) => s.status);
   const openOverlay = useUIStore((s) => s.openOverlay);
+  const { canOpenFolders, isBrave } = useBrowserSupport();
 
   const hasWorkspace = workspaceStatus === 'ready' || workspaceStatus === 'scanning';
 
@@ -31,7 +32,7 @@ export function Welcome() {
         </p>
 
         <div className="mt-7 flex flex-col gap-2">
-          {!hasWorkspace && supportsDirectoryPicker && (
+          {!hasWorkspace && canOpenFolders && (
             <PrimaryAction
               icon={<FolderTree size={17} />}
               title="Open a folder"
@@ -66,12 +67,19 @@ export function Welcome() {
           window.
         </p>
 
-        {!supportsDirectoryPicker && (
-          <p className="mt-3 text-sm leading-relaxed text-ink-faint">
-            This browser can't open folders or save in place — that needs Chrome or Edge. Opening
-            individual files works, and saving will download a copy.
-          </p>
-        )}
+        {!canOpenFolders &&
+          (isBrave ? (
+            <p className="mt-3 text-sm leading-relaxed text-ink-faint">
+              Brave blocks the File System Access API by default, so folders and saving in place are
+              unavailable — Shields isn't involved. Enable <strong>File System</strong> at{' '}
+              <code className="font-mono text-xs">brave://flags</code> and restart to turn them on.
+            </p>
+          ) : (
+            <p className="mt-3 text-sm leading-relaxed text-ink-faint">
+              This browser can't open folders or save in place — that needs Chrome or Edge. Opening
+              individual files works, and saving will download a copy.
+            </p>
+          ))}
       </div>
     </div>
   );

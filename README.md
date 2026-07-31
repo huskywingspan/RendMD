@@ -37,9 +37,16 @@ Also: Mermaid diagrams render inline, code blocks are syntax-highlighted, tables
 | Browser | What works |
 |---|---|
 | **Chrome, Edge** | Everything: folders, save-in-place, install, OS file handling. |
+| **Brave** | Everything, *after* enabling one flag — see below. |
 | Firefox, Safari | Open and edit single files. Saving downloads a copy — the File System Access API isn't available. |
 
 The gap isn't RendMD being lazy; writing back to a file you opened is a capability only Chromium ships today. RendMD detects what's available and degrades rather than breaking.
+
+### Brave
+
+Brave blocks the File System Access API by default, listing it among its deviations from Chromium. Shields has nothing to do with it, so turning Shields off doesn't help.
+
+Open `brave://flags`, search for **File System**, set it to Enabled, and restart. Folders and save-in-place then work exactly as they do in Chrome. RendMD detects Brave and says so in place rather than telling you to go and install another browser.
 
 ## Running it locally
 

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore, type TreeNode } from '@/stores/workspaceStore';
 import { useDocumentsStore } from '@/stores/documentsStore';
+import { useBrowserSupport } from '@/hooks/useBrowserSupport';
 import { IconButton } from '@/components/UI/IconButton';
 import { cn } from '@/utils/cn';
 
@@ -34,6 +35,7 @@ export function FileTree() {
   const refresh = useWorkspaceStore((s) => s.refresh);
   const closeFolder = useWorkspaceStore((s) => s.closeFolder);
 
+  const { isBrave } = useBrowserSupport();
   const [filter, setFilter] = useState('');
 
   const filtered = useMemo(() => {
@@ -43,11 +45,30 @@ export function FileTree() {
   }, [filter, files]);
 
   if (status === 'unsupported') {
+    // Brave has the capability but ships it disabled, so the fix is a setting
+    // rather than a different browser. Saying "use Chrome" to a Brave user is
+    // both wrong and sends them looking in Shields, which isn't involved.
+    if (isBrave) {
+      return (
+        <EmptyPanel
+          icon={<Folder size={20} />}
+          title="Brave has this turned off"
+          body="Brave blocks the File System Access API by default, which is what folders and saving in place both use. Shields doesn't affect it — it's a browser flag."
+          steps={[
+            'Open brave://flags',
+            'Search for "File System"',
+            'Set it to Enabled, then restart Brave',
+          ]}
+          footnote="If it isn't there in your version, Chrome and Edge have it on by default."
+        />
+      );
+    }
+
     return (
       <EmptyPanel
         icon={<Folder size={20} />}
         title="Folders need Chrome or Edge"
-        body="Opening a whole folder uses the File System Access API, which Firefox and Safari haven't shipped. You can still open individual files."
+        body="Opening a whole folder uses the File System Access API, which Firefox and Safari haven't shipped. You can still open individual files, but saving will download a copy rather than write back."
       />
     );
   }
@@ -247,18 +268,33 @@ interface EmptyPanelProps {
   icon: React.ReactNode;
   title: string;
   body: string;
+  /** Numbered instructions, for the cases the user can fix themselves. */
+  steps?: string[];
+  footnote?: string;
   action?: { label: string; onPress: () => void };
   secondary?: { label: string; onPress: () => void };
 }
 
-function EmptyPanel({ icon, title, body, action, secondary }: EmptyPanelProps) {
+function EmptyPanel({ icon, title, body, steps, footnote, action, secondary }: EmptyPanelProps) {
   return (
-    <div className="flex flex-1 flex-col items-start gap-2.5 px-4 py-6">
+    <div className="flex flex-1 flex-col items-start gap-2.5 overflow-y-auto px-4 py-6">
       <span className="text-ink-faint" aria-hidden>
         {icon}
       </span>
       <h2 className="text-md font-medium text-ink">{title}</h2>
       <p className="text-sm leading-relaxed text-ink-muted">{body}</p>
+
+      {steps && (
+        <ol className="mt-1 flex list-decimal flex-col gap-1.5 pl-4 text-sm text-ink-muted marker:text-ink-faint">
+          {steps.map((step) => (
+            <li key={step} className="pl-0.5 leading-relaxed">
+              {step}
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {footnote && <p className="text-xs leading-relaxed text-ink-faint">{footnote}</p>}
 
       {action && (
         <button

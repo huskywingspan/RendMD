@@ -11,7 +11,7 @@ import {
 import { Modal, Section, Field, Toggle, SegmentedControl } from '@/components/UI/Modal';
 import { clearSession } from '@/lib/sessionStore';
 import { toast } from '@/stores/toastStore';
-import { supportsDirectoryPicker, supportsFileSystemAccess } from '@/lib/fs';
+import { useBrowserSupport } from '@/hooks/useBrowserSupport';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -39,6 +39,7 @@ const MEASURES: { value: ReadingMeasure; label: string }[] = [
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const settings = useSettingsStore();
+  const { canWriteFiles, canOpenFolders, isBrave } = useBrowserSupport();
   const [confirmingReset, setConfirmingReset] = useState(false);
 
   return (
@@ -122,20 +123,30 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       </Section>
 
       <Section title="This browser">
-        <p className="text-sm leading-relaxed text-ink-muted">
-          {supportsFileSystemAccess ? (
-            <>
-              Full file access is available: RendMD can open files and save changes straight back to
-              them.
-              {!supportsDirectoryPicker && ' Opening whole folders is not supported here.'}
-            </>
-          ) : (
-            <>
-              This browser can't write files in place. You can open documents, and saving will
-              download a copy instead. Chrome or Edge give the full experience.
-            </>
-          )}
-        </p>
+        {canWriteFiles ? (
+          <p className="text-sm leading-relaxed text-ink-muted">
+            Full file access is available: RendMD can open files and save changes straight back to
+            them.
+            {!canOpenFolders && ' Opening whole folders is not supported here.'}
+          </p>
+        ) : isBrave ? (
+          <>
+            <p className="text-sm leading-relaxed text-ink-muted">
+              Brave blocks the File System Access API by default, so RendMD can't open folders or
+              save in place — it downloads a copy instead. Shields doesn't affect this; it's a
+              browser flag.
+            </p>
+            <p className="text-sm leading-relaxed text-ink-muted">
+              Open <code className="font-mono text-xs">brave://flags</code>, search for{' '}
+              <strong>File System</strong>, set it to Enabled, and restart Brave.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm leading-relaxed text-ink-muted">
+            This browser can't write files in place. You can open documents, and saving will
+            download a copy instead. Chrome or Edge give the full experience.
+          </p>
+        )}
       </Section>
 
       <Section title="Data">
