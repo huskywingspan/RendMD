@@ -2,7 +2,7 @@
 
 ## Setup
 
-Node 20+ and npm 10+.
+Node 22.22.2+ (see `.node-version`) and npm 10+.
 
 ```bash
 git clone https://github.com/huskywingspan/RendMD.git
@@ -21,11 +21,25 @@ Dev server at http://localhost:5173.
 | `npm run test` | Tests once |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run check` | Lint + test + build — what CI runs |
-| `npm run icons` | Regenerate PWA icons from `public/icons/*.svg` |
+| `npm run icons` | Regenerate PWA icons from `public/icons/*.svg` (fetches sharp on demand) |
 
 Use Chrome or Edge for development. The File System Access API — folders, saving in place — doesn't exist elsewhere, and you'll be testing the fallback path without meaning to.
 
 Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before making structural changes, and [docs/DECISIONS.md](docs/DECISIONS.md) before undoing something that looks odd. Several things that look like oversights are load-bearing.
+
+### A note on the lockfile
+
+Regenerate it with `npm install --package-lock-only`, not a plain `npm install`.
+
+Vite's Rolldown and Tailwind's Oxide both ship platform-specific native
+binaries with WASM fallbacks. A plain `npm install` on Windows or macOS prunes
+the transitive dependencies of the variants it didn't select, producing a
+lockfile that installs fine locally and then fails `npm ci` on Linux CI with
+"Missing: @emnapi/... from lock file". `--package-lock-only` resolves from
+registry metadata instead and records every platform.
+
+If you change dependencies, run `npm ci` afterwards to prove the lockfile is
+complete before pushing.
 
 ## Conventions
 

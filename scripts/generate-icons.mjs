@@ -1,10 +1,15 @@
 /**
  * Rasterise the PWA icon set from public/icons/*.svg.
  *
- * Run with `npm run icons` after editing either SVG. The PNGs are committed
- * because the build must not depend on sharp being installable — it ships
- * native binaries, and a CI runner that can't fetch them shouldn't take the
- * deploy down with it.
+ * Run with `npm run icons` after editing either SVG. The generated PNGs are
+ * committed, so this is a maintenance tool rather than a build step.
+ *
+ * sharp is deliberately NOT a devDependency. It ships platform-specific native
+ * binaries, and having it in the tree once produced a lockfile that installed
+ * on Windows but not on Linux CI — which broke a deploy for a tool that runs
+ * roughly never. Install it on demand instead:
+ *
+ *     npx --yes -p sharp node scripts/generate-icons.mjs
  *
  * Two sources:
  *   icon.svg           full-bleed, used for the browser tab, install prompt
@@ -12,10 +17,21 @@
  *   icon-maskable.svg  artwork inset to the safe zone, so Android launchers
  *                      can crop it to a circle/squircle without clipping.
  */
-import sharp from 'sharp';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+
+let sharp;
+try {
+  ({ default: sharp } = await import('sharp'));
+} catch {
+  console.error(
+    'sharp is not installed. It is kept out of devDependencies on purpose —\n' +
+      'see the note at the top of this file. Run:\n\n' +
+      '  npx --yes -p sharp node scripts/generate-icons.mjs\n',
+  );
+  process.exit(1);
+}
 
 const iconsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'icons');
 

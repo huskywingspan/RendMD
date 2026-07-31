@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run lint && npm run test && npm run build",
+    "icons": "npx --yes -p sharp node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
@@ -65,12 +66,14 @@
     "globals": "^17.8.0",
     "jsdom": "^30.0.1",
     "prettier": "^3.9.6",
-    "sharp": "^0.35.3",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.65.0",
     "vite": "^8.2.0",
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22.22.2"
   }
 }
