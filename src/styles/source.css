@@ -1,0 +1,90 @@
+/**
+ * The source editor's two layers.
+ *
+ * Source view is a transparent <textarea> stacked over a syntax-highlighted
+ * copy of the same text. The caret comes from the textarea; every glyph you
+ * see comes from the layer underneath. They are therefore only usable while
+ * their text metrics agree *exactly* — same font, size, line height, padding,
+ * tab size, and, critically, the same wrapping.
+ *
+ * When they disagree the failure is silent and severe: the caret sits at one
+ * document offset while the text under it belongs to another, so you edit a
+ * line you are not looking at. That shipped. Shiki emits a <pre>, the UA
+ * stylesheet gives <pre> `white-space: pre`, and the textarea wraps with
+ * `pre-wrap` — so every line long enough to wrap pushed the two out of step by
+ * a further row. One wrapped paragraph was enough to make backspace delete
+ * from the row above; a long document drifted by ten.
+ *
+ * The rules below exist to make that impossible rather than unlikely:
+ *
+ *   - Metrics are declared once, on `.source-metrics`, and applied to BOTH
+ *     layers. Neither can drift from the other because there is nothing to
+ *     drift from.
+ *   - Everything Shiki or the UA puts on <pre>/<code> is neutralised and made
+ *     to inherit, so no descendant can reintroduce a difference.
+ *
+ * src/styles/__tests__/source-alignment.test.ts asserts these declarations
+ * exist. That test is not pedantry: this file having been deleted, and nobody
+ * noticing, is the actual history of this bug.
+ */
+
+.source-metrics {
+  font-family: var(--rmd-font-mono);
+  /* A step below the reading size: source is scanned, not read. */
+  font-size: calc(var(--reading-size) * 0.82);
+  line-height: 1.65;
+  letter-spacing: normal;
+  tab-size: 2;
+  font-variant-ligatures: none;
+  /* Both layers must break lines at precisely the same points. */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  padding: 1.5rem;
+}
+
+/*
+ * Shiki wraps its output in <pre><code>, and both carry UA and theme styling
+ * that would otherwise override the container. Everything here inherits, so
+ * `.source-metrics` stays the single source of truth.
+ */
+.source-highlight pre,
+.source-highlight code,
+.source-highlight .line {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent !important;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  tab-size: inherit;
+  white-space: inherit;
+  overflow-wrap: inherit;
+  word-break: inherit;
+}
+
+/* The highlighted layer is a backdrop: never interactive, never selectable. */
+.source-highlight {
+  pointer-events: none;
+  user-select: none;
+}
+
+/*
+ * The textarea sits on top with transparent text, so the highlighted copy
+ * shows through while the caret and selection remain real.
+ */
+.source-textarea {
+  color: transparent;
+  caret-color: var(--rmd-ink);
+  background: transparent;
+  border: 0;
+  resize: none;
+  outline: none;
+}
+
+.source-textarea::selection {
+  /* Selection has to be visible against text it does not itself draw. */
+  background-color: var(--rmd-selection);
+}

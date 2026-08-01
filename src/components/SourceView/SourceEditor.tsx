@@ -11,22 +11,14 @@ interface SourceEditorProps {
   scrollContainerRef?: (el: HTMLElement | null) => void;
 }
 
-// Shared text styling for perfect alignment between textarea and Shiki output
-const TEXT_STYLES = {
-  fontFamily: 'var(--rmd-font-mono)',
-  // Steps down from the reading size: source is scanned, not read.
-  fontSize: 'calc(var(--reading-size) * 0.82)',
-  lineHeight: '1.65',
-  tabSize: 2,
-  fontVariantLigatures: 'none',
-} as const;
-
 /**
  * SourceEditor — markdown source with Shiki syntax highlighting.
  *
  * An overlay: a transparent textarea for editing over highlighted HTML for
- * display. Both must share exact text metrics or the caret drifts from the
- * glyphs.
+ * display. Both carry `.source-metrics`, which declares their text metrics in
+ * one place — see src/styles/source.css. They must wrap identically or the
+ * caret ends up at a different document offset than the text drawn beneath it,
+ * and you silently edit a line you are not looking at.
  *
  * The textarea is *locally* controlled rather than driven straight from the
  * prop, and that is load-bearing rather than stylistic. Feeding a transformed
@@ -79,7 +71,12 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
     
     const highlight = async () => {
       try {
-        const html = await highlightCode(text || ' ', 'markdown', isDark);
+        // A trailing newline is appended so the highlighted layer ends with
+        // the same empty line box the textarea reserves. Without it the
+        // backdrop is one row shorter, and the two scroll out of step over
+        // the final row.
+        const html = await highlightCode(`${text}
+`, 'markdown', isDark);
         
         if (!cancelled) {
           setHighlightedHtml(html);
@@ -88,7 +85,8 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
         console.warn('Shiki highlighting failed:', error);
         if (!cancelled) {
           // Fallback to plain text
-          setHighlightedHtml(`<pre style="margin:0;"><code>${escapeHtml(text)}</code></pre>`);
+          setHighlightedHtml(`<pre><code>${escapeHtml(text)}
+</code></pre>`);
         }
       }
     };
@@ -118,16 +116,11 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
       "bg-sunken",
       className
     )}>
-      {/* Shiki highlighted background (non-interactive) */}
+      {/* Highlighted backdrop. Never interactive; the textarea is on top. */}
       <div
         ref={highlightRef}
-        className="source-highlight pointer-events-none absolute inset-0 overflow-auto p-6"
+        className="source-highlight source-metrics absolute inset-0 overflow-auto"
         aria-hidden="true"
-        style={{
-          ...TEXT_STYLES,
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-        }}
         dangerouslySetInnerHTML={{ __html: highlightedHtml }}
       />
       
@@ -137,17 +130,7 @@ export function SourceEditor({ value, onChange, className, onScrollSync, scrollC
         value={text}
         onChange={handleChange}
         onScroll={handleScroll}
-        className={cn(
-          "source-textarea absolute inset-0 w-full h-full",
-          "m-0 resize-none p-6",
-          "bg-transparent text-transparent caret-ink",
-          "outline-none border-none"
-        )}
-        style={{
-          ...TEXT_STYLES,
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-        }}
+        className="source-textarea source-metrics absolute inset-0 h-full w-full overflow-auto"
         spellCheck={false}
         autoComplete="off"
         autoCorrect="off"

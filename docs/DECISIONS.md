@@ -179,3 +179,17 @@ Source view is a controlled textarea. Every keystroke went text → parse → st
 **Decision.** Autosave declines to write when a document has lost more than 60% of its saved length, and offers a "Save anyway" action instead. Manual `Ctrl+S` is never blocked.
 
 **Why.** Autosave is a convenience; overwriting a file with a fraction of its former contents, unprompted, is not. Deleting most of a document deliberately costs one click. Doing it by accident now leaves time to undo.
+
+---
+
+## 17. The source view's two layers share one definition of their metrics
+
+**Context.** Source view is a transparent `<textarea>` stacked over a syntax-highlighted copy of the same text. The caret belongs to the textarea; every visible glyph belongs to the layer beneath.
+
+That only works while their text metrics agree exactly. The rules enforcing this lived in `src/index.css`, which the v2 overhaul deleted without recreating them. Shiki emits a `<pre>`, the UA stylesheet gives `<pre>` `white-space: pre`, and the textarea wraps with `pre-wrap` — so every line long enough to wrap pushed the layers a further row apart. Clicking on the row you could see put the caret in the row above it, and you edited a line you were not looking at.
+
+**Decision.** Metrics are declared once, in `.source-metrics`, and applied to *both* layers. Everything the UA or Shiki puts on `<pre>`/`<code>` is neutralised to `inherit`. The highlighted text is given a trailing newline so both layers reserve the same final line box.
+
+**Why a test that reads CSS.** `src/styles/__tests__/source-alignment.test.ts` asserts the declarations exist and that the stylesheet is imported. Testing CSS is unusual and normally not worth it — but the failure here is silent, corrupts documents, and its actual cause was a file being deleted during a tidy-up with nothing to notice. Removing the import alone fails the suite.
+
+**The wider lesson.** A design where two independently-styled elements must agree pixel-for-pixel has no safe failure mode: when it breaks, it does not look broken. The alternative is a real code editor component (CodeMirror), which is correct by construction rather than by matching declarations. That remains the better long-term answer; the guard above is what makes the current approach defensible in the meantime.
