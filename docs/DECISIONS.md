@@ -135,3 +135,47 @@ The test earned itself immediately: it caught `ink-faint` at 3.79:1 against the 
 **Decision.** 5.9.3.
 
 **Why.** `typescript-eslint` declares `typescript >=4.8.4 <6.1.0`. Adopting TS 7 means dropping type-aware linting until the ecosystem catches up, and TS 7's benefit here is compile speed on a codebase that already typechecks in seconds. Worth revisiting once `typescript-eslint` supports it.
+
+---
+
+## 13. The document, not the parsed object, is the source of truth
+
+**Context.** Documents were stored as a parsed `frontmatter` object plus a `content` body, and the full text was rebuilt on demand by re-serialising the object. That reconstruction is not an identity: it drops YAML comments, rewrites quoting, normalises CRLF to LF, and inserts a blank line after the closing delimiter.
+
+Source view is a controlled textarea. Every keystroke went text → parse → store → *rebuild* → back into the textarea. When the rebuilt text differed from what was typed, the replacement landed under the cursor, and the next keypress edited the wrong offset. Backspacing deleted lines elsewhere in the file, and autosave wrote the result to disk.
+
+**Decision.** The document keeps its frontmatter block as verbatim source. `documentText` is `block + content` — a plain concatenation. The parsed object is a *view*, used by the frontmatter panel, and the block is regenerated only when that panel actually edits a field.
+
+**Why.** A round trip through an editor must be lossless, or the editor is not safe to type in. Storing the parsed form and rebuilding is the kind of design that looks tidier and is quietly destructive; the identity `join(split(x)) === x` is now asserted over fourteen document shapes, and nine of those tests fail against the old implementation.
+
+---
+
+## 14. One writer at a time in split view
+
+**Context.** Split view mounts two editors over one document. Both wrote to the same `content` field, so a ProseMirror transaction — a table column resize is enough, since it rewrites cell attributes — would serialise the rendered pane's copy over newer text typed in the source pane.
+
+**Decision.** In split view, only the pane with focus propagates its edits; the other adopts changes instead. With a single pane the guard is off entirely.
+
+**Why.** The first attempt gated on `editor.isFocused` read inside the transaction, unconditionally. That broke toolbar buttons: a command chain's `.focus()` had not settled when the check ran, so "delete row" silently did nothing. Dropping a user's edit is a worse failure than the race being guarded against, so the guard is now narrow — it applies only where two panes genuinely compete — and reads focus from the editor's own focus/blur events rather than sampling it mid-transaction.
+
+---
+
+## 15. Undo belongs to the document, not the editor
+
+**Context.** Undo was ProseMirror's, which covers one editor instance. It knew nothing about source-view edits and was discarded on every tab or view switch. Worse, `edit.undo` tested availability with `Boolean(editor)`, and App retains a stale reference after the rendered pane unmounts — so in source view the command reported itself available, called `preventDefault()` on Ctrl+Z, suppressed the textarea's own native undo, and then did nothing. There was no way back from a mistake.
+
+**Decision.** A document-level history of whole-text snapshots, fed by both panes, with edits inside 500ms coalesced into one step. Undo means the same thing regardless of which pane made the change or how many times the view has changed since.
+
+**Why snapshots rather than diffs.** A patch history is smaller but has to be exactly right to be safe, and this is the mechanism people reach for *after* something has already gone wrong — the last place to be clever. Bounded at 200 states and 8 MB per document.
+
+**Not a tree.** Editing after undoing still discards the redo branch, as it does in most editors. A true undo tree would keep it, and is worth doing — but a linear history that definitely works beats a tree that might not.
+
+---
+
+## 16. Autosave refuses catastrophic truncation
+
+**Context.** When the source-view bug truncated a file, autosave committed it to disk within about a second, before the damage was noticed.
+
+**Decision.** Autosave declines to write when a document has lost more than 60% of its saved length, and offers a "Save anyway" action instead. Manual `Ctrl+S` is never blocked.
+
+**Why.** Autosave is a convenience; overwriting a file with a fraction of its former contents, unprompted, is not. Deleting most of a document deliberately costs one click. Doing it by accident now leaves time to undo.

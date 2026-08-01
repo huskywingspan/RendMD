@@ -17,7 +17,15 @@ interface ShortcutsModalProps {
  * are listed separately below.
  */
 
-const GROUP_ORDER: CommandGroup[] = ['File', 'Workspace', 'Edit', 'View', 'Insert', 'Help'];
+const GROUP_ORDER: CommandGroup[] = [
+  'File',
+  'Workspace',
+  'Edit',
+  'View',
+  'Insert',
+  'Table',
+  'Help',
+];
 
 const EXTRA_BINDINGS: { group: CommandGroup; title: string; shortcut: string }[] = [
   { group: 'Help', title: 'Command palette', shortcut: 'Ctrl+K' },

@@ -19,11 +19,15 @@ import { useLaunchQueue, useLaunchShortcuts } from '@/hooks/useLaunchQueue';
 import { useOutline, type OutlineItem } from '@/hooks/useOutline';
 import { useScrollSync } from '@/hooks/useScrollSync';
 
-import { useActiveDocument, useDocumentsStore, useHasUnsavedChanges } from '@/stores/documentsStore';
+import {
+  documentText,
+  useActiveDocument,
+  useDocumentsStore,
+  useHasUnsavedChanges,
+} from '@/stores/documentsStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { serializeFrontmatter } from '@/utils/frontmatterParser';
 import { cn } from '@/utils/cn';
 
 // Split out of the initial bundle: none of these are needed to read a document.
@@ -141,10 +145,9 @@ export default function App() {
     [outline],
   );
 
-  const sourceText = useMemo(
-    () => (doc ? serializeFrontmatter(doc.frontmatter, doc.content) : ''),
-    [doc],
-  );
+  // Plain concatenation of the preserved frontmatter block and the body, so
+  // what the source editor shows is byte-identical to what is on disk.
+  const sourceText = useMemo(() => (doc ? documentText(doc) : ''), [doc]);
 
   const showChrome = !focusMode;
   const showRendered = viewMode === 'read' || viewMode === 'split';
@@ -206,6 +209,14 @@ export default function App() {
                       // and cursor independent — a shared instance cannot.
                       key={doc.id}
                       initialContent={doc.content}
+                      // Only consulted while this pane is unfocused, to pick up
+                      // edits made in the source pane during split view.
+                      content={doc.content}
+                      // Bumped by undo, revert and reload; adopted even while
+                      // this pane has focus.
+                      revision={doc.revision}
+                      // Only in split view is there another pane to race with.
+                      sharesDocument={isSplit}
                       onChange={handleContentChange}
                       onEditorReady={setEditor}
                       scrollContainerRef={isSplit ? setRefA : undefined}

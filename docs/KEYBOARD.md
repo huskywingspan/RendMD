@@ -73,6 +73,8 @@ Opening a folder, reverting to the last saved version, and reloading from disk a
 
 `Ctrl+B` is context-sensitive: it toggles the sidebar unless the editor has focus and text is selected.
 
+**Undo works across both views.** It steps through whole-document states rather than per-pane edit histories, so an edit made in source view can be undone after switching to rendered, and vice versa. A run of typing rewinds as a phrase rather than one character at a time.
+
 **Select text** to get the formatting menu — block type, bold, italic, strikethrough, code, link. There's no permanent toolbar by design.
 
 ## Markdown as you type
@@ -87,6 +89,12 @@ Opening a folder, reverting to the last saved version, and reloading from disk a
 | ` ``` ` | Code block |
 | `---` | Horizontal rule |
 | `**bold**` `_italic_` `` `code` `` | Inline formatting |
+
+## Tables
+
+Put the cursor in a table and a small toolbar appears above it: insert or delete rows and columns, merge cells, delete the table.
+
+Everything there is also in the palette under **Table** — search `row`, `column`, or `merge`. Those entries only appear when the cursor is actually inside a table.
 
 ## Help
 
