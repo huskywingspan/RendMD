@@ -30,6 +30,8 @@ export interface PersistedDocument {
   handle: FileSystemFileHandle | null;
   content: string;
   frontmatter: Frontmatter | null;
+  /** Verbatim frontmatter source; see OpenDocument.frontmatterBlock. */
+  frontmatterBlock: string;
   /** Text as last read from or written to disk; drives the dirty flag. */
   savedText: string;
   isDirty: boolean;

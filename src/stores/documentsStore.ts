@@ -10,7 +10,11 @@ import {
   readFileHandle,
   writeFileHandle,
 } from '@/lib/fs';
-import { parseFrontmatter, serializeFrontmatter } from '@/utils/frontmatterParser';
+import {
+  parseFrontmatter,
+  joinDocument,
+  renderFrontmatterBlock,
+} from '@/utils/frontmatterParser';
 import {
   deleteDocument,
   loadAllDocuments,
@@ -20,6 +24,15 @@ import {
   type PersistedDocument,
 } from '@/lib/sessionStore';
 import { toast } from '@/stores/toastStore';
+import {
+  createHistory,
+  record as recordHistory,
+  undo as undoHistory,
+  redo as redoHistory,
+  canUndo as historyCanUndo,
+  canRedo as historyCanRedo,
+  type DocumentHistory,
+} from '@/lib/history';
 
 /**
  * Open documents.
@@ -48,7 +61,22 @@ export interface OpenDocument {
   handle: FileSystemFileHandle | null;
   /** Markdown body, frontmatter excluded. */
   content: string;
+  /**
+   * Parsed view of the frontmatter, for the panel. Derived and lossy — never
+   * the source of truth for what gets written.
+   */
   frontmatter: Frontmatter | null;
+  /**
+   * The frontmatter source verbatim, delimiters and trailing newline included,
+   * or '' when the document has none.
+   *
+   * This is what makes saving lossless. Rebuilding the header from the parsed
+   * object drops YAML comments, rewrites quoting and normalises line endings,
+   * so a document would be silently rewritten just by being opened and
+   * touched. Only the frontmatter panel regenerates this, and only when it
+   * actually edits a field.
+   */
+  frontmatterBlock: string;
   /** Exact text last read from or written to disk. Used by "revert". */
   savedText: string;
   isDirty: boolean;
@@ -57,6 +85,25 @@ export interface OpenDocument {
   scrollRatio: number;
   /** True once a document has never touched disk (Save writes via a picker). */
   isUntitled: boolean;
+  /**
+   * Whole-text undo history, fed by both panes.
+   *
+   * Deliberately not persisted: it is per-session working memory, and writing
+   * a few hundred document snapshots to IndexedDB on every keystroke would
+   * cost far more than it saves.
+   */
+  history: DocumentHistory;
+  /**
+   * Bumped whenever the text is replaced from outside the editing panes —
+   * undo, redo, revert, reload from disk.
+   *
+   * The panes normally ignore incoming content while focused, so the user's
+   * own typing is never overwritten mid-keystroke. But an undo *must* land
+   * even in the pane you are typing in, so this gives the panes a way to tell
+   * "someone replaced the document" apart from "here is your own edit coming
+   * back", without weakening the guard that matters.
+   */
+  revision: number;
 }
 
 interface DocumentsState {
@@ -80,6 +127,8 @@ interface DocumentsState {
   moveTab: (fromIndex: number, toIndex: number) => void;
 
   setContent: (id: string, content: string) => void;
+  undo: (id: string) => boolean;
+  redo: (id: string) => boolean;
   setFrontmatter: (id: string, frontmatter: Frontmatter | null) => void;
   setScrollRatio: (id: string, ratio: number) => void;
   replaceDocumentText: (id: string, text: string) => void;
@@ -99,9 +148,13 @@ function createId(): string {
   return crypto.randomUUID();
 }
 
-/** Full document text, frontmatter included — what gets written to disk. */
+/**
+ * Full document text — what gets written to disk and shown in source view.
+ *
+ * A plain concatenation, deliberately. See OpenDocument.frontmatterBlock.
+ */
 export function documentText(doc: OpenDocument): string {
-  return serializeFrontmatter(doc.frontmatter, doc.content);
+  return joinDocument(doc.frontmatterBlock, doc.content);
 }
 
 export const useDocumentsStore = create<DocumentsState>()((set, get) => {
@@ -197,11 +250,14 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
             handle,
             content: parsed.content,
             frontmatter: parsed.frontmatter,
+            frontmatterBlock: parsed.block,
             savedText: text,
             isDirty: false,
             lastSavedAt: Date.now(),
             scrollRatio: 0,
             isUntitled: false,
+            history: createHistory(text),
+            revision: 0,
           },
           activate,
         );
@@ -225,11 +281,14 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
         handle,
         content: parsed.content,
         frontmatter: parsed.frontmatter,
+        frontmatterBlock: parsed.block,
         savedText: text,
         isDirty: false,
         lastSavedAt: null,
         scrollRatio: 0,
         isUntitled: false,
+        history: createHistory(text),
+        revision: 0,
       });
     },
 
@@ -244,12 +303,15 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
         handle: null,
         content: parsed.content,
         frontmatter: parsed.frontmatter,
+        frontmatterBlock: parsed.block,
         savedText: '',
         // A template counts as content worth keeping, so it starts dirty.
         isDirty: content.length > 0,
         lastSavedAt: null,
         scrollRatio: 0,
         isUntitled: true,
+        history: createHistory(content),
+        revision: 0,
       });
     },
 
@@ -309,11 +371,25 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
     /* ── Editing ───────────────────────────────────────────────────────── */
 
     setContent(id, content) {
-      patch(id, (doc) => (doc.content === content ? doc : { ...doc, content, isDirty: true }));
+      patch(id, (doc) => {
+        if (doc.content === content) return doc;
+        const next = { ...doc, content, isDirty: true };
+        return { ...next, history: recordHistory(doc.history, documentText(next)) };
+      });
     },
 
     setFrontmatter(id, frontmatter) {
-      patch(id, (doc) => ({ ...doc, frontmatter, isDirty: true }));
+      // The only place the header is rewritten, and here it is the point:
+      // the user edited a field in the frontmatter panel.
+      patch(id, (doc) => {
+        const next = {
+          ...doc,
+          frontmatter,
+          frontmatterBlock: renderFrontmatterBlock(frontmatter),
+          isDirty: true,
+        };
+        return { ...next, history: recordHistory(doc.history, documentText(next)) };
+      });
     },
 
     setScrollRatio(id, ratio) {
@@ -332,8 +408,57 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
         ...doc,
         content: parsed.content,
         frontmatter: parsed.frontmatter,
+        frontmatterBlock: parsed.block,
         isDirty: true,
+        history: recordHistory(doc.history, text),
       }));
+    },
+
+    /* ── Undo ──────────────────────────────────────────────────────────────
+     * Whole-document, so a step means the same thing whichever pane made the
+     * change. Applied by replaying the text back through the parser, which
+     * keeps the frontmatter block and body consistent with each other.
+     * ─────────────────────────────────────────────────────────────────── */
+
+    undo(id) {
+      const doc = get().documents.find((d) => d.id === id);
+      if (!doc) return false;
+
+      const stepped = undoHistory(doc.history);
+      if (!stepped) return false;
+
+      const parsed = parseFrontmatter(stepped.text);
+      patch(id, (current) => ({
+        ...current,
+        content: parsed.content,
+        frontmatter: parsed.frontmatter,
+        frontmatterBlock: parsed.block,
+        // Restoring to exactly what is on disk is not a pending change.
+        isDirty: stepped.text !== current.savedText,
+        history: stepped.history,
+        revision: current.revision + 1,
+      }));
+      return true;
+    },
+
+    redo(id) {
+      const doc = get().documents.find((d) => d.id === id);
+      if (!doc) return false;
+
+      const stepped = redoHistory(doc.history);
+      if (!stepped) return false;
+
+      const parsed = parseFrontmatter(stepped.text);
+      patch(id, (current) => ({
+        ...current,
+        content: parsed.content,
+        frontmatter: parsed.frontmatter,
+        frontmatterBlock: parsed.block,
+        isDirty: stepped.text !== current.savedText,
+        history: stepped.history,
+        revision: current.revision + 1,
+      }));
+      return true;
     },
 
     /* ── Persistence ───────────────────────────────────────────────────── */
@@ -433,7 +558,10 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
         ...current,
         content: parsed.content,
         frontmatter: parsed.frontmatter,
+        frontmatterBlock: parsed.block,
         isDirty: false,
+        history: recordHistory(current.history, doc.savedText),
+        revision: current.revision + 1,
       }));
       return true;
     },
@@ -451,9 +579,12 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
           ...current,
           content: parsed.content,
           frontmatter: parsed.frontmatter,
+          frontmatterBlock: parsed.block,
           savedText: text,
           isDirty: false,
           lastSavedAt: Date.now(),
+          history: recordHistory(current.history, text),
+          revision: current.revision + 1,
         }));
         return true;
       } catch (error) {
@@ -512,6 +643,7 @@ function toPersisted(doc: OpenDocument): PersistedDocument {
     handle: doc.handle,
     content: doc.content,
     frontmatter: doc.frontmatter,
+    frontmatterBlock: doc.frontmatterBlock,
     savedText: doc.savedText,
     isDirty: doc.isDirty,
     lastSavedAt: doc.lastSavedAt,
@@ -523,6 +655,10 @@ function fromPersisted(doc: PersistedDocument): OpenDocument {
   return {
     ...doc,
     isUntitled: doc.handle === null && doc.lastSavedAt === null,
+    // History is per-session; a restored document starts from where it left
+    // off rather than carrying a stale stack across a reload.
+    history: createHistory(joinDocument(doc.frontmatterBlock, doc.content)),
+    revision: 0,
   };
 }
 
@@ -570,6 +706,17 @@ export function useActiveDocument(): OpenDocument | null {
   return useDocumentsStore(
     (state) => state.documents.find((doc) => doc.id === state.activeId) ?? null,
   );
+}
+
+/** Whether the active document has anything to step back to, or forward to. */
+export function activeCanUndo(state: DocumentsState): boolean {
+  const doc = state.documents.find((d) => d.id === state.activeId);
+  return doc ? historyCanUndo(doc.history) : false;
+}
+
+export function activeCanRedo(state: DocumentsState): boolean {
+  const doc = state.documents.find((d) => d.id === state.activeId);
+  return doc ? historyCanRedo(doc.history) : false;
 }
 
 export function useHasUnsavedChanges(): boolean {

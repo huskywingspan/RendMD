@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/react';
-import { useDocumentsStore } from '@/stores/documentsStore';
+import { useDocumentsStore, activeCanUndo, activeCanRedo } from '@/stores/documentsStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -12,7 +12,14 @@ import { useSettingsStore } from '@/stores/settingsStore';
  * shown to the user *is* the one being matched.
  */
 
-export type CommandGroup = 'File' | 'Edit' | 'View' | 'Insert' | 'Workspace' | 'Help';
+export type CommandGroup =
+  | 'File'
+  | 'Edit'
+  | 'View'
+  | 'Insert'
+  | 'Table'
+  | 'Workspace'
+  | 'Help';
 
 export interface Command {
   id: string;
@@ -37,6 +44,10 @@ const workspace = () => useWorkspaceStore.getState();
 const settings = () => useSettingsStore.getState();
 
 const hasActiveDocument = (): boolean => docs().activeId !== null;
+
+/** Table commands are only meaningful with the cursor inside one. */
+const inTable = ({ editor }: CommandContext): boolean =>
+  Boolean(editor?.isActive('table'));
 
 export const COMMANDS: Command[] = [
   /* ── File ──────────────────────────────────────────────────────────────── */
@@ -258,9 +269,15 @@ export const COMMANDS: Command[] = [
     title: 'Undo',
     group: 'Edit',
     shortcut: 'Ctrl+Z',
-    available: ({ editor }) => Boolean(editor),
-    run: ({ editor }) => {
-      editor?.chain().focus().undo().run();
+    // Availability comes from the document's own history, not from whether an
+    // editor object happens to exist. The previous check was `Boolean(editor)`,
+    // and App keeps a stale reference after the rendered pane unmounts — so in
+    // source view this reported itself available, swallowed Ctrl+Z, suppressed
+    // the textarea's native undo, and then did nothing.
+    available: () => activeCanUndo(docs()),
+    run: () => {
+      const id = docs().activeId;
+      if (id) docs().undo(id);
     },
   },
   {
@@ -268,9 +285,10 @@ export const COMMANDS: Command[] = [
     title: 'Redo',
     group: 'Edit',
     shortcut: 'Ctrl+Shift+Z',
-    available: ({ editor }) => Boolean(editor),
-    run: ({ editor }) => {
-      editor?.chain().focus().redo().run();
+    available: () => activeCanRedo(docs()),
+    run: () => {
+      const id = docs().activeId;
+      if (id) docs().redo(id);
     },
   },
 
@@ -328,6 +346,101 @@ export const COMMANDS: Command[] = [
     available: ({ editor }) => Boolean(editor),
     run: ({ editor }) => {
       editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    },
+  },
+
+  /* ── Table ─────────────────────────────────────────────────────────────
+   * Only offered when the cursor is actually inside a table, so they stay out
+   * of the way the rest of the time. Removing the table toolbar during the
+   * overhaul left no way at all to add or delete a row — the first thing a
+   * user hit.
+   * ─────────────────────────────────────────────────────────────────────── */
+  {
+    id: 'table.addRowAfter',
+    title: 'Table: insert row below',
+    group: 'Table',
+    keywords: 'add new row',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().addRowAfter().run();
+    },
+  },
+  {
+    id: 'table.addRowBefore',
+    title: 'Table: insert row above',
+    group: 'Table',
+    keywords: 'add new row',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().addRowBefore().run();
+    },
+  },
+  {
+    id: 'table.deleteRow',
+    title: 'Table: delete row',
+    group: 'Table',
+    keywords: 'remove row',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().deleteRow().run();
+    },
+  },
+  {
+    id: 'table.addColumnAfter',
+    title: 'Table: insert column right',
+    group: 'Table',
+    keywords: 'add new column',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().addColumnAfter().run();
+    },
+  },
+  {
+    id: 'table.addColumnBefore',
+    title: 'Table: insert column left',
+    group: 'Table',
+    keywords: 'add new column',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().addColumnBefore().run();
+    },
+  },
+  {
+    id: 'table.deleteColumn',
+    title: 'Table: delete column',
+    group: 'Table',
+    keywords: 'remove column',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().deleteColumn().run();
+    },
+  },
+  {
+    id: 'table.toggleHeaderRow',
+    title: 'Table: toggle header row',
+    group: 'Table',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().toggleHeaderRow().run();
+    },
+  },
+  {
+    id: 'table.mergeOrSplit',
+    title: 'Table: merge or split cells',
+    group: 'Table',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().mergeOrSplit().run();
+    },
+  },
+  {
+    id: 'table.delete',
+    title: 'Table: delete table',
+    group: 'Table',
+    keywords: 'remove table',
+    available: inTable,
+    run: ({ editor }) => {
+      editor?.chain().focus().deleteTable().run();
     },
   },
   {

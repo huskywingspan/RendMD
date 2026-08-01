@@ -33,9 +33,19 @@ export interface ThemeConfig {
 
 // Document types
 export interface ParsedDocument {
+  /** Parsed view of the header, for the frontmatter panel. Lossy. */
   frontmatter: Frontmatter | null;
+  /** Everything after the frontmatter block. */
   content: string;
+  /** The original input, unmodified. */
   raw: string;
+  /**
+   * The exact frontmatter source, delimiters and trailing newline included, or
+   * '' when there is none. `block + content === raw`, always — that identity is
+   * what keeps editing a document from rewriting parts of it the user did not
+   * touch.
+   */
+  block: string;
 }
 
 // Table of Contents types

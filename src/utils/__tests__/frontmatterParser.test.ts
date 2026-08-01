@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseFrontmatter,
+  joinDocument,
   serializeFrontmatter,
   updateFrontmatterField,
   parseTags,
@@ -226,5 +227,62 @@ describe('COMMON_FRONTMATTER_FIELDS', () => {
       expect(field).toHaveProperty('label');
       expect(field).toHaveProperty('type');
     }
+  });
+});
+
+describe('document round-trip identity', () => {
+  /**
+   * The property that protects users' files.
+   *
+   * The source editor holds the full document text. If splitting a document
+   * and putting it back together is not an identity, then every keystroke
+   * rewrites text the user did not touch — and because the editor is a
+   * controlled input, the replacement lands under the cursor and the next
+   * keypress edits the wrong place.
+   *
+   * That is not hypothetical: it shipped. Reconstructing the header from the
+   * parsed object destroyed YAML comments, stripped quotes, converted CRLF to
+   * LF, and inserted a blank line after the closing delimiter. Editing a table
+   * in source view deleted lines elsewhere in the file, and autosave then
+   * wrote the damage to disk.
+   */
+  const documents: [name: string, source: string][] = [
+    ['no frontmatter', '# Title\n\n| a | b |\n|---|---|\n| 1 | 2 |\n'],
+    ['empty document', ''],
+    ['frontmatter, one newline after close', '---\ntitle: Doc\n---\n# Title\n\nBody\n'],
+    ['frontmatter, blank line after close', '---\ntitle: Doc\n---\n\nBody\n'],
+    ['double-quoted value', '---\ntitle: "Doc"\n---\n\nBody\n'],
+    ['single-quoted value', "---\ntitle: 'Doc'\n---\n\nBody\n"],
+    ['YAML comment', '---\n# keep me\ntitle: Doc\n---\n\nBody\n'],
+    ['CRLF line endings', '---\r\ntitle: Doc\r\n---\r\nBody\r\n'],
+    ['list value', '---\ntags:\n  - one\n  - two\n---\n\nBody\n'],
+    ['trailing whitespace in body', '# Title\n\nBody with trailing spaces   \n'],
+    ['no trailing newline', '# Title\n\nBody'],
+    ['body containing a --- rule', '# Title\n\n---\n\nMore\n'],
+    ['frontmatter and a --- rule in the body', '---\na: 1\n---\n\nText\n\n---\n\nMore\n'],
+    ['malformed YAML', '---\nthis: [is: not: valid\n---\n\nBody\n'],
+  ];
+
+  it.each(documents)('splitting and rejoining %s returns it unchanged', (_name, source) => {
+    const parsed = parseFrontmatter(source);
+    expect(joinDocument(parsed.block, parsed.content)).toBe(source);
+  });
+
+  it.each(documents)('block + content covers the whole of %s', (_name, source) => {
+    const parsed = parseFrontmatter(source);
+    expect(parsed.block + parsed.content).toBe(parsed.raw);
+  });
+
+  it('survives being rejoined repeatedly, as typing does', () => {
+    const original = '---\n# comment\ntitle: "Quoted"\n---\nBody\n';
+    let text = original;
+
+    // Each pass stands in for one keystroke's worth of split-and-rejoin.
+    for (let i = 0; i < 25; i += 1) {
+      const parsed = parseFrontmatter(text);
+      text = joinDocument(parsed.block, parsed.content);
+    }
+
+    expect(text).toBe(original);
   });
 });
