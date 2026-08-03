@@ -1,6 +1,7 @@
 export { Editor } from './Editor';
 export type { EditorProps } from './Editor';
 export { BubbleMenu } from './BubbleMenu';
+export { FormatToolbar } from './FormatToolbar';
 export { TableToolbar } from './TableToolbar';
 export { LinkPopover } from './LinkPopover';
 export { ImagePopover } from './ImagePopover';

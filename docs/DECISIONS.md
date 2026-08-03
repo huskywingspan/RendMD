@@ -193,3 +193,31 @@ That only works while their text metrics agree exactly. The rules enforcing this
 **Why a test that reads CSS.** `src/styles/__tests__/source-alignment.test.ts` asserts the declarations exist and that the stylesheet is imported. Testing CSS is unusual and normally not worth it — but the failure here is silent, corrupts documents, and its actual cause was a file being deleted during a tidy-up with nothing to notice. Removing the import alone fails the suite.
 
 **The wider lesson.** A design where two independently-styled elements must agree pixel-for-pixel has no safe failure mode: when it breaks, it does not look broken. The alternative is a real code editor component (CodeMirror), which is correct by construction rather than by matching declarations. That remains the better long-term answer; the guard above is what makes the current approach defensible in the meantime.
+
+---
+
+## 18. Block spacing is decided in exactly one rule
+
+**Context.** Consecutive paragraphs rendered with a gap of zero. A blank line in the markdown source simply disappeared, and prose read as one unbroken wall of text — reported as "shouldn't there be a new line between paragraphs?", and initially plausible as ordinary markdown behaviour rather than a defect.
+
+It was a defect. `.prose-surface > * + *` sets the gap between top-level blocks and scores (0,1,0) — a class plus two universal selectors, among the least specific rules that can be written. `.prose-surface p { margin: 0 }`, added to clear the browser's default margins because `<p>` also appears nested inside list items and table cells, scores (0,1,1) and silently outranked it. Lists had the same collision.
+
+**Decision.** The UA margin reset is wrapped in `:where(…)`, which forces it to zero specificity, and the elements it covers no longer declare `margin` themselves. The gap is a token, `--prose-block-gap`, consumed by one rule. Blocks that genuinely need more room — blockquotes, tables, code blocks — still override it by naming an element or a class, which they outrank honestly.
+
+**Why.** Nothing reported an error here. The CSS parsed, the rule existed, the selector was correct, and the computed value was zero. Guarding it needs the same tactic as ADR 17: `src/styles/__tests__/prose-rhythm.test.ts` asserts that none of those element rules reintroduce a `margin` declaration, and that the token is non-zero. Reinstating the original line fails the suite.
+
+---
+
+## 19. A format toolbar that is off by default
+
+**Context.** Formatting was reachable two ways: a bubble menu that appears over a selection, and the command palette. That left every *insert* command — tables, images, horizontal rules, code blocks — effectively invisible, because insertion happens at a collapsed cursor, where a selection-triggered menu structurally cannot appear.
+
+**Decision.** A format toolbar at the top of the rendered pane, off by default, toggled from a single title-bar icon, `Ctrl+Shift+B`, or the palette. The preference persists. When off it renders nothing at all — not a collapsed strip — so the reading surface is identical to having no toolbar in the codebase.
+
+**Why in the pane rather than the shell.** It drives the ProseMirror document. In split view that makes it unambiguous which pane it acts on; in source-only view it is absent rather than present and inert. It also sits outside the scroll container, so toggling it resizes the viewport instead of reflowing the text column.
+
+**Why not auto-reveal on typing or selection.** A row that appears and disappears while you write shifts the document under the cursor, and unpredictable chrome is worse than chrome you asked for. Toggling it shifts the text once, because you caused it.
+
+**Why the controls are shared.** `blockTypes.ts` holds the block list and the commands; `formatting.tsx` holds the controls. Both the toolbar and the bubble menu consume them. Two lists of the same commands drift — one gains a heading level, the other keeps mapping the old set — and the mismatch only surfaces in whichever surface was not updated.
+
+**Not included:** table row and column operations, which remain in the contextual `TableToolbar`. A control that is dead nine tenths of the time teaches you to ignore the bar it sits in.

@@ -32,13 +32,28 @@
 /* ── Block rhythm ─────────────────────────────────────────────────────────
  * Headings carry more space above than below, so each one sits with the
  * content it introduces rather than floating between two blocks.
+ *
+ * Every element here also appears nested — a <p> inside a list item or a table
+ * cell, a <ul> inside a <li> — where the browser's default margins are wrong.
+ * So the defaults are cleared first, and this file then decides every gap.
+ *
+ * That reset is wrapped in :where() to give it zero specificity, which is load
+ * bearing. It was previously written as `.prose-surface p { margin: 0 }`, one
+ * element token more specific than `.prose-surface > * + *` below — so it beat
+ * the rhythm rule and consecutive paragraphs rendered flush against each other
+ * with no gap at all. A blank line in the source simply vanished when rendered.
+ * At zero specificity the reset cannot outrank anything, so a gap declared
+ * below is a gap that actually applies.
  * ─────────────────────────────────────────────────────────────────────── */
+:where(.prose-surface) :where(p, h1, h2, h3, h4, h5, h6, ul, ol, pre, table, figure) {
+  margin: 0;
+}
+
 .prose-surface > * + * {
-  margin-top: 1.05em;
+  margin-top: var(--prose-block-gap);
 }
 
 .prose-surface p {
-  margin: 0;
   /* Avoid a lone last line stranded at the top of the next screen. */
   text-wrap: pretty;
 }
@@ -50,7 +65,6 @@
 .prose-surface h4,
 .prose-surface h5,
 .prose-surface h6 {
-  margin: 0;
   color: var(--rmd-ink);
   font-weight: 620;
   line-height: 1.25;
@@ -155,7 +169,6 @@
 }
 
 .prose-surface pre {
-  margin: 0;
   padding: 0;
   background: none;
   border: none;
@@ -193,7 +206,6 @@
 /* ── Lists ────────────────────────────────────────────────────────────── */
 .prose-surface ul,
 .prose-surface ol {
-  margin: 0;
   padding-left: 1.4em;
 }
 

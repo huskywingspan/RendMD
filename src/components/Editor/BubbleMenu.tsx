@@ -1,31 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
 import type { Editor } from '@tiptap/react';
-import {
-  Bold,
-  ChevronDown,
-  Code,
-  Heading1,
-  Heading2,
-  Heading3,
-  Italic,
-  Link as LinkIcon,
-  List,
-  ListChecks,
-  ListOrdered,
-  Pilcrow,
-  Quote,
-  SquareCode,
-  Strikethrough,
-} from 'lucide-react';
+import { Bold, Code, Italic, Link as LinkIcon, Strikethrough } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { BlockTypeMenu, Divider, FormatButton } from './formatting';
 
 /**
  * Selection toolbar.
  *
- * With the persistent formatting toolbar gone, this is where formatting lives:
- * it appears over a selection and nowhere else, so the chrome above the
- * document stays empty while you read.
+ * Appears over a selection and nowhere else. It is the fast path for
+ * reformatting text you have already written; the format toolbar is the
+ * discoverable path, and inserting blocks at a collapsed cursor is only
+ * possible there, since this menu requires a selection to exist.
+ *
+ * Both surfaces share their controls — see ./formatting.
  *
  * Positioned with Floating UI against a virtual reference derived from the
  * selection rectangle. The previous implementation subtracted a hardcoded
@@ -118,39 +106,31 @@ export function BubbleMenu({ editor, onLinkClick }: BubbleMenuProps) {
         'animate-[menu-in_120ms_ease-out]',
       )}
     >
-      <BlockTypeMenu
-        editor={editor}
-        open={blockMenuOpen}
-        onOpenChange={setBlockMenuOpen}
-      />
+      <BlockTypeMenu editor={editor} open={blockMenuOpen} onOpenChange={setBlockMenuOpen} />
 
       <Divider />
 
-      <MarkButton
-        editor={editor}
+      <FormatButton
         icon={<Bold size={14} />}
         label="Bold"
         shortcut="Ctrl+B"
         isActive={editor.isActive('bold')}
         onPress={() => editor.chain().focus().toggleBold().run()}
       />
-      <MarkButton
-        editor={editor}
+      <FormatButton
         icon={<Italic size={14} />}
         label="Italic"
         shortcut="Ctrl+I"
         isActive={editor.isActive('italic')}
         onPress={() => editor.chain().focus().toggleItalic().run()}
       />
-      <MarkButton
-        editor={editor}
+      <FormatButton
         icon={<Strikethrough size={14} />}
         label="Strikethrough"
         isActive={editor.isActive('strike')}
         onPress={() => editor.chain().focus().toggleStrike().run()}
       />
-      <MarkButton
-        editor={editor}
+      <FormatButton
         icon={<Code size={14} />}
         label="Inline code"
         isActive={editor.isActive('code')}
@@ -159,8 +139,7 @@ export function BubbleMenu({ editor, onLinkClick }: BubbleMenuProps) {
 
       <Divider />
 
-      <MarkButton
-        editor={editor}
+      <FormatButton
         icon={<LinkIcon size={14} />}
         label="Link"
         shortcut="Ctrl+K"
@@ -169,159 +148,4 @@ export function BubbleMenu({ editor, onLinkClick }: BubbleMenuProps) {
       />
     </div>
   );
-}
-
-/* ── Block type ──────────────────────────────────────────────────────────── */
-
-const BLOCK_TYPES = [
-  { id: 'paragraph', label: 'Text', icon: Pilcrow },
-  { id: 'h1', label: 'Heading 1', icon: Heading1 },
-  { id: 'h2', label: 'Heading 2', icon: Heading2 },
-  { id: 'h3', label: 'Heading 3', icon: Heading3 },
-  { id: 'bulletList', label: 'Bullet list', icon: List },
-  { id: 'orderedList', label: 'Numbered list', icon: ListOrdered },
-  { id: 'taskList', label: 'Task list', icon: ListChecks },
-  { id: 'blockquote', label: 'Quote', icon: Quote },
-  { id: 'codeBlock', label: 'Code block', icon: SquareCode },
-] as const;
-
-type BlockTypeId = (typeof BLOCK_TYPES)[number]['id'];
-
-function BlockTypeMenu({
-  editor,
-  open,
-  onOpenChange,
-}: {
-  editor: Editor;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const current = currentBlockType(editor);
-  const active = BLOCK_TYPES.find((type) => type.id === current) ?? BLOCK_TYPES[0];
-  const Icon = active.icon;
-
-  const apply = (id: BlockTypeId): void => {
-    const chain = editor.chain().focus();
-    switch (id) {
-      case 'paragraph':
-        chain.setParagraph().run();
-        break;
-      case 'h1':
-        chain.toggleHeading({ level: 1 }).run();
-        break;
-      case 'h2':
-        chain.toggleHeading({ level: 2 }).run();
-        break;
-      case 'h3':
-        chain.toggleHeading({ level: 3 }).run();
-        break;
-      case 'bulletList':
-        chain.toggleBulletList().run();
-        break;
-      case 'orderedList':
-        chain.toggleOrderedList().run();
-        break;
-      case 'taskList':
-        chain.toggleTaskList().run();
-        break;
-      case 'blockquote':
-        chain.toggleBlockquote().run();
-        break;
-      case 'codeBlock':
-        chain.toggleCodeBlock().run();
-        break;
-    }
-    onOpenChange(false);
-  };
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => onOpenChange(!open)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className="flex h-7 items-center gap-1 rounded-sm px-1.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
-      >
-        <Icon size={14} aria-hidden />
-        <span className="max-w-24 truncate">{active.label}</span>
-        <ChevronDown size={11} aria-hidden />
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className={cn(
-            'absolute top-full left-0 z-10 mt-1 w-44 rounded-lg border border-line',
-            'bg-overlay py-1 shadow-lg animate-[menu-in_120ms_ease-out]',
-          )}
-        >
-          {BLOCK_TYPES.map(({ id, label, icon: ItemIcon }) => (
-            <button
-              key={id}
-              type="button"
-              role="menuitem"
-              onClick={() => apply(id)}
-              className={cn(
-                'flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm',
-                id === current ? 'text-accent' : 'text-ink-muted hover:bg-hover hover:text-ink',
-              )}
-            >
-              <ItemIcon size={13} aria-hidden />
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function currentBlockType(editor: Editor): BlockTypeId {
-  if (editor.isActive('heading', { level: 1 })) return 'h1';
-  if (editor.isActive('heading', { level: 2 })) return 'h2';
-  if (editor.isActive('heading', { level: 3 })) return 'h3';
-  if (editor.isActive('taskList')) return 'taskList';
-  if (editor.isActive('bulletList')) return 'bulletList';
-  if (editor.isActive('orderedList')) return 'orderedList';
-  if (editor.isActive('blockquote')) return 'blockquote';
-  if (editor.isActive('codeBlock')) return 'codeBlock';
-  return 'paragraph';
-}
-
-/* ── Pieces ──────────────────────────────────────────────────────────────── */
-
-function MarkButton({
-  icon,
-  label,
-  shortcut,
-  isActive,
-  onPress,
-}: {
-  editor: Editor;
-  icon: React.ReactNode;
-  label: string;
-  shortcut?: string;
-  isActive: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onPress}
-      aria-label={shortcut ? `${label} (${shortcut})` : label}
-      aria-pressed={isActive}
-      title={shortcut ? `${label} — ${shortcut}` : label}
-      className={cn(
-        'grid size-7 place-items-center rounded-sm transition-colors',
-        isActive ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:bg-hover hover:text-ink',
-      )}
-    >
-      {icon}
-    </button>
-  );
-}
-
-function Divider() {
-  return <span className="mx-0.5 h-5 w-px bg-line" aria-hidden />;
 }

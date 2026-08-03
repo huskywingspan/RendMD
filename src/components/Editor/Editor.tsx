@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { Editor as TipTapEditor } from '@tiptap/react';
 import { BubbleMenu } from './BubbleMenu';
+import { FormatToolbar } from './FormatToolbar';
 import { LinkPopover } from './LinkPopover';
 import { ImagePopover } from './ImagePopover';
 import { TableToolbar } from './TableToolbar';
@@ -203,6 +204,13 @@ export function Editor({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {/* Above the scroll container, so it stays put and toggling it resizes
+          the viewport rather than reflowing the text. Renders nothing unless
+          the user has turned it on. */}
+      {editor && (
+        <FormatToolbar editor={editor} onLinkClick={() => setLinkPopoverOpen(true)} />
+      )}
+
       {editor && (
         <>
           <BubbleMenu editor={editor} onLinkClick={() => setLinkPopoverOpen(true)} />

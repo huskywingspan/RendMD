@@ -59,6 +59,7 @@ Opening a folder, reverting to the last saved version, and reloading from disk a
 | `Ctrl+Shift+E` | Show files |
 | `Ctrl+Shift+O` | Show outline |
 | `Ctrl+Shift+F` | Focus mode — hides all chrome |
+| `Ctrl+Shift+B` | Format toolbar — off by default, above the rendered pane |
 | `Ctrl+=` / `Ctrl+-` | Text size |
 
 ## Editing

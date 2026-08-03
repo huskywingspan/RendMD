@@ -41,6 +41,14 @@ interface SettingsState {
   spellcheck: boolean;
   /** Reopen the previous session's tabs on launch. */
   restoreSession: boolean;
+  /**
+   * Show the format toolbar above the rendered document.
+   *
+   * Off by default, and persisted. This is a reading tool first: the toolbar is
+   * something you turn on for a writing session, not chrome that greets you
+   * every time you open a file to read it.
+   */
+  formatToolbar: boolean;
 
   setTheme: (theme: ThemePreference) => void;
   toggleTheme: () => void;
@@ -51,6 +59,8 @@ interface SettingsState {
   setAutoSave: (enabled: boolean) => void;
   setSpellcheck: (enabled: boolean) => void;
   setRestoreSession: (enabled: boolean) => void;
+  setFormatToolbar: (enabled: boolean) => void;
+  toggleFormatToolbar: () => void;
   resetAppearance: () => void;
 }
 
@@ -68,6 +78,7 @@ export const useSettingsStore = create<SettingsState>()(
       autoSave: true,
       spellcheck: true,
       restoreSession: true,
+      formatToolbar: false,
 
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => {
@@ -88,6 +99,8 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoSave: (autoSave) => set({ autoSave }),
       setSpellcheck: (spellcheck) => set({ spellcheck }),
       setRestoreSession: (restoreSession) => set({ restoreSession }),
+      setFormatToolbar: (formatToolbar) => set({ formatToolbar }),
+      toggleFormatToolbar: () => set((state) => ({ formatToolbar: !state.formatToolbar })),
       resetAppearance: () => set({ ...APPEARANCE_DEFAULTS }),
     }),
     {

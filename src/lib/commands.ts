@@ -208,6 +208,14 @@ export const COMMANDS: Command[] = [
     run: () => ui().toggleFocusMode(),
   },
   {
+    id: 'view.formatToolbar',
+    title: 'Toggle format toolbar',
+    group: 'View',
+    shortcut: 'Ctrl+Shift+B',
+    keywords: 'formatting bar editing tools heading table insert',
+    run: () => settings().toggleFormatToolbar(),
+  },
+  {
     id: 'view.theme',
     title: 'Toggle light / dark',
     group: 'View',

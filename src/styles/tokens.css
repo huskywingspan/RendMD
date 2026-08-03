@@ -101,6 +101,10 @@
   --reading-size: 17px;
   --reading-leading: 1.7;
   --reading-family: var(--rmd-font-sans);
+  /* Space between top-level blocks. Deliberately less than a full blank line:
+     enough to read as a paragraph break, not so much that prose turns into a
+     list of disconnected fragments. Consumed by .prose-surface > * + *. */
+  --prose-block-gap: 1.15em;
 
   --rmd-font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
     sans-serif;

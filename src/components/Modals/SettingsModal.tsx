@@ -105,11 +105,22 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           />
         </Field>
 
-        <Field label="Spellcheck">
+        <Field label="Spellcheck" hint="Underlines misspellings in the rendered view.">
           <Toggle
             label="Spellcheck"
             checked={settings.spellcheck}
             onChange={settings.setSpellcheck}
+          />
+        </Field>
+
+        <Field
+          label="Format toolbar"
+          hint="A row of formatting and insert controls above the rendered document. Ctrl+Shift+B."
+        >
+          <Toggle
+            label="Format toolbar"
+            checked={settings.formatToolbar}
+            onChange={settings.setFormatToolbar}
           />
         </Field>
 

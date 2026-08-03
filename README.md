@@ -20,7 +20,9 @@ Everything else is secondary to making that loop feel like nothing.
 
 **Open a folder, not just a file.** Point RendMD at the directory where you keep your notes. It indexes every markdown file inside, shows them in a tree, and remembers the folder between visits. Files open in tabs.
 
-**Edit what you're reading.** The rendered document *is* the editing surface — click into a heading and change it. Formatting appears when you select text and stays out of the way when you don't. There is no permanent toolbar.
+**Edit what you're reading.** The rendered document *is* the editing surface — click into a heading and change it. Formatting appears when you select text and stays out of the way when you don't.
+
+**A toolbar, only when you want one.** Nothing sits above the document by default. `Ctrl+Shift+B` — or the pen icon in the title bar — reveals a row with headings, lists, links, tables, images and rules, for when you're writing rather than reading. It remembers whether you left it open, and it disappears entirely in focus mode.
 
 **Save in place.** `Ctrl+S` writes to the original file. Not a download, not a copy in `~/Downloads` — the file you opened.
 

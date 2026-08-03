@@ -6,6 +6,7 @@ import {
   Minimize2,
   Moon,
   PanelLeft,
+  PenLine,
   Search,
   Settings,
   Sun,
@@ -33,8 +34,14 @@ interface TitleBarProps {
  * The top bar.
  *
  * Deliberately thin. It carries where you are (the breadcrumb), how to get
- * somewhere else (the palette), and how you're looking at the document. Every
- * other command lives in the palette, which is why this doesn't grow a toolbar.
+ * somewhere else (the palette), and how you're looking at the document.
+ *
+ * It still doesn't grow a toolbar — but it does carry the *switch* for one.
+ * That single icon is what makes the format toolbar discoverable: formatting
+ * was previously reachable only by selecting text (the bubble menu) or by
+ * knowing the palette existed, which left every insert-at-the-cursor command —
+ * tables, images, rules — effectively invisible. One button in a bar that
+ * already has five is a cheaper price than a permanent row above the document.
  */
 export function TitleBar({ editor }: TitleBarProps) {
   const doc = useActiveDocument();
@@ -51,6 +58,8 @@ export function TitleBar({ editor }: TitleBarProps) {
 
   const themePreference = useSettingsStore((s) => s.theme);
   const toggleTheme = useSettingsStore((s) => s.toggleTheme);
+  const formatToolbar = useSettingsStore((s) => s.formatToolbar);
+  const toggleFormatToolbar = useSettingsStore((s) => s.toggleFormatToolbar);
   const isDark = resolveTheme(themePreference) === 'dark';
 
   return (
@@ -115,6 +124,14 @@ export function TitleBar({ editor }: TitleBarProps) {
       )}
 
       <div className="flex items-center gap-0.5">
+        <IconButton
+          icon={<PenLine size={15} />}
+          label={formatToolbar ? 'Hide format toolbar' : 'Show format toolbar'}
+          shortcut="Ctrl+Shift+B"
+          onClick={toggleFormatToolbar}
+          active={formatToolbar}
+        />
+
         <ExportMenu editor={editor} />
 
         <IconButton
