@@ -30,6 +30,18 @@ const FAMILY_VARS: Record<ReadingFamily, string> = {
 export const MIN_READING_SIZE = 14;
 export const MAX_READING_SIZE = 24;
 
+/**
+ * Offered autosave delays, in milliseconds.
+ *
+ * A short list rather than a slider: the difference between 1.2s and 1.4s is
+ * not something anyone can feel, and offering it implies a precision that
+ * isn't there. These are the steps that change the behaviour meaningfully.
+ */
+export const AUTOSAVE_DELAYS = [1000, 2000, 5000, 15000, 30000] as const;
+
+/** Must be one of AUTOSAVE_DELAYS, or the control has nothing to select. */
+export const DEFAULT_AUTOSAVE_DELAY = 1000;
+
 interface SettingsState {
   theme: ThemePreference;
   readingFamily: ReadingFamily;
@@ -37,6 +49,15 @@ interface SettingsState {
   readingMeasure: ReadingMeasure;
   /** Write to disk automatically a beat after you stop typing. */
   autoSave: boolean;
+  /**
+   * How long after the last keystroke autosave waits, in milliseconds.
+   *
+   * A debounce, not an interval: the countdown restarts on every change, so a
+   * longer value does not mean saving less often while you type — it means
+   * waiting longer after you stop. Worth raising if a file is watched by
+   * something that reacts to writes.
+   */
+  autoSaveDelay: number;
   /** Browser spellcheck inside the rendered editor. */
   spellcheck: boolean;
   /** Reopen the previous session's tabs on launch. */
@@ -57,6 +78,7 @@ interface SettingsState {
   adjustReadingSize: (delta: number) => void;
   setReadingMeasure: (measure: ReadingMeasure) => void;
   setAutoSave: (enabled: boolean) => void;
+  setAutoSaveDelay: (ms: number) => void;
   setSpellcheck: (enabled: boolean) => void;
   setRestoreSession: (enabled: boolean) => void;
   setFormatToolbar: (enabled: boolean) => void;
@@ -76,6 +98,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       ...APPEARANCE_DEFAULTS,
       autoSave: true,
+      autoSaveDelay: DEFAULT_AUTOSAVE_DELAY,
       spellcheck: true,
       restoreSession: true,
       formatToolbar: false,
@@ -97,6 +120,15 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({ readingSize: clampReadingSize(state.readingSize + delta) })),
       setReadingMeasure: (readingMeasure) => set({ readingMeasure }),
       setAutoSave: (autoSave) => set({ autoSave }),
+      setAutoSaveDelay: (ms) =>
+        set({
+          // Persisted state is user-editable in devtools and survives version
+          // changes, so an unknown value falls back rather than becoming the
+          // timeout of an unbounded setTimeout.
+          autoSaveDelay: (AUTOSAVE_DELAYS as readonly number[]).includes(ms)
+            ? ms
+            : DEFAULT_AUTOSAVE_DELAY,
+        }),
       setSpellcheck: (spellcheck) => set({ spellcheck }),
       setRestoreSession: (restoreSession) => set({ restoreSession }),
       setFormatToolbar: (formatToolbar) => set({ formatToolbar }),

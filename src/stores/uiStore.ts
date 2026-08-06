@@ -24,6 +24,14 @@ interface UIState {
   overlay: Overlay;
   findOpen: boolean;
   findReplaceMode: boolean;
+  /**
+   * Bumped by every openFind call, including while the bar is already up.
+   *
+   * Ctrl+F on an open search bar used to be a no-op, which reads as the
+   * shortcut being broken. The bar watches this counter and re-focuses its
+   * input when it changes, so pressing it again does the useful thing.
+   */
+  findNonce: number;
   /** Viewport is narrow enough that the rail becomes a drawer. */
   isCompact: boolean;
 
@@ -56,6 +64,7 @@ export const useUIStore = create<UIState>()(
       focusMode: false,
       overlay: null,
       findOpen: false,
+      findNonce: 0,
       findReplaceMode: false,
       isCompact: false,
 
@@ -91,7 +100,12 @@ export const useUIStore = create<UIState>()(
       toggleOverlay: (overlay) =>
         set((state) => ({ overlay: state.overlay === overlay ? null : overlay })),
 
-      openFind: (replace = false) => set({ findOpen: true, findReplaceMode: replace }),
+      openFind: (replace = false) =>
+        set((state) => ({
+          findOpen: true,
+          findReplaceMode: replace,
+          findNonce: state.findNonce + 1,
+        })),
       closeFind: () => set({ findOpen: false }),
 
       setCompact: (isCompact) =>

@@ -4,6 +4,7 @@ import {
   UserCancelledError,
   downloadFile,
   ensurePermission,
+  getLastModified,
   openMarkdownFiles,
   pickSaveLocation,
   queryPermission,
@@ -79,6 +80,15 @@ export interface OpenDocument {
   frontmatterBlock: string;
   /** Exact text last read from or written to disk. Used by "revert". */
   savedText: string;
+  /**
+   * The file's mtime as of that read or write, or null when there is no handle.
+   *
+   * This is how an edit made outside RendMD is noticed. Without it `save`
+   * writes whatever is in memory over whatever is on disk: open a file here,
+   * change it in another editor, type one character, and autosave destroys the
+   * other edit about a second later with no indication it ever existed.
+   */
+  lastModified: number | null;
   isDirty: boolean;
   lastSavedAt: number | null;
   /** Scroll position as a 0–1 ratio, so it survives a change of window size. */
@@ -111,6 +121,11 @@ interface DocumentsState {
   activeId: string | null;
   /** True while the previous session is being read back from IndexedDB. */
   isRestoring: boolean;
+  /**
+   * Document whose file changed on disk under unsaved edits, awaiting a
+   * decision. Nothing is written to that file until it clears.
+   */
+  conflictId: string | null;
 
   openFiles: () => Promise<void>;
   openHandle: (
@@ -133,7 +148,9 @@ interface DocumentsState {
   setScrollRatio: (id: string, ratio: number) => void;
   replaceDocumentText: (id: string, text: string) => void;
 
-  save: (id: string) => Promise<boolean>;
+  /** `force` overwrites a file that changed on disk. Only the conflict dialog passes it. */
+  save: (id: string, options?: { force?: boolean }) => Promise<boolean>;
+  dismissConflict: () => void;
   saveAs: (id: string) => Promise<boolean>;
   saveAll: () => Promise<void>;
   revert: (id: string) => Promise<boolean>;
@@ -155,6 +172,31 @@ function createId(): string {
  */
 export function documentText(doc: OpenDocument): string {
   return joinDocument(doc.frontmatterBlock, doc.content);
+}
+
+/** Current mtime of a handle, or null when it can't be read. */
+async function readMtime(handle: FileSystemFileHandle | null): Promise<number | null> {
+  if (!handle) return null;
+  try {
+    return await getLastModified(handle);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Has the file moved on since we last read or wrote it?
+ *
+ * Conservative in one direction on purpose: an unreadable mtime, or a document
+ * opened before this was tracked, reports *no* conflict. Blocking every save
+ * on missing metadata would make the app feel broken, and the alternative
+ * failure — a spurious dialog on every save — trains people to click through
+ * the one time it matters.
+ */
+async function hasChangedOnDisk(doc: OpenDocument): Promise<boolean> {
+  if (!doc.handle || doc.lastModified === null) return false;
+  const current = await readMtime(doc.handle);
+  return current !== null && current !== doc.lastModified;
 }
 
 export const useDocumentsStore = create<DocumentsState>()((set, get) => {
@@ -200,6 +242,7 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
     documents: [],
     activeId: null,
     isRestoring: true,
+    conflictId: null,
 
     /* ── Opening ───────────────────────────────────────────────────────── */
 
@@ -252,6 +295,7 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
             frontmatter: parsed.frontmatter,
             frontmatterBlock: parsed.block,
             savedText: text,
+            lastModified: await getLastModified(handle).catch(() => null),
             isDirty: false,
             lastSavedAt: Date.now(),
             scrollRatio: 0,
@@ -283,6 +327,7 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
         frontmatter: parsed.frontmatter,
         frontmatterBlock: parsed.block,
         savedText: text,
+        lastModified: file.lastModified,
         isDirty: false,
         lastSavedAt: null,
         scrollRatio: 0,
@@ -305,6 +350,7 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
         frontmatter: parsed.frontmatter,
         frontmatterBlock: parsed.block,
         savedText: '',
+        lastModified: null,
         // A template counts as content worth keeping, so it starts dirty.
         isDirty: content.length > 0,
         lastSavedAt: null,
@@ -463,7 +509,7 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
 
     /* ── Persistence ───────────────────────────────────────────────────── */
 
-    async save(id) {
+    async save(id, options = {}) {
       const doc = get().documents.find((d) => d.id === id);
       if (!doc) return false;
       if (!doc.isDirty && doc.handle) return true; // Nothing to write.
@@ -476,22 +522,40 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
         return false;
       }
 
+      // Refuse to write over an edit made outside RendMD.
+      //
+      // `force` is what the conflict dialog's "Keep mine" passes: at that point
+      // the overwrite is the user's explicit decision rather than an accident.
+      if (!options.force && (await hasChangedOnDisk(doc))) {
+        set({ conflictId: id });
+        return false;
+      }
+
       const text = documentText(doc);
 
       try {
         await writeFileHandle(doc.handle, text);
+        // Read back after the write, so the mtime we store is the one our own
+        // save produced — otherwise the next save would flag itself.
+        const mtime = await readMtime(doc.handle);
         patch(id, (current) => ({
           ...current,
           savedText: text,
+          lastModified: mtime,
           isDirty: false,
           lastSavedAt: Date.now(),
         }));
+        if (get().conflictId === id) set({ conflictId: null });
         return true;
       } catch (error) {
         console.error('[RendMD] Save failed:', error);
         toast.error(`Could not save ${doc.name}`);
         return false;
       }
+    },
+
+    dismissConflict() {
+      set({ conflictId: null });
     },
 
     async saveAs(id) {
@@ -517,16 +581,20 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
         }
 
         await writeFileHandle(handle, text);
+        const mtime = await readMtime(handle);
         patch(id, (current) => ({
           ...current,
           handle,
           name: handle.name,
           path: handle.name,
           savedText: text,
+          lastModified: mtime,
           isDirty: false,
           isUntitled: false,
           lastSavedAt: Date.now(),
         }));
+        // Writing to a different file resolves any conflict on the old one.
+        if (get().conflictId === id) set({ conflictId: null });
         return true;
       } catch (error) {
         if (error instanceof UserCancelledError) return false;
@@ -575,17 +643,22 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => {
       try {
         const text = await readFileHandle(doc.handle);
         const parsed = parseFrontmatter(text);
+        const mtime = await readMtime(doc.handle);
         patch(id, (current) => ({
           ...current,
           content: parsed.content,
           frontmatter: parsed.frontmatter,
           frontmatterBlock: parsed.block,
           savedText: text,
+          lastModified: mtime,
           isDirty: false,
           lastSavedAt: Date.now(),
+          // Recorded so the version being replaced is still reachable by undo:
+          // loading the file from disk must not be the end of your own edits.
           history: recordHistory(current.history, text),
           revision: current.revision + 1,
         }));
+        if (get().conflictId === id) set({ conflictId: null });
         return true;
       } catch (error) {
         console.error('[RendMD] Reload failed:', error);
@@ -655,6 +728,16 @@ function fromPersisted(doc: PersistedDocument): OpenDocument {
   return {
     ...doc,
     isUntitled: doc.handle === null && doc.lastSavedAt === null,
+    /**
+     * Deliberately not restored.
+     *
+     * A stale mtime from a previous session is worse than none: the file may
+     * legitimately have changed while RendMD was closed, and every restored
+     * document would open into a conflict. Restore instead re-reads clean
+     * documents (see refreshPermittedDocuments), and a dirty one gets its
+     * baseline from the first read or write of this session.
+     */
+    lastModified: null,
     // History is per-session; a restored document starts from where it left
     // off rather than carrying a stale stack across a reload.
     history: createHistory(joinDocument(doc.frontmatterBlock, doc.content)),

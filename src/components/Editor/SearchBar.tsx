@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Editor } from '@tiptap/react';
 import { X, ChevronUp, ChevronDown, CaseSensitive, Replace } from 'lucide-react';
 import { searchPluginKey } from './extensions/search';
+import { useUIStore } from '@/stores/uiStore';
 import { cn } from '@/utils/cn';
 
 interface SearchBarProps {
@@ -31,13 +32,33 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
   const totalMatches = pluginState?.totalMatches ?? 0;
   const currentMatch = pluginState?.currentMatchIndex ?? 0;
 
-  // Focus search input on mount
+  // Focus the input on mount, and again whenever Ctrl+F is pressed while the
+  // bar is already open — which otherwise did nothing at all.
+  //
+  // Called directly rather than inside requestAnimationFrame: React attaches
+  // refs before it runs effects, so the input already exists here, and a frame
+  // callback does not fire at all while the page is not compositing — a
+  // background tab, or a window the compositor has parked. Focusing is not a
+  // measurement and has nothing to wait for.
+  const findNonce = useUIStore((s) => s.findNonce);
   useEffect(() => {
-    requestAnimationFrame(() => {
-      searchInputRef.current?.focus();
-      searchInputRef.current?.select();
-    });
-  }, []);
+    searchInputRef.current?.focus();
+    searchInputRef.current?.select();
+  }, [findNonce]);
+
+  /**
+   * Drop the highlight decorations whenever this unmounts.
+   *
+   * `handleClose` clears them on the paths it owns, but the bar can now also
+   * be closed from the global Escape handler, which knows nothing about the
+   * editor's search state. Clearing on unmount covers every route out,
+   * including a document being closed while a search is active.
+   */
+  useEffect(() => {
+    return () => {
+      editor.commands.clearSearch();
+    };
+  }, [editor]);
 
   // Push the seeded term into the editor's search state once on mount. The
   // term itself comes from a lazy useState initialiser (see above) so it is
@@ -86,10 +107,11 @@ export function SearchBar({ editor, onClose, showReplace: initialShowReplace = f
     editor.commands.replaceAllMatches(replaceTerm);
   }, [editor, replaceTerm]);
 
+  // Decorations are cleared by the unmount effect above, which covers the
+  // global Escape path too.
   const handleClose = useCallback(() => {
-    editor.commands.clearSearch();
     onClose();
-  }, [editor, onClose]);
+  }, [onClose]);
 
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

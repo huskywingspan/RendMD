@@ -28,12 +28,50 @@ interface TableToolbarProps {
   editor: Editor;
 }
 
+/**
+ * The DOM element of the table containing the selection, or null.
+ *
+ * Resolved by walking the ProseMirror node hierarchy rather than by taking
+ * `domAtPos().node.closest('table')`. At a node boundary — the very start of a
+ * table is one — `domAtPos` can resolve to the parent container with an
+ * offset, or to the preceding sibling, so `closest` would climb to whichever
+ * table happened to be *before* the cursor. That is precisely how the toolbar
+ * ended up drawn over the table above the one being edited.
+ */
+function tableElementAt(editor: Editor): HTMLTableElement | null {
+  const { $from } = editor.state.selection;
+
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if ($from.node(depth).type.name !== 'table') continue;
+
+    const dom = editor.view.nodeDOM($from.before(depth));
+    if (!(dom instanceof HTMLElement)) return null;
+    // TipTap wraps tables in a scrolling div, so the node DOM may be either.
+    return dom instanceof HTMLTableElement ? dom : dom.querySelector('table');
+  }
+
+  return null;
+}
+
 export function TableToolbar({ editor }: TableToolbarProps) {
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
-  const [visible, setVisible] = useState(false);
+  /**
+   * The anchor, held as state rather than derived at position time.
+   *
+   * This is what makes moving between two tables reposition the toolbar. The
+   * effect below previously depended only on a boolean `visible`, which does
+   * not change when the cursor leaves one table for another — so the position
+   * was computed once and never revisited, and the toolbar stayed behind on
+   * the first table until some unrelated event forced a recompute.
+   */
+  const [table, setTable] = useState<HTMLTableElement | null>(null);
 
   const sync = useCallback(() => {
-    setVisible(editor.isActive('table') && editor.view.hasFocus());
+    const active = editor.isActive('table') && editor.view.hasFocus();
+    const next = active ? tableElementAt(editor) : null;
+    // Compared by identity: React bails out when the element is the same, so
+    // moving between cells of one table costs nothing.
+    setTable(next);
   }, [editor]);
 
   useEffect(() => {
@@ -51,21 +89,12 @@ export function TableToolbar({ editor }: TableToolbarProps) {
   }, [editor, sync]);
 
   // Anchor to the table element itself rather than the caret, so the toolbar
-  // stays put while moving between cells.
+  // stays put while moving between cells of the same table.
   useEffect(() => {
-    if (!visible || !toolbar) return;
-
-    const reference = {
-      getBoundingClientRect: () => {
-        const node = editor.view.domAtPos(editor.state.selection.from).node;
-        const element = node instanceof HTMLElement ? node : node.parentElement;
-        const table = element?.closest('table');
-        return (table ?? editor.view.dom).getBoundingClientRect();
-      },
-    };
+    if (!table || !toolbar) return;
 
     const update = () => {
-      void computePosition(reference, toolbar, {
+      void computePosition(table, toolbar, {
         placement: 'top-start',
         middleware: [offset(6), flip({ padding: 8 }), shift({ padding: 8 })],
       }).then(({ x, y }) => {
@@ -74,10 +103,13 @@ export function TableToolbar({ editor }: TableToolbarProps) {
     };
 
     update();
-    return autoUpdate(editor.view.dom, toolbar, update);
-  }, [visible, toolbar, editor]);
+    // Watch the table, not the editor. Observing the editor element meant the
+    // only thing that ever triggered a recompute was a scroll event — which is
+    // why a mispositioned toolbar appeared to fix itself when the page moved.
+    return autoUpdate(table, toolbar, update);
+  }, [table, toolbar]);
 
-  if (!visible) return null;
+  if (!table) return null;
 
   return (
     <div

@@ -187,25 +187,34 @@ export function SegmentedControl<T extends string>({
   options,
   onChange,
   label,
+  disabled = false,
 }: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
   label: string;
+  /** Dimmed and inert — for a setting that only applies when another is on. */
+  disabled?: boolean;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex rounded-md bg-sunken p-0.5">
+    <div
+      role="group"
+      aria-label={label}
+      className={cn('flex rounded-md bg-sunken p-0.5', disabled && 'opacity-40')}
+    >
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
+          disabled={disabled}
           aria-pressed={value === option.value}
           className={cn(
             'rounded-sm px-2.5 py-1 text-sm transition-colors duration-[120ms]',
+            'disabled:cursor-not-allowed',
             value === option.value
               ? 'bg-canvas font-medium text-ink shadow-sm'
-              : 'text-ink-muted hover:text-ink',
+              : 'text-ink-muted enabled:hover:text-ink',
           )}
         >
           {option.label}

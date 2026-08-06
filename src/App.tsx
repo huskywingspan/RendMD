@@ -38,6 +38,7 @@ const CommandPalette = lazy(() =>
 const SettingsModal = lazy(() => import('@/components/Modals/SettingsModal'));
 const ShortcutsModal = lazy(() => import('@/components/Modals/ShortcutsModal'));
 const ImageInsertModal = lazy(() => import('@/components/Modals/ImageInsertModal'));
+const ConflictModal = lazy(() => import('@/components/Modals/ConflictModal'));
 const SearchBar = lazy(() => import('@/components/Editor/SearchBar'));
 
 /** Below this width the rail becomes a drawer and split view is unavailable. */
@@ -262,6 +263,12 @@ export default function App() {
         {overlay === 'settings' && <SettingsModal isOpen onClose={closeOverlay} />}
         {overlay === 'shortcuts' && <ShortcutsModal isOpen onClose={closeOverlay} />}
         {overlay === 'image' && editor && <ImageInsertModal editor={editor} onClose={closeOverlay} />}
+      </Suspense>
+
+      {/* Outside the overlay switch: a conflict is raised by the save path, not
+          chosen from a menu, and must be able to appear over whatever is open. */}
+      <Suspense fallback={null}>
+        <ConflictModal />
       </Suspense>
 
       {isDragging && <DropOverlay />}

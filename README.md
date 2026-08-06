@@ -24,7 +24,9 @@ Everything else is secondary to making that loop feel like nothing.
 
 **A toolbar, only when you want one.** Nothing sits above the document by default. `Ctrl+Shift+B` — or the pen icon in the title bar — reveals a row with headings, lists, links, tables, images and rules, for when you're writing rather than reading. It remembers whether you left it open, and it disappears entirely in focus mode.
 
-**Save in place.** `Ctrl+S` writes to the original file. Not a download, not a copy in `~/Downloads` — the file you opened.
+**Save in place.** `Ctrl+S` writes to the original file. Not a download, not a copy in `~/Downloads` — the file you opened. Autosave writes a beat after you stop typing; both the delay and whether it runs at all are in Settings.
+
+**It won't overwrite someone else's edit.** If a file changes on disk while you have unsaved changes to it — another editor, a sync client, a `git checkout` — RendMD stops before writing and asks whether to keep your version, load theirs, or save a copy. Loading theirs leaves your version in undo.
 
 **Find anything with `Ctrl+K`.** One palette over every file in your workspace, every heading in the current document, and every command. Fuzzy-matched, so `tgfcs` finds "Toggle focus mode".
 

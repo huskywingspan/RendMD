@@ -4,8 +4,6 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { queryPermission } from '@/lib/fs';
 import { toast } from '@/stores/toastStore';
 
-/** How long to wait after the last keystroke before writing to disk. */
-const AUTOSAVE_DELAY_MS = 1200;
 
 /**
  * Autosave declines to write when a document has lost this much of itself, and
@@ -41,6 +39,7 @@ const asked = new Set<string>();
  */
 export function useAutoSave(): void {
   const autoSave = useSettingsStore((s) => s.autoSave);
+  const autoSaveDelay = useSettingsStore((s) => s.autoSaveDelay);
   const documents = useDocumentsStore((s) => s.documents);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
@@ -62,6 +61,11 @@ export function useAutoSave(): void {
 
         const current = useDocumentsStore.getState().documents.find((d) => d.id === doc.id);
         if (!current?.isDirty || !current.handle) return;
+
+        // A conflict already raised for this document is waiting on the user.
+        // Retrying every keystroke would stack modals behind the one they are
+        // looking at.
+        if (useDocumentsStore.getState().conflictId === current.id) return;
 
         // Silent path only: no prompting without a gesture.
         if ((await queryPermission(current.handle, 'readwrite')) !== 'granted') return;
@@ -86,11 +90,11 @@ export function useAutoSave(): void {
 
         asked.delete(current.id);
         await useDocumentsStore.getState().save(current.id);
-      }, AUTOSAVE_DELAY_MS);
+      }, autoSaveDelay);
 
       pending.set(doc.id, timer);
     }
-  }, [autoSave, documents]);
+  }, [autoSave, autoSaveDelay, documents]);
 
   // Clear every pending timer on unmount.
   useEffect(() => {

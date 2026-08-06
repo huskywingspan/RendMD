@@ -221,3 +221,43 @@ It was a defect. `.prose-surface > * + *` sets the gap between top-level blocks 
 **Why the controls are shared.** `blockTypes.ts` holds the block list and the commands; `formatting.tsx` holds the controls. Both the toolbar and the bubble menu consume them. Two lists of the same commands drift — one gains a heading level, the other keeps mapping the old set — and the mismatch only surfaces in whichever surface was not updated.
 
 **Not included:** table row and column operations, which remain in the contextual `TableToolbar`. A control that is dead nine tenths of the time teaches you to ignore the bar it sits in.
+
+---
+
+## 20. Saving checks the file first
+
+**Context.** `save` wrote to disk unconditionally. RendMD had no way to know a file had changed since it read it, so opening a document here, editing it in another program, and then typing one character destroyed the other edit about a second later — autosave committed it, and nothing indicated the other version had ever existed.
+
+The machinery was half-built and easy to miss: `getLastModified` had been in the file layer since the beginning, exported and documented as *"used to notice edits made outside RendMD"*, and was called by nothing at all. External changes were picked up only at session restore, and only for clean documents.
+
+**Decision.** Every document with a handle carries the file's mtime as of the last read or write. `save` compares before writing and refuses on a mismatch, raising a dialog offering three answers: overwrite, load the version from disk, or write a copy elsewhere. Autosave skips any document with a decision pending, so the prompt does not stack.
+
+**Why a modal rather than a toast.** Three answers do not fit an affordance that carries one, and a toast expires. This is the moment where one of two versions of someone's work is about to be lost; it should wait.
+
+**Losing your edits is undoable.** "Load theirs" goes through `reloadFromDisk`, which records the incoming text as a history step — so the version being replaced is one Ctrl+Z away rather than gone.
+
+**Deliberately conservative in one direction.** A missing or unreadable mtime reports *no* conflict, and a restored session starts with no baseline rather than a stale one. A spurious dialog on every save teaches people to click through the one that matters, and blocking saves on absent metadata would make the app look broken.
+
+---
+
+## 21. Floating surfaces track what they are attached to
+
+**Context.** Two independent reports, one cause each, both in code that positions something over the document.
+
+The table toolbar drew over the wrong table, or failed to appear until the page was scrolled. Its positioning effect depended on a boolean `visible`, which does not change when the cursor moves from one table to another, so the position was computed once and never revisited. And `autoUpdate` was watching `editor.view.dom` — an element that never resizes — so the only thing that ever forced a recompute was a scroll event. Both symptoms, one mistake. It also resolved the table with `domAtPos().node.closest('table')`, which at a node boundary can climb from the preceding sibling.
+
+Find and replace could not be closed. Escape was bound to the two inputs, so it worked only if focus had never left them — press Enter to jump to a match, click into the document to read it, and the keyboard could no longer dismiss it. `Ctrl+F` was not a toggle either, so pressing it again did nothing visible.
+
+**Decision.** The toolbar holds its anchor element in state, so changing tables re-runs positioning, and `autoUpdate` observes the table. The anchor is found by walking the ProseMirror node hierarchy, which cannot resolve to a neighbour. Escape closes find from anywhere, decorations are cleared on unmount rather than on one code path, and `Ctrl+F` re-focuses the field when the bar is already open.
+
+**A repeat lesson.** The search field's focus call sat inside `requestAnimationFrame`, which does not fire while the page is not compositing — the same trap that once stopped outline extraction from running. Focusing is not a measurement and has nothing to wait for; React attaches refs before it runs effects, so the call is now direct.
+
+---
+
+## 22. Async failures are reported, not swallowed
+
+**Context.** ErrorBoundary catches what React throws while rendering, and the file paths catch what they expect. Nothing caught a promise that rejected outside a `try`/`catch` — a save failing after its caller returned, a session write to IndexedDB, a dynamic import for a lazily loaded modal. Those reached the console and stopped, so the app simply appeared not to do the thing it was asked.
+
+**Decision.** A single `unhandledrejection` listener, installed before render, that reports through the existing toast surface. Repeats within ten seconds are collapsed so a failing timer produces one message rather than one per beat, and cancellations — `AbortError`, `UserCancelledError` — are ignored, because a dismissed file picker is the user saying no.
+
+**It does not attempt recovery.** The point is only that a silent failure becomes a visible one: "nothing happened" is the hardest bug for a user to report.

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import {
   useSettingsStore,
+  AUTOSAVE_DELAYS,
   MIN_READING_SIZE,
   MAX_READING_SIZE,
   type ReadingFamily,
@@ -29,6 +30,12 @@ const FAMILIES: { value: ReadingFamily; label: string }[] = [
   { value: 'serif', label: 'Serif' },
   { value: 'mono', label: 'Mono' },
 ];
+
+/** Values are stringified milliseconds — SegmentedControl is keyed on strings. */
+const AUTOSAVE_DELAY_OPTIONS = AUTOSAVE_DELAYS.map((ms) => ({
+  value: String(ms),
+  label: ms < 60000 ? `${ms / 1000}s` : `${ms / 60000}m`,
+}));
 
 const MEASURES: { value: ReadingMeasure; label: string }[] = [
   { value: 'narrow', label: 'Narrow' },
@@ -102,6 +109,19 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             label="Save automatically"
             checked={settings.autoSave}
             onChange={settings.setAutoSave}
+          />
+        </Field>
+
+        <Field
+          label="Autosave delay"
+          hint="How long after you stop typing. The countdown restarts on every keystroke, so this is a pause, not an interval."
+        >
+          <SegmentedControl
+            label="Autosave delay"
+            value={String(settings.autoSaveDelay)}
+            options={AUTOSAVE_DELAY_OPTIONS}
+            onChange={(value) => settings.setAutoSaveDelay(Number(value))}
+            disabled={!settings.autoSave}
           />
         </Field>
 

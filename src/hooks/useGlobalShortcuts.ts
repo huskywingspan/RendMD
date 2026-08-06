@@ -25,6 +25,23 @@ export function useGlobalShortcuts(editor: Editor | null): void {
       // Let the palette and other overlays own the keyboard while they're up.
       if (useUIStore.getState().overlay !== null && event.key !== 'Escape') return;
 
+      // Escape closes the find bar from anywhere.
+      //
+      // Its own Escape handling is bound to its two inputs, which covers only
+      // the case where focus never left them. Press Enter to jump to a match
+      // and then click into the document to read it, and focus is in the
+      // editor — where nothing was listening, so the bar could not be
+      // dismissed by keyboard at all.
+      if (
+        event.key === 'Escape' &&
+        useUIStore.getState().findOpen &&
+        useUIStore.getState().overlay === null
+      ) {
+        event.preventDefault();
+        useUIStore.getState().closeFind();
+        return;
+      }
+
       // Ctrl+K opens the palette. Not in the registry because it is the way you
       // reach the registry.
       if (isCombo(event, { ctrl: true, key: 'k' })) {
