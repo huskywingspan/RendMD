@@ -41,6 +41,20 @@ registry metadata instead and records every platform.
 If you change dependencies, run `npm ci` afterwards to prove the lockfile is
 complete before pushing.
 
+**Use the npm that CI uses.** CI and Cloudflare both run the npm bundled with
+the Node in `.node-version` — currently Node 22.22.2, so npm 10. npm 11 resolves
+`@emnapi/*` into a different shape, and a lockfile it writes fails `npm ci` on
+npm 10 with "Missing: @emnapi/runtime@… from lock file". Running `npm ci`
+locally only proves the lockfile against *your* npm. If you are on a newer Node,
+regenerate through `npx npm@10 install --package-lock-only` and check with
+`npx npm@10 ci`.
+
+**Do not run `npm audit fix` here.** It rewrites the tree in place using your
+local npm and prunes what it thinks is unused, which is exactly the combination
+that produces a lockfile that installs on your machine and nowhere else. It has
+broken the deploy twice. Bump the offending dependency in `package.json` and
+regenerate as above instead.
+
 ## Conventions
 
 **TypeScript** is strict. Explicit return types on exported functions. `interface` for object shapes unless you need a union.
